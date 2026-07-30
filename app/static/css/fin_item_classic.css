@@ -1,0 +1,88 @@
+.vbc-form {
+    background: #c0c0c0;
+    border: 2px solid #808080;
+    padding: 12px;
+    font-family: "MS Sans Serif", Tahoma, sans-serif;
+    font-size: 13px;
+}
+
+.vbc-form .form-control,
+.vbc-form .form-select {
+    border-radius: 0;
+    font-size: 13px;
+    padding: 2px 6px;
+    height: 28px;
+}
+
+.vbc-form .form-label {
+    font-size: 12px;
+    margin-bottom: 2px;
+    font-weight: 600;
+}
+
+.vbc-title {
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    padding: 4px 10px;
+    font-weight: bold;
+    margin: -12px -12px 10px;
+}
+
+.vbc-frame {
+    border: 1px solid #808080;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #c0c0c0;
+}
+
+.vbc-frame legend {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0 4px;
+    width: auto;
+    float: none;
+}
+
+.vbc-statusbar {
+    background: #c0c0c0;
+    border-top: 1px solid #fff;
+    padding: 4px 8px;
+    font-size: 12px;
+    display: flex;
+    gap: 20px;
+}
+
+.vbc-btnbar .btn {
+    border-radius: 0;
+    min-width: 100px;
+    font-size: 13px;
+}
+
+.vbc-readonly {
+    background: #e8e8e8 !important;
+}
+
+.item-title-display {
+    background: #ffffcc;
+    border: 1px inset #808080;
+    padding: 4px 8px;
+    min-height: 28px;
+    font-weight: bold;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 0;
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+.grid-table {
+    font-size: 12px;
+    background: #fff;
+}
+
+.grid-table th {
+    background: #000080;
+    color: #fff;
+    font-weight: 600;
+}

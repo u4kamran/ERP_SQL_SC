@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card card-stat">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1">Welcome</p>
+                        <h4 id="welcome-name">—</h4>
+                    </div>
+                    <i class="bi bi-person-circle fs-1 text-primary opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-stat">
+            <div class="card-body">
+                <p class="text-muted mb-1">Your Roles</p>
+                <div id="welcome-roles">—</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-stat">
+            <div class="card-body">
+                <p class="text-muted mb-1">System</p>
+                <h6 class="mb-0">{{ app_name }}</h6>
+                <small class="text-muted">Sales &amp; Inventory ERP</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4" data-perm="inventory.fin_item.view">
+    <div class="col-md-6">
+        <div class="card card-stat h-100">
+            <div class="card-body">
+                <h5 class="mb-2"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Sales Dashboard</h5>
+                <p class="text-muted small mb-3">
+                    KPIs, daily trend chart, top invoices, and month-over-month comparison.
+                </p>
+                <a href="/admin/sales-dashboard" class="btn btn-primary">
+                    Open Sales Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card card-stat">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2" id="quick-actions">
+                    <a href="/admin/sales-dashboard" class="btn btn-primary" data-perm="inventory.fin_item.view">
+                        <i class="bi bi-graph-up-arrow me-1"></i> Sales Dashboard
+                    </a>
+                    <a href="/admin/users" class="btn btn-outline-primary" data-perm="auth.users.view">
+                        <i class="bi bi-people me-1"></i> Manage Users
+                    </a>
+                    <a href="/admin/fin-item-classic" class="btn btn-outline-primary" data-perm="inventory.fin_item.view">
+                        <i class="bi bi-box-seam me-1"></i> Item Master
+                    </a>
+                    <a href="/admin/gl-ledger-mobile" class="btn btn-outline-danger" data-perm="inventory.fin_item.view">
+                        <i class="bi bi-phone me-1"></i> GL Ledger (Mobile)
+                    </a>
+                    <a href="/admin/gl-ledger-report" class="btn btn-outline-primary" data-perm="inventory.fin_item.view">
+                        <i class="bi bi-journal-text me-1"></i> GL Ledger Report
+                    </a>
+                    <a href="/admin/sms-email-scheduler" class="btn btn-outline-primary" data-perm="inventory.fin_item.view">
+                        <i class="bi bi-envelope-paper me-1"></i> SMS Sales Email
+                    </a>
+                    <a href="/admin/profile" class="btn btn-outline-secondary">
+                        <i class="bi bi-person me-1"></i> My Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4 g-4 d-none" id="admin-links-section" data-super-only>
+    <div class="col-lg-7">
+        <div class="card card-stat h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>System Links</h6>
+                <span class="badge text-bg-light border">Internal</span>
+            </div>
+            <div class="card-body p-0">
+                {% for group in internal_link_groups %}
+                <div class="link-group">
+                    <div class="link-group-title">{{ group.title }}</div>
+                    <div class="list-group list-group-flush">
+                        {% for link in group.links %}
+                        <a href="{{ link.path }}"
+                           class="list-group-item list-group-item-action link-list-item"
+                           {% if link.get('permission') %}data-perm="{{ link.permission }}"{% endif %}>
+                            <div class="d-flex align-items-start gap-3">
+                                <span class="link-list-icon"><i class="bi {{ link.icon }}"></i></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-semibold">{{ link.label }}</div>
+                                    <div class="text-muted small">{{ link.description }}</div>
+                                    <code class="small text-primary">{{ base_url }}{{ link.path }}</code>
+                                </div>
+                                <i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card card-stat h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-box-arrow-up-right me-2"></i>External Links</h6>
+                <span class="badge text-bg-primary">Opens in new tab</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="external-links-list">
+                    {% for link in external_links %}
+                    <a href="{{ link.url }}"
+                       class="list-group-item list-group-item-action link-list-item external-link-item"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="link-list-icon external"><i class="bi {{ link.icon }}"></i></span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-semibold">
+                                    {{ link.label }}
+                                    <i class="bi bi-box-arrow-up-right small ms-1 text-muted"></i>
+                                </div>
+                                <div class="text-muted small">{{ link.description }}</div>
+                                <code class="small text-primary text-break">{{ link.url }}</code>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary copy-link-btn"
+                                    title="Copy link"
+                                    data-url="{{ link.url }}">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const profile = await Auth.requireAuth();
+    if (!profile) return;
+
+    document.getElementById('welcome-name').textContent = profile.first_name
+        ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+        : profile.username;
+
+    document.getElementById('welcome-roles').innerHTML = profile.roles
+        .map(r => `<span class="badge bg-primary badge-role">${r}</span>`).join('') || '—';
+
+    Auth.applySuperUserVisibility();
+
+    document.querySelectorAll('[data-perm]').forEach(el => {
+        const perm = el.getAttribute('data-perm');
+        if (perm && !Auth.hasPermission(perm) && !Auth.hasPermission('auth.admin.full')) {
+            el.style.display = 'none';
+        }
+    });
+
+    document.querySelectorAll('#quick-actions [data-perm]').forEach(el => {
+        if (!Auth.hasPermission(el.getAttribute('data-perm'))) el.style.display = 'none';
+    });
+
+    document.querySelectorAll('.link-list-item[data-perm]').forEach(el => {
+        const perm = el.getAttribute('data-perm');
+        if (perm && !Auth.hasPermission(perm) && !Auth.hasPermission('auth.admin.full')) {
+            el.style.display = 'none';
+        }
+    });
+
+    document.querySelectorAll('.copy-link-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = btn.getAttribute('data-url');
+            try {
+                await navigator.clipboard.writeText(url);
+                const icon = btn.querySelector('i');
+                icon.className = 'bi bi-check2';
+                setTimeout(() => { icon.className = 'bi bi-clipboard'; }, 1500);
+            } catch {
+                window.prompt('Copy this link:', url);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

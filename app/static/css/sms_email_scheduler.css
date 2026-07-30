@@ -1,0 +1,65 @@
+.sms-scheduler-form .page-header h4 {
+    color: #1a3a5c;
+}
+
+.scheduler-frame {
+    border: 1px solid #c8d4e0;
+    border-radius: 6px;
+    padding: 1rem 1.25rem 1.25rem;
+    background: #fafbfd;
+}
+
+.scheduler-frame legend {
+    float: none;
+    width: auto;
+    padding: 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a3a5c;
+}
+
+.status-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    background: #fff;
+    min-height: 78px;
+}
+
+.status-card.is-ok {
+    border-color: #198754;
+    background: #f3faf6;
+}
+
+.status-card.is-warn {
+    border-color: #ffc107;
+    background: #fffdf5;
+}
+
+.status-card.is-bad {
+    border-color: #dc3545;
+    background: #fff7f7;
+}
+
+.status-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+}
+
+.status-value {
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.preview-box {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    max-height: 180px;
+    overflow: auto;
+}

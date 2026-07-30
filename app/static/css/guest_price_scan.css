@@ -1,0 +1,210 @@
+.guest-scan-body {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #e8f1ff 0%, #f8f9fa 45%, #ffffff 100%);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.guest-header {
+    padding: 1.5rem 1rem 1rem;
+}
+
+.guest-logo {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25);
+}
+
+.guest-store-name {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0b3d91;
+    margin-bottom: 0.25rem;
+}
+
+.guest-tagline {
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.guest-main {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.scanner-wrap {
+    position: relative;
+}
+
+.scanner-box {
+    position: relative;
+    width: 100%;
+    min-height: 280px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #111;
+}
+
+.scanner-video {
+    width: 100%;
+    height: auto;
+    min-height: 280px;
+    object-fit: cover;
+    display: block;
+    background: #000;
+}
+
+#reader {
+    border: 2px dashed #dee2e6;
+    background: #f8f9fa;
+}
+
+#reader video {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 280px;
+    max-height: 360px;
+    object-fit: cover;
+    border-radius: 0;
+    display: block !important;
+    background: #000;
+}
+
+#reader.scanning {
+    border-color: #0d6efd;
+    background: #000;
+    min-height: 300px;
+}
+
+.scan-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.scan-frame {
+    width: 92%;
+    height: 38%;
+    max-height: 140px;
+    border: 3px solid rgba(25, 135, 84, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+    animation: scanPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes scanPulse {
+    0%, 100% { border-color: rgba(25, 135, 84, 0.95); }
+    50% { border-color: rgba(13, 202, 240, 0.95); }
+}
+
+.scan-hint {
+    margin-top: 0.75rem;
+    color: #fff;
+    font-size: 0.85rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.scan-status {
+    font-weight: 500;
+}
+
+.scan-tips li {
+    padding: 0.15rem 0;
+}
+
+
+.result-section {
+    border-radius: 16px;
+    animation: fadeUp 0.35s ease;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.result-price {
+    font-size: clamp(2.5rem, 12vw, 3.5rem);
+    font-weight: 800;
+    color: #198754;
+    line-height: 1.1;
+}
+
+.result-gst-note {
+    margin-top: 0.25rem;
+}
+
+.result-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #212529;
+    line-height: 1.35;
+}
+
+.result-details {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.result-row:last-child {
+    border-bottom: none;
+}
+
+.result-key {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.result-value {
+    font-weight: 600;
+    text-align: right;
+    word-break: break-all;
+}
+
+.promo-badge {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: #fff3cd;
+    color: #856404;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.guest-footer {
+    margin-top: auto;
+}
+
+@media (max-width: 380px) {
+    .guest-store-name {
+        font-size: 1.15rem;
+    }
+}

@@ -1,0 +1,128 @@
+.sales-dashboard .kpi-card {
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    height: 100%;
+}
+
+.sales-dashboard .kpi-card .card-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.sales-dashboard .kpi-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-bottom: 0.35rem;
+}
+
+.sales-dashboard .kpi-value {
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.sales-dashboard .kpi-sub {
+    color: #6c757d;
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+}
+
+.sales-dashboard .kpi-icon {
+    font-size: 2rem;
+    opacity: 0.35;
+}
+
+.sales-dashboard .kpi-sale .kpi-value { color: #0d6efd; }
+.sales-dashboard .kpi-cost .kpi-value { color: #fd7e14; }
+.sales-dashboard .kpi-profit .kpi-value { color: #198754; }
+.sales-dashboard .kpi-percent .kpi-value { color: #6f42c1; }
+.sales-dashboard .kpi-avg .kpi-value { color: #20c997; }
+
+.sales-dashboard .filter-bar {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+}
+
+.sales-dashboard .period-badge {
+    font-size: 0.85rem;
+}
+
+.sales-dashboard .kpi-compare {
+    font-size: 0.78rem;
+    margin-top: 0.45rem;
+    line-height: 1.35;
+}
+
+.sales-dashboard .kpi-compare .prev-value {
+    color: #6c757d;
+}
+
+.sales-dashboard .kpi-change {
+    font-weight: 600;
+}
+
+.sales-dashboard .kpi-change.up {
+    color: #198754;
+}
+
+.sales-dashboard .kpi-change.down {
+    color: #dc3545;
+}
+
+.sales-dashboard .kpi-change.flat {
+    color: #6c757d;
+}
+
+.sales-dashboard .compare-panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    padding: 1rem 1.25rem;
+}
+
+.sales-dashboard .compare-panel h6 {
+    font-size: 0.95rem;
+}
+
+.sales-dashboard .compare-table th,
+.sales-dashboard .compare-table td {
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.sales-dashboard .compare-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.sales-dashboard .chart-panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    padding: 1rem 1.25rem;
+    height: 100%;
+}
+
+.sales-dashboard .chart-wrap {
+    position: relative;
+    height: 280px;
+}
+
+.sales-dashboard .legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.sales-dashboard .legend-dot.current { background: #0d6efd; }
+.sales-dashboard .legend-dot.previous { background: #6c757d; }
+
+.sales-dashboard .preset-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}

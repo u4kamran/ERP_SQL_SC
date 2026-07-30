@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}My Profile - {{ app_name }}{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card card-stat">
+            <div class="card-body p-4">
+                <form id="profileForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" id="profile-username" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="profile-email" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="profile-firstname">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="profile-lastname">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="profile-phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Roles</label>
+                            <div id="profile-roles" class="form-control-plaintext"></div>
+                        </div>
+                    </div>
+                    <div id="form-error" class="alert alert-danger mt-3 d-none"></div>
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-save me-1"></i> Save Profile
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const profile = await Auth.requireAuth();
+    if (!profile) return;
+
+    document.getElementById('profile-username').value = profile.username;
+    document.getElementById('profile-email').value = profile.email;
+    document.getElementById('profile-firstname').value = profile.first_name || '';
+    document.getElementById('profile-lastname').value = profile.last_name || '';
+    document.getElementById('profile-phone').value = profile.phone_number || '';
+    document.getElementById('profile-roles').innerHTML = profile.roles
+        .map(r => `<span class="badge bg-primary me-1">${r}</span>`).join('');
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errEl = document.getElementById('form-error');
+        errEl.classList.add('d-none');
+        try {
+            await Api.put('/api/v1/profile/', {
+                first_name: document.getElementById('profile-firstname').value || null,
+                last_name: document.getElementById('profile-lastname').value || null,
+                phone_number: document.getElementById('profile-phone').value || null,
+            });
+            Auth.showAlert('alert-container', 'Profile updated successfully.', 'success');
+        } catch (err) {
+            errEl.textContent = err.message;
+            errEl.classList.remove('d-none');
+        }
+    });
+});
+</script>
+{% endblock %}

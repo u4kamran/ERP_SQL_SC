@@ -1,0 +1,71 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logs
+logs/
+*.log
+
+# Deployment packages
+deploy/AHSteelLab-Deploy.zip
+AHSteelLab-UPLOAD.zip
+AHSteelLab-UNZIP-AND-RUN.zip
+secrets.txt
+
+# Cloudflare deployment (local credentials)
+deploy/cloudflared/bin/
+deploy/cloudflared/config.yml
+deploy/start-app-service.ps1
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime scheduler state
+data/
+
+# Local temp / duplicate install copies
+_tmp_*.py
+install_/
+
+# Keep alembic/ but ignore local overrides if any

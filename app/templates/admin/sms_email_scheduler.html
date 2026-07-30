@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}SMS Sales Email Scheduler - {{ app_name }}{% endblock %}
+{% block extra_css %}
+<link href="/static/css/sms_email_scheduler.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="sms-scheduler-form">
+    <div class="page-header mb-4">
+        <h4 class="mb-1"><i class="bi bi-envelope-paper me-2"></i>SMS Sales Email Scheduler</h4>
+        <p class="text-muted mb-0">
+            Automatically email the latest <code>SMS_DB_</code> sales summary when a <strong>new</strong> message arrives.
+            The system checks every 30 minutes during the time window.
+        </p>
+    </div>
+
+    <div id="alert-area"></div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="status-card" id="card-scheduler">
+                <div class="status-label">Scheduler</div>
+                <div class="status-value" id="status-scheduler">—</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card" id="card-window">
+                <div class="status-label">Time Window</div>
+                <div class="status-value" id="status-window">—</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card" id="card-smtp">
+                <div class="status-label">Email (SMTP)</div>
+                <div class="status-value" id="status-smtp">—</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card" id="card-pending">
+                <div class="status-label">Pending Send</div>
+                <div class="status-value" id="status-pending">—</div>
+            </div>
+        </div>
+    </div>
+
+    <fieldset class="scheduler-frame">
+        <legend>Schedule Settings</legend>
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="enabled">
+            <label class="form-check-label" for="enabled">
+                <strong>Enable automatic email alerts</strong>
+            </label>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Send to email(s)</label>
+                <input type="text" class="form-control form-control-sm" id="recipients"
+                       placeholder="you@example.com, manager@example.com">
+                <div class="form-text">Comma-separated addresses.</div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Email subject</label>
+                <input type="text" class="form-control form-control-sm" id="email_subject"
+                       value="Sales Summary Alert">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Body keyword filter</label>
+                <input type="text" class="form-control form-control-sm" id="body_keyword"
+                       value="Total Sales">
+                <div class="form-text">Matches latest <code>SMS_DB_.BODY</code> containing this text.</div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Window start</label>
+                <input type="time" class="form-control form-control-sm" id="window_start" value="08:00">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Window end</label>
+                <input type="time" class="form-control form-control-sm" id="window_end" value="01:30">
+                <div class="form-text">Overnight window (e.g. 08:00 → 01:30 next day).</div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Check every</label>
+                <select class="form-select form-select-sm" id="check_interval_minutes">
+                    <option value="15">15 minutes</option>
+                    <option value="30" selected>30 minutes</option>
+                    <option value="60">60 minutes</option>
+                </select>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="scheduler-frame mt-3">
+        <legend>Latest SMS Record</legend>
+        <div class="row g-2 small">
+            <div class="col-md-3"><strong>Latest ID:</strong> <span id="latest-id">—</span></div>
+            <div class="col-md-3"><strong>Last emailed ID:</strong> <span id="last-emailed-id">—</span></div>
+            <div class="col-md-3"><strong>Last check:</strong> <span id="last-check">—</span></div>
+            <div class="col-md-3"><strong>Next check:</strong> <span id="next-check">—</span></div>
+            <div class="col-md-3"><strong>Last email sent:</strong> <span id="last-email">—</span></div>
+        </div>
+        <div class="small mt-2 text-muted" id="last-check-message">—</div>
+        <pre class="preview-box mt-2 mb-0" id="latest-preview">No preview yet.</pre>
+        <div class="text-danger small mt-2 d-none" id="last-error"></div>
+    </fieldset>
+
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn btn-primary" type="button" id="btn-save">
+            <i class="bi bi-save me-1"></i>Save Settings
+        </button>
+        <button class="btn btn-outline-success" type="button" id="btn-test">
+            <i class="bi bi-envelope-check me-1"></i>Send Test Email
+        </button>
+        <button class="btn btn-outline-primary" type="button" id="btn-run-now">
+            <i class="bi bi-play-circle me-1"></i>Run Check Now
+        </button>
+        <a href="/dashboard" class="btn btn-outline-secondary ms-auto">Close</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/sms_email_scheduler.js?v=4"></script>
+{% endblock %}

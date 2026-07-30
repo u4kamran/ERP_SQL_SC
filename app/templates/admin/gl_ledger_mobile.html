@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#800000">
+    <title>GL Ledger (Mobile) - {{ app_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/gl_ledger_mobile.css?v=2" rel="stylesheet">
+</head>
+<body class="ledger-mobile-body">
+    <header class="ledger-mobile-header">
+        <a href="/dashboard" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left"></i></a>
+        <div class="flex-grow-1 text-center">
+            <h1 class="ledger-mobile-title mb-0">GL Ledger</h1>
+            <p class="ledger-mobile-sub mb-0">{{ app_name }}</p>
+        </div>
+        <a href="/admin/gl-ledger-report" class="btn btn-sm btn-outline-light" title="Desktop view"><i class="bi bi-display"></i></a>
+    </header>
+
+    <main class="ledger-mobile-main">
+        <div id="alert-area"></div>
+
+        <!-- Step 1: Request report -->
+        <section class="card border-0 shadow-sm mb-3" id="step-request">
+            <div class="card-body">
+                <h2 class="h6 fw-bold text-danger mb-3"><i class="bi bi-sliders me-1"></i> Step 1 — Choose ledger</h2>
+
+                <div class="mb-3">
+                    <label class="form-label">Account ID</label>
+                    <div class="input-group input-group-lg">
+                        <input type="number" class="form-control" id="start_ac_id" placeholder="e.g. 12010090">
+                        <button class="btn btn-outline-secondary" type="button" id="btn-search-start"><i class="bi bi-search"></i></button>
+                    </div>
+                    <div class="account-title" id="start_ac_title">Account title</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">To account (optional)</label>
+                    <div class="input-group input-group-lg">
+                        <input type="number" class="form-control" id="end_ac_id" placeholder="Same as above if one account">
+                        <button class="btn btn-outline-secondary" type="button" id="btn-search-end"><i class="bi bi-search"></i></button>
+                    </div>
+                    <div class="account-title" id="end_ac_title">Ending account title</div>
+                </div>
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="complete_report">
+                    <label class="form-check-label" for="complete_report">Complete report (all accounts)</label>
+                </div>
+
+                <label class="form-label">Date range</label>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary date-preset" data-preset="today">Today</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary date-preset" data-preset="month">This Month</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary date-preset" data-preset="ytd">Year to Date</button>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <input type="date" class="form-control" id="date_from">
+                    </div>
+                    <div class="col-6">
+                        <input type="date" class="form-control" id="date_to">
+                    </div>
+                </div>
+
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="suppress_zero_bal">
+                    <label class="form-check-label" for="suppress_zero_bal">Suppress zero balance</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="page_wise">
+                    <label class="form-check-label" for="page_wise">Page wise</label>
+                </div>
+
+                <button type="button" class="btn btn-danger btn-lg w-100" id="btn-generate">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>Generate &amp; View PDF
+                </button>
+                <p class="text-muted small text-center mt-2 mb-0" id="generate-status"></p>
+            </div>
+        </section>
+
+        <!-- Step 2: View PDF -->
+        <section class="card border-0 shadow-sm mb-3 d-none" id="step-view">
+            <div class="card-body p-2">
+                <h2 class="h6 fw-bold text-success px-2 pt-2 mb-2"><i class="bi bi-eye me-1"></i> Step 2 — View PDF</h2>
+                <div class="pdf-viewer-wrap">
+                    <iframe id="pdf-frame" class="pdf-frame" title="Ledger PDF"></iframe>
+                </div>
+                <div class="p-2 d-grid gap-2">
+                    <a class="btn btn-success btn-lg" id="btn-open-pdf" href="#" target="_blank" rel="noopener">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Open Full PDF
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-new-report">
+                        <i class="bi bi-arrow-repeat me-1"></i>New Report
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 3: WhatsApp — always visible -->
+        <section class="card border-0 shadow-sm mb-3" id="step-share">
+            <div class="card-body">
+                <h2 class="h6 fw-bold text-success mb-3"><i class="bi bi-whatsapp me-1"></i> Step 3 — Send on WhatsApp</h2>
+                <div id="share-not-ready" class="alert alert-info py-2 small mb-3">
+                    Generate PDF in <strong>Step 1</strong> first — then WhatsApp will activate.
+                </div>
+                <div id="whatsapp-config-hint" class="alert alert-warning py-2 small d-none mb-3"></div>
+
+                <label class="form-label" for="whatsapp_phone">WhatsApp number</label>
+                <div class="input-group input-group-lg mb-1">
+                    <span class="input-group-text">+92</span>
+                    <input type="tel" class="form-control" id="whatsapp_phone" placeholder="3001234567" inputmode="numeric" autocomplete="tel">
+                    <button type="button" class="btn btn-outline-secondary" id="btn-search-whatsapp" title="Search contact">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <p class="text-muted small mb-3">Pakistan: <code>3001234567</code> or <code>03001234567</code></p>
+
+                <div class="d-grid gap-2 mb-3">
+                    <button type="button" class="btn btn-success btn-lg" id="btn-whatsapp-auto" disabled>
+                        <i class="bi bi-whatsapp me-1"></i>Send PDF automatically
+                    </button>
+                    <button type="button" class="btn btn-outline-success" id="btn-whatsapp-link" disabled>
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Open WhatsApp manually (link)
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" id="btn-whatsapp-share" disabled>
+                        <i class="bi bi-share me-1"></i>Share PDF file (phone only)
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-copy-whatsapp-msg" disabled>
+                        <i class="bi bi-clipboard me-1"></i>Copy message + link
+                    </button>
+                </div>
+                <p class="text-muted small mb-0 d-none" id="share-file-hint"></p>
+            </div>
+        </section>
+
+        <!-- Step 4: Email (optional) -->
+        <section class="card border-0 shadow-sm mb-3 d-none" id="step-email">
+            <div class="card-body">
+                <h2 class="h6 fw-bold text-primary mb-3"><i class="bi bi-envelope me-1"></i> Step 4 — Send email (optional)</h2>
+                <div id="email-smtp-hint" class="alert alert-warning py-2 small d-none"></div>
+                <label class="form-label">Send to email</label>
+                <input type="email" class="form-control form-control-lg mb-2" id="email_to" placeholder="name@example.com">
+                <input type="text" class="form-control mb-2" id="email_subject" placeholder="Subject (optional)">
+                <textarea class="form-control mb-3" id="email_message" rows="2" placeholder="Message (optional)"></textarea>
+                <button type="button" class="btn btn-primary btn-lg w-100" id="btn-email">
+                    <i class="bi bi-send me-1"></i>Send PDF by Email
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal fade" id="whatsappSearchModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Search WhatsApp Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" id="whatsapp-search-query" placeholder="Name, account ID, or mobile...">
+                    <div id="whatsapp-search-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="searchModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" id="search-query" placeholder="Search account...">
+                    <div id="search-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/api.js?v=7"></script>
+    <script src="/static/js/whatsapp_share.js?v=3"></script>
+    <script src="/static/js/gl_ledger_mobile.js?v=9"></script>
+</body>
+</html>

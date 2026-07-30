@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Items (FIN_ITEM) - {{ app_name }}{% endblock %}
+{% block page_title %}Inventory Items (FIN_ITEM){% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="input-group" style="max-width: 320px;">
+        <input type="text" class="form-control" id="search-input" placeholder="Search title, short name, barcode...">
+        <button class="btn btn-outline-secondary" id="search-btn"><i class="bi bi-search"></i></button>
+    </div>
+    <button class="btn btn-primary" id="btn-create-item" data-perm="inventory.fin_item.create">
+        <i class="bi bi-plus-lg me-1"></i> New Item
+    </button>
+</div>
+
+<div class="card card-stat">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Manual ID</th>
+                        <th>Title</th>
+                        <th>Short</th>
+                        <th>Barcode</th>
+                        <th class="text-end">Sales Rate</th>
+                        <th class="text-end">OQTY</th>
+                        <th class="text-end">CQTY</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="items-table-body">
+                    <tr><td colspan="10" class="text-center py-4 text-muted">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted" id="pagination-info">—</small>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="prev-page" disabled>Previous</button>
+            <button class="btn btn-outline-secondary" id="next-page" disabled>Next</button>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="itemModalTitle">New Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="itemForm">
+                <div class="modal-body">
+                    <input type="hidden" id="item-id">
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-basic" type="button">Basic</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pricing" type="button">Pricing</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-levels" type="button">Stock Levels</button></li>
+                        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-gl" type="button">GL / Tax</button></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-basic">
+                            <div class="row g-3">
+                                <div class="col-md-6"><label class="form-label">Item Title *</label><input class="form-control" id="f-item_title" required maxlength="100"></div>
+                                <div class="col-md-3"><label class="form-label">Short Name</label><input class="form-control" id="f-item_short" maxlength="20"></div>
+                                <div class="col-md-3"><label class="form-label">OEM</label><input class="form-control" id="f-item_oem" maxlength="20"></div>
+                                <div class="col-md-4"><label class="form-label">Barcode</label><input class="form-control" id="f-barcodeid" maxlength="50"></div>
+                                <div class="col-md-4"><label class="form-label">Barcode (WS)</label><input class="form-control" id="f-barcodeid_ws" maxlength="50"></div>
+                                <div class="col-md-2"><label class="form-label">UOM ID</label><input type="number" class="form-control" id="f-uom_id" value="1"></div>
+                                <div class="col-md-2"><label class="form-label">Country ID</label><input type="number" class="form-control" id="f-country_id" value="1"></div>
+                                <div class="col-md-2"><label class="form-label">AC Level</label><input type="number" class="form-control" id="f-ac_level" value="4"></div>
+                                <div class="col-md-2"><label class="form-label">ED Status</label><input type="number" class="form-control" id="f-ed_status" value="0"></div>
+                                <div class="col-md-2"><label class="form-label">Item Nature</label><input type="number" class="form-control" id="f-item_nature" value="0"></div>
+                                <div class="col-md-2"><label class="form-label">CO ID</label><input type="number" class="form-control" id="f-co_id" value="0"></div>
+                                <div class="col-12"><label class="form-label">Remarks</label><input class="form-control" id="f-remarks" maxlength="50"></div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-pricing">
+                            <div class="row g-3">
+                                <div class="col-md-3"><label class="form-label">Sales Rate</label><input type="number" step="0.0001" class="form-control" id="f-sales_rate" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Cost Rate</label><input type="number" step="0.0001" class="form-control" id="f-cost_rate" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Visa Card Rate</label><input type="number" step="0.0001" class="form-control" id="f-visacard_rate" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Disc P1</label><input type="number" step="0.0001" class="form-control" id="f-disc_p1" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Disc P2</label><input type="number" step="0.0001" class="form-control" id="f-disc_p2" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Disc P3</label><input type="number" step="0.0001" class="form-control" id="f-disc_p3" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Disc P4</label><input type="number" step="0.0001" class="form-control" id="f-disc_p4" value="0"></div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-levels">
+                            <div class="row g-3">
+                                <div class="col-md-3"><label class="form-label">Min Level</label><input type="number" step="0.01" class="form-control" id="f-min_level" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Max Level</label><input type="number" step="0.01" class="form-control" id="f-max_level" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">RO Qty</label><input type="number" step="0.01" class="form-control" id="f-ro_qty" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Critical Level</label><input type="number" step="0.01" class="form-control" id="f-critical_level" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Min Level 1</label><input type="number" step="0.01" class="form-control" id="f-min_level1" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Max Level 1</label><input type="number" step="0.01" class="form-control" id="f-max_level1" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">RO Qty 1</label><input type="number" step="0.01" class="form-control" id="f-ro_qty1" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">Critical Level 1</label><input type="number" step="0.01" class="form-control" id="f-critical_level1" value="0"></div>
+                            </div>
+                            <p class="text-muted small mt-3">Balance fields (OQTY, CQTY, etc.) are maintained by VB6 transactions and shown as read-only in the list.</p>
+                        </div>
+                        <div class="tab-pane fade" id="tab-gl">
+                            <div class="row g-3">
+                                <div class="col-md-3"><label class="form-label">GL Sales ID</label><input type="number" class="form-control" id="f-gl_sales_id" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">GL Pur ID</label><input type="number" class="form-control" id="f-gl_pur_id" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">GL Cons ID</label><input type="number" class="form-control" id="f-gl_cons_id" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">GL Disc ID</label><input type="number" class="form-control" id="f-gl_disc_id" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">GL STAX ID</label><input type="number" class="form-control" id="f-gl_stax_id" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">STAX Reg</label><input type="number" step="0.0001" class="form-control" id="f-stax_reg" value="0"></div>
+                                <div class="col-md-3"><label class="form-label">STAX Unreg</label><input type="number" step="0.0001" class="form-control" id="f-stax_unreg" value="0"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="item-form-error" class="alert alert-danger mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Detail Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Item Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><pre id="view-detail" class="small mb-0" style="white-space:pre-wrap"></pre></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/fin_items.js"></script>
+{% endblock %}

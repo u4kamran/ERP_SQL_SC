@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Sales Dashboard - {{ app_name }}{% endblock %}
+{% block page_title %}Sales Dashboard{% endblock %}
+{% block extra_css %}
+<link href="/static/css/sales_dashboard.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="sales-dashboard">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-graph-up-arrow me-2"></i>Sales Dashboard</h4>
+            <div class="text-muted small">
+                <span id="sales-period-text">Loading…</span>
+                <span class="badge bg-light text-dark border period-badge ms-2" id="sales-total-days">—</span>
+            </div>
+            <div class="text-muted small mt-1" id="sales-compare-period-text">—</div>
+        </div>
+        <button class="btn btn-sm btn-primary" type="button" id="btn-refresh-sales">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+    </div>
+
+    <div class="filter-bar mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small mb-1" for="sales-date-from">From</label>
+                <input type="datetime-local" class="form-control form-control-sm" id="sales-date-from">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1" for="sales-date-to">To</label>
+                <input type="datetime-local" class="form-control form-control-sm" id="sales-date-to">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small mb-1">Quick range</label>
+                <div class="d-flex flex-wrap gap-1" id="preset-buttons">
+                    <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="this-month">This Month</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="last-month">Last Month</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="last-7">Last 7 Days</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="last-30">Last 30 Days</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sales-dashboard-error" class="alert alert-danger py-2 d-none"></div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-4 col-lg">
+            <div class="card kpi-card kpi-sale">
+                <div class="card-body">
+                    <div class="kpi-label">Total Sale</div>
+                    <div class="kpi-value" id="kpi-total-sale">—</div>
+                    <div class="kpi-compare" id="cmp-total-sale"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg">
+            <div class="card kpi-card kpi-cost">
+                <div class="card-body">
+                    <div class="kpi-label">Total Cost</div>
+                    <div class="kpi-value" id="kpi-total-cost">—</div>
+                    <div class="kpi-compare" id="cmp-total-cost"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg">
+            <div class="card kpi-card kpi-profit">
+                <div class="card-body">
+                    <div class="kpi-label">Profit</div>
+                    <div class="kpi-value" id="kpi-profit">—</div>
+                    <div class="kpi-compare" id="cmp-profit"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg">
+            <div class="card kpi-card kpi-percent">
+                <div class="card-body">
+                    <div class="kpi-label">Profit %</div>
+                    <div class="kpi-value" id="kpi-profit-pct">—</div>
+                    <div class="kpi-compare" id="cmp-profit-pct"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg">
+            <div class="card kpi-card kpi-avg">
+                <div class="card-body">
+                    <div class="kpi-label">Avg Sale / Day</div>
+                    <div class="kpi-value" id="kpi-avg-sale">—</div>
+                    <div class="kpi-compare" id="cmp-avg-sale"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <div class="chart-panel">
+                <h6 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Daily Sales Trend</h6>
+                <div class="chart-wrap">
+                    <canvas id="sales-trend-chart"></canvas>
+                </div>
+                <div class="chart-legend small text-muted mt-2">
+                    <span class="legend-dot current"></span> Current period
+                    <span class="legend-dot previous ms-3"></span> Last month (same dates)
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-panel h-100">
+                <h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Top 10 Invoices</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm compare-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Inv #</th>
+                                <th class="num">Sale</th>
+                                <th class="num">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-invoices-body">
+                            <tr><td colspan="3" class="text-muted">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="compare-panel">
+        <h6 class="mb-3"><i class="bi bi-arrow-left-right me-2"></i>Month-over-Month Comparison</h6>
+        <div class="table-responsive">
+            <table class="table table-sm compare-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th class="num">Current</th>
+                        <th class="num">Last Month</th>
+                        <th class="num">Change</th>
+                        <th class="num">Change %</th>
+                    </tr>
+                </thead>
+                <tbody id="sales-compare-table-body">
+                    <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/js/sales_dashboard.js?v=5"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    await Auth.requireAuth();
+    if (!canViewSalesDashboard()) {
+        document.querySelector('.sales-dashboard').innerHTML =
+            '<div class="alert alert-danger">Access denied.</div>';
+        return;
+    }
+    initSalesDashboard();
+});
+</script>
+{% endblock %}

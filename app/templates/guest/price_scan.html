@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0d6efd">
+    <title>Price Check - {{ app_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/guest_price_scan.css?v=5" rel="stylesheet">
+</head>
+<body class="guest-scan-body">
+    <header class="guest-header text-center">
+        <div class="guest-logo">
+            <i class="bi bi-upc-scan"></i>
+        </div>
+        <h1 class="guest-store-name">{{ app_name }}</h1>
+        <p class="guest-tagline mb-0">Scan or search to check the price</p>
+    </header>
+
+    <main class="guest-main container-fluid px-3 pb-4">
+        <div id="alert-container" class="d-none mb-3">
+            <div id="alert-box" class="alert mb-0" role="alert"></div>
+        </div>
+
+        <section class="scan-section card border-0 shadow-sm">
+            <div class="card-body p-3">
+                <div class="scanner-wrap">
+                    <div id="reader" class="scanner-box">
+                        <video id="camera-preview" class="scanner-video d-none" playsinline webkit-playsinline muted autoplay></video>
+                    </div>
+                    <div id="scan-overlay" class="scan-overlay d-none">
+                        <div class="scan-frame"></div>
+                        <p class="scan-hint">Align barcode inside the box</p>
+                    </div>
+                </div>
+                <p id="scan-status" class="scan-status text-center text-muted small mt-2 mb-0">Tap Start Camera Scan</p>
+                <div class="scanner-actions d-grid gap-2 mt-3">
+                    <button type="button" class="btn btn-primary btn-lg" id="btn-start-scan">
+                        <i class="bi bi-camera-video me-2"></i>Start Camera Scan
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="btn-stop-scan">
+                        <i class="bi bi-camera-video-off me-1"></i>Stop Camera
+                    </button>
+                </div>
+                <ul class="scan-tips list-unstyled small text-muted mt-3 mb-0">
+                    <li><i class="bi bi-check2 me-1"></i> Hold phone 15–20 cm from barcode</li>
+                    <li><i class="bi bi-check2 me-1"></i> If scan fails, use Manual ID below</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="manual-section card border-0 shadow-sm mt-3">
+            <div class="card-body p-3">
+                <h2 class="h6 fw-semibold mb-3"><i class="bi bi-search me-1"></i> Search without camera</h2>
+
+                <label for="manual-id" class="form-label fw-semibold">Manual ID <span class="text-muted fw-normal">(on price tag)</span></label>
+                <div class="input-group input-group-lg mb-3">
+                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                    <input type="text" class="form-control" id="manual-id"
+                           placeholder="e.g. 12345" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                    <button class="btn btn-success" type="button" id="btn-lookup-manual">
+                        <i class="bi bi-search"></i> Find
+                    </button>
+                </div>
+
+                <label for="manual-barcode" class="form-label fw-semibold">Barcode number</label>
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                    <input type="text" class="form-control" id="manual-barcode"
+                           placeholder="Type barcode digits" inputmode="numeric" autocomplete="off">
+                    <button class="btn btn-primary" type="button" id="btn-lookup-barcode">
+                        <i class="bi bi-search"></i> Find
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-section" class="result-section card border-0 shadow d-none mt-3">
+            <div class="card-body p-4 text-center">
+                <p class="result-label text-muted mb-1">Sale Price (incl. GST)</p>
+                <div class="result-price" id="result-price">—</div>
+                <div id="result-gst-note" class="result-gst-note text-muted small d-none"></div>
+
+                <h2 class="result-title mt-3 mb-4" id="result-title">—</h2>
+
+                <div class="result-details text-start">
+                    <div class="result-row">
+                        <span class="result-key">Manual ID</span>
+                        <span class="result-value" id="result-manual-id">—</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-key">Barcode</span>
+                        <span class="result-value" id="result-barcode">—</span>
+                    </div>
+                    <div class="result-row d-none" id="row-short">
+                        <span class="result-key">Short Name</span>
+                        <span class="result-value" id="result-short">—</span>
+                    </div>
+                    <div class="result-row d-none" id="row-uom">
+                        <span class="result-key">Unit</span>
+                        <span class="result-value" id="result-uom">—</span>
+                    </div>
+                    <div class="result-row d-none" id="row-brand">
+                        <span class="result-key">Brand</span>
+                        <span class="result-value" id="result-brand">—</span>
+                    </div>
+                    <div class="result-row d-none" id="row-mrp">
+                        <span class="result-key">Market Price</span>
+                        <span class="result-value" id="result-mrp">—</span>
+                    </div>
+                </div>
+
+                <div id="promo-badge" class="promo-badge d-none">
+                    <i class="bi bi-tag-fill me-1"></i> Promotion Item
+                </div>
+
+                <button type="button" class="btn btn-outline-primary btn-lg w-100 mt-4" id="btn-scan-another">
+                    <i class="bi bi-arrow-repeat me-2"></i>Search Another Item
+                </button>
+            </div>
+        </section>
+
+        <section id="loading-section" class="loading-section text-center py-5 d-none">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2 mb-0">Looking up item…</p>
+        </section>
+    </main>
+
+    <footer class="guest-footer text-center text-muted small py-3">
+        &copy; 2026 {{ app_name }}
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/static/js/money_format.js"></script>
+    <script src="/static/js/guest_price_scan.js?v=8"></script>
+</body>
+</html>

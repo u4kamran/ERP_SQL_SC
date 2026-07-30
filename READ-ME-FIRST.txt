@@ -1,0 +1,65 @@
+================================================================================
+                    AH STEEL LAB - UNZIP AND RUN
+================================================================================
+
+IMPORTANT - READ FIRST
+----------------------
+This is NOT a normal HTML website for cPanel/FTP upload.
+
+You CANNOT upload to public_html on shared hosting and expect it to work.
+This app needs Python + SQL Server on a Windows PC.
+
+If you only have cPanel (PHP hosting) -> this package will NOT work there.
+
+
+WHERE TO PUT THIS FOLDER
+------------------------
+On your Windows PC that has SQL Server (SHAHEENHPLT):
+
+  1. Unzip this entire folder to:
+     D:\AHSteelLab\
+
+  2. You should have:
+     D:\AHSteelLab\INSTALL.bat
+     D:\AHSteelLab\START-WEBSITE.bat
+     D:\AHSteelLab\app\
+     etc.
+
+
+HOW TO GO ONLINE (2 STEPS)
+--------------------------
+
+  STEP 1 - Double-click:  INSTALL.bat
+           (installs everything, opens .env to edit password)
+
+  STEP 2 - Double-click:  START-WEBSITE.bat
+           (starts website - keep window open)
+
+  STEP 3 - Open browser:  https://app.ahsteellab.com/login
+           Login: admin / ChangeMe@2026!
+
+
+ALWAYS ON (optional)
+--------------------
+Right-click INSTALL-SERVICES.bat -> Run as Administrator
+(website starts automatically when PC boots)
+
+
+DO NOT UPLOAD TO
+----------------
+  X cPanel public_html
+  X ahsteellab.com FTP folder (reports site - leave unchanged)
+
+
+YOUR WEBSITE URLS
+-----------------
+  Login:    https://app.ahsteellab.com/login
+  Items:    https://app.ahsteellab.com/admin/fin-items
+  Reports:  https://ahsteellab.com  (unchanged)
+
+
+NEED HELP?
+----------
+  docs\CLOUDFLARE_DEPLOY.md
+
+================================================================================

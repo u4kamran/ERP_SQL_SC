@@ -1,0 +1,135 @@
+/* AH Steel Lab - Admin layout styles */
+
+:root {
+    --sidebar-width: 260px;
+    --primary-color: #1a237e;
+}
+
+body.admin-body {
+    min-height: 100vh;
+    background-color: #f4f6f9;
+}
+
+.admin-sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
+    color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.admin-sidebar .brand {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.admin-sidebar .nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-sidebar .nav-link:hover,
+.admin-sidebar .nav-link.active {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+
+.admin-sidebar .nav-section {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255,255,255,0.4);
+    padding: 1rem 1.5rem 0.25rem;
+}
+
+.admin-content {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+}
+
+.admin-topbar {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1.5rem;
+}
+
+.admin-main {
+    padding: 1.5rem;
+}
+
+.card-stat {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.table-actions .btn {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.badge-role {
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+}
+
+.link-group-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    padding: 0.75rem 1.25rem 0.25rem;
+    background: #f8f9fa;
+    border-top: 1px solid #eee;
+}
+
+.link-group:first-child .link-group-title {
+    border-top: none;
+}
+
+.link-list-item {
+    border-left: none;
+    border-right: none;
+    padding: 0.9rem 1.25rem;
+}
+
+.link-list-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: rgba(26, 35, 126, 0.08);
+    color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.link-list-icon.external {
+    background: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.copy-link-btn {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s;
+    }
+    .admin-sidebar.show {
+        transform: translateX(0);
+    }
+    .admin-content {
+        margin-left: 0;
+    }
+}

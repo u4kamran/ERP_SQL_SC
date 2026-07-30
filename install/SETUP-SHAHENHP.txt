@@ -1,0 +1,122 @@
+AH Steel Lab - Two-machine setup (NSDS2626)
+============================================
+
+You have TWO computers:
+
+  [DATABASE MACHINE]                    [APP MACHINE]
+       shahenhp                          Your install PC
+       SQL Server                        Python + this app
+       nsds2626 (business data)          connects to shahenhp over network
+       NSDS2626_AUTH (login users)
+
+The app does NOT need to be installed on the database server.
+The database does NOT need Python.
+
+
+PART A - ON DATABASE MACHINE (shahenhp)  [ONE TIME]
+----------------------------------------------------
+Do this on the PC where SQL Server is installed.
+
+1. Make sure SQL Server accepts remote connections:
+   - SQL Server Configuration Manager
+   - Enable TCP/IP
+   - Restart SQL Server service
+
+2. Open Windows Firewall on shahenhp:
+   - Allow inbound TCP port 1433 (SQL Server)
+
+3. Create the auth database (choose ONE option):
+
+   Option 1 - SSMS on shahenhp (easiest):
+     Open SQL Server Management Studio on shahenhp
+     Run these files in order:
+       sql\01_create_database.sql
+       sql\02_create_schema.sql
+       sql\03_create_tables.sql
+       sql\04_create_indexes.sql
+       sql\05_seed_data.sql
+
+   Option 2 - From app PC over network:
+     Copy sql\ folder to app PC, then run:
+       install\setup-database.bat
+     (needs sqlcmd + network access to shahenhp)
+
+4. Confirm databases exist on shahenhp:
+   - nsds2626        (your existing VB6 business DB)
+   - NSDS2626_AUTH   (new login/auth DB)
+
+
+PART B - ON APP MACHINE (install PC)
+------------------------------------
+Do this on the OTHER computer where you want the web app.
+
+1. Install on this PC only:
+   - Python 3.13+  (check "Add Python to PATH")
+   - ODBC Driver 18 for SQL Server
+
+2. Copy the whole folder ahsteellab-nsds2626 to this PC.
+   Do NOT copy the venv folder.
+
+3. Test network connection to database machine:
+   Open Command Prompt and run:
+     ping shahenhp
+
+   If ping fails, use the real server name or IP in .env later, e.g.:
+     DB_SERVER=192.168.1.50
+
+4. Double-click:  install\install.bat
+   - Creates .env pointing to remote shahenhp
+   - Installs Python packages
+   - Tests connection to shahenhp
+   - Seeds admin user
+
+5. Double-click:  install\start.bat
+   - App runs on THIS PC at http://localhost:8000
+
+
+PART C - OPEN FROM BROWSER
+--------------------------
+On the app machine itself:
+  http://localhost:8000/login
+
+From other PCs on the same network (use app machine IP):
+  http://192.168.x.x:8000/login
+  (replace with your app PC IP address)
+
+Login:
+  Username: admin
+  Password: ChangeMe@2026!
+
+
+CONNECTION SETTINGS (in install\env.shahenhp)
+---------------------------------------------
+DB_SERVER=shahenhp          <-- database machine name or IP
+BUSINESS_DB_NAME=nsds2626
+DB_NAME=NSDS2626_AUTH
+DB_USER=sa
+DB_PASSWORD=redgreen
+
+If shahenhp name does not resolve from app PC, edit .env after install:
+  DB_SERVER=192.168.1.50
+  BUSINESS_DB_SERVER=192.168.1.50
+
+
+TROUBLESHOOTING
+---------------
+Cannot connect from app PC to shahenhp:
+  - ping shahenhp from app PC
+  - SQL TCP/IP enabled on database machine
+  - Firewall port 1433 open on database machine
+  - sa login enabled, password correct
+  - Try IP instead of computer name in .env
+
+App works on app PC but not from other PCs:
+  - Windows Firewall on app PC: allow port 8000
+  - Use http://app-pc-ip:8000 not localhost
+
+Auth DB missing:
+  - Run Part A step 3 on database machine first
+
+Item Master empty:
+  - Check BUSINESS_DB_NAME=nsds2626 in .env
+  - Confirm nsds2626 on shahenhp has your item data
