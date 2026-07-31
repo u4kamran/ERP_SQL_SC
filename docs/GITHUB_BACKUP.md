@@ -48,7 +48,10 @@ Git will ask for GitHub login (browser or personal access token).
 
 ## Daily backup — save changes to GitHub
 
-After you change code or add features:
+**Easy way:** Double-click **`BACKUP-TO-GITHUB.bat`** in the project folder.  
+It shows changed files, asks for a message, then commits and pushes to GitHub.
+
+**Manual way** (PowerShell):
 
 ```powershell
 cd D:\CursorProject\ahsteellab-nsds2626
@@ -56,7 +59,7 @@ cd D:\CursorProject\ahsteellab-nsds2626
 git status
 git add -A
 git commit -m "Brief description of what you changed"
-git push origin main
+git push erpsqlsc main
 ```
 
 **Tip:** Back up at least once per week, or after every important change.

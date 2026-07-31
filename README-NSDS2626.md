@@ -31,6 +31,8 @@ Full steps: [install/SETUP-SHAHENHP.txt](install/SETUP-SHAHENHP.txt)
 | [docs/GITHUB_BACKUP.md](docs/GITHUB_BACKUP.md) | Push/pull code backup on GitHub |
 | [docs/DISASTER_RECOVERY.md](docs/DISASTER_RECOVERY.md) | Install on another PC; change DB names |
 
+**Quick backup:** Double-click `BACKUP-TO-GITHUB.bat`
+
 **Clone backup:** `git clone https://github.com/u4kamran/ERP_SQL_SC.git`
 
 ---

@@ -109,4 +109,5 @@ def main() -> None:
     raise SystemExit(run_once(dry_run=args.dry_run))
 
 
-if
+if __name__ == "__main__":
+    main()

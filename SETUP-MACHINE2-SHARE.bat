@@ -23,3 +23,9 @@ echo.
 echo  Share created. From MAIN PC (shaheenhp) test:
 echo    dir \\shaheenac\%SHARE%
 echo.
+echo  Also grant SQL Server 2008 service account read/write on:
+echo    %FOLDER%
+echo    %DATA%
+echo  (Properties - Security - add NT AUTHORITY\NETWORK SERVICE or your SQL account)
+echo.
+pause
