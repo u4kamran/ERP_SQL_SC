@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, sms_email_scheduler, sales_dashboard, guest_price_lookup
+from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, voucher_entry
 
 api_router = APIRouter()
 
@@ -17,6 +17,9 @@ api_router.include_router(fin_item.router, prefix="/fin-items", tags=["FIN_ITEM"
 api_router.include_router(fin_item_classic.router, prefix="/fin-item-classic", tags=["FIN_ITEM Classic"])
 api_router.include_router(gl_ledger_report.router, prefix="/reports/gl-ledger", tags=["GL Ledger Report"])
 api_router.include_router(gl_ledger_credit_summary.router, prefix="/reports/gl-ledger-credit", tags=["GL Credit Summary Ledger"])
+api_router.include_router(trial_balance_d2d.router, prefix="/reports/trial-balance-d2d", tags=["Trial Balance D2D"])
 api_router.include_router(sms_email_scheduler.router, prefix="/reports/sms-email", tags=["SMS Email Scheduler"])
 api_router.include_router(sales_dashboard.router, prefix="/reports/sales-dashboard", tags=["Sales Dashboard"])
+api_router.include_router(sales_dashboard_email.router, prefix="/reports/sales-dashboard/email", tags=["Sales Dashboard Email"])
 api_router.include_router(guest_price_lookup.router, prefix="/public/price-lookup", tags=["Guest Price Lookup"])
+api_router.include_router(voucher_entry.router, prefix="/vouchers", tags=["Voucher Entry"])

@@ -15,11 +15,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _ENV_FILE = _PROJECT_ROOT / ".env"
+_SHARED_SMTP_FILE = _PROJECT_ROOT.parent / "shared-smtp.env"
+
+_env_files = [str(_ENV_FILE)]
+if _SHARED_SMTP_FILE.exists():
+    _env_files.append(str(_SHARED_SMTP_FILE))
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=str(_ENV_FILE),
+        env_file=tuple(_env_files),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -52,6 +57,7 @@ class Settings(BaseSettings):
 
     business_db_server: str = ""
     business_db_name: str = "nsds2626"
+    voucher_legacy_uid: int = Field(default=40, alias="VOUCHER_LEGACY_UID")
 
     # JWT
     jwt_algorithm: str = "HS256"
@@ -124,6 +130,10 @@ class Settings(BaseSettings):
     sync_business_db: bool = True
     sync_interval_minutes: int = 1440
     sync_keep_local_backups: int = 2
+
+    # Business day for sales reports (day starts 08:00, ends next day 05:00)
+    business_day_start_hour: int = 8
+    business_day_end_hour: int = 5
 
     # Logging
     log_level: str = "INFO"

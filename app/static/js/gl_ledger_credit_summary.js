@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadUserEmail();
     await loadEmailStatus();
     bindEvents();
+    AccountRangeSync.bind(validateAccount);
     wireSearchModalFocus('searchModal', 'search-query');
 });
 
@@ -46,8 +47,6 @@ function bindEvents() {
     document.getElementById('btn-search-end').addEventListener('click', () => openSearch('end'));
     document.getElementById('search-query').addEventListener('input', debounce(searchAccounts, 300));
     document.getElementById('complete_report').addEventListener('change', toggleCompleteReport);
-    document.getElementById('start_ac_id').addEventListener('change', () => validateAccount('start'));
-    document.getElementById('end_ac_id').addEventListener('change', () => validateAccount('end'));
 }
 
 function setDefaultDates() {
@@ -61,7 +60,8 @@ function setDefaultAccounts() {
     const start = document.getElementById('start_ac_id');
     const end = document.getElementById('end_ac_id');
     if (!start.value) start.value = '12010090';
-    if (!end.value) end.value = '12010090';
+    if (!end.value) end.value = start.value;
+    AccountRangeSync.reset();
     validateAccount('start');
     validateAccount('end');
 }
@@ -115,6 +115,7 @@ function toggleCompleteReport() {
 }
 
 function clearForm() {
+    AccountRangeSync.reset();
     document.getElementById('start_ac_id').value = '';
     document.getElementById('end_ac_id').value = '';
     document.getElementById('suppress_zero_bal').checked = false;
@@ -345,8 +346,7 @@ async function searchAccounts() {
             </table>`;
         container.querySelectorAll('.search-row').forEach(row => {
             row.addEventListener('click', () => {
-                document.getElementById(`${searchTarget}_ac_id`).value = row.dataset.id;
-                document.getElementById(`${searchTarget}_ac_title`).textContent = row.dataset.title;
+                AccountRangeSync.pickAccount(searchTarget, row.dataset.id, row.dataset.title, validateAccount);
                 searchModal.hide();
             });
         });

@@ -16,7 +16,16 @@ CHECK_SECONDS = 60
 STARTUP_WAIT_SECONDS = 8
 
 
-def is_healthy(port: int = 8000) -> bool:
+def _settings():
+    sys.path.insert(0, str(ROOT))
+    from app.config.settings import settings
+
+    return settings
+
+
+def is_healthy(port: int | None = None) -> bool:
+    if port is None:
+        port = _settings().port
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5) as response:
             return response.status == 200
@@ -35,9 +44,11 @@ def start_app() -> None:
 
 
 def main() -> None:
-    print("ERP watchdog started — checking every 60 seconds.")
+    settings = _settings()
+    print(f"{settings.app_name} watchdog started — checking every 60 seconds.")
     print("Press Ctrl+C to stop the watchdog (the site keeps running until STOP-APP.bat).")
-    print("URL: https://erp.ahsteellab.com")
+    print(f"URL: {settings.base_url}")
+    print(f"Port: {settings.port}")
     print()
 
     if not is_healthy():

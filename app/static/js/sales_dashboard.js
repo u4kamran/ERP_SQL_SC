@@ -26,41 +26,12 @@ function setDefaultDates() {
     applyPreset('this-month', false);
 }
 
-function pad(n) {
-    return String(n).padStart(2, '0');
-}
-
-function toLocalInput(d) {
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 function applyPreset(preset, reload = true) {
-    const now = new Date();
-    let start;
-    let end;
+    const range = applyBusinessPreset(preset);
+    if (!range) return;
 
-    if (preset === 'this-month') {
-        start = new Date(now.getFullYear(), now.getMonth(), 1, 6, 0, 0);
-        end = new Date(now);
-    } else if (preset === 'last-month') {
-        start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 6, 0, 0);
-        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-    } else if (preset === 'last-7') {
-        end = new Date(now);
-        start = new Date(end);
-        start.setDate(start.getDate() - 7);
-        start.setHours(6, 0, 0, 0);
-    } else if (preset === 'last-30') {
-        end = new Date(now);
-        start = new Date(end);
-        start.setDate(start.getDate() - 30);
-        start.setHours(6, 0, 0, 0);
-    } else {
-        return;
-    }
-
-    document.getElementById('sales-date-from').value = toLocalInput(start);
-    document.getElementById('sales-date-to').value = toLocalInput(end);
+    document.getElementById('sales-date-from').value = toLocalInput(range.start);
+    document.getElementById('sales-date-to').value = toLocalInput(range.end);
 
     document.querySelectorAll('.preset-btn').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.preset === preset);
@@ -71,9 +42,17 @@ function applyPreset(preset, reload = true) {
 
 function extendRangeToNow() {
     const activePreset = document.querySelector('.preset-btn.active')?.dataset.preset;
-    if (activePreset === 'this-month' || activePreset === 'last-7' || activePreset === 'last-30') {
+    if (['today', 'this-month', 'last-7', 'last-30'].includes(activePreset)) {
         document.getElementById('sales-date-to').value = toLocalInput(new Date());
     }
+}
+
+function pad(n) {
+    return String(n).padStart(2, '0');
+}
+
+function toLocalInput(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function toApiDateTime(localValue) {
@@ -96,14 +75,16 @@ async function loadAll() {
     try {
         const params = buildParams();
         params.set('_', String(Date.now()));
-        const [summary, trend, topInvoices] = await Promise.all([
+        const [summary, trend, topInvoices, dayWise] = await Promise.all([
             Api.get(`${SALES_API}/summary?${params}`),
             Api.get(`${SALES_API}/daily-trend?${params}`),
             Api.get(`${SALES_API}/top-invoices?${params}&limit=10`),
+            Api.get(`${SALES_API}/day-wise?${params}`),
         ]);
         renderSummary(summary);
         renderTrendChart(trend);
         renderTopInvoices(topInvoices);
+        renderDayWise(dayWise);
     } catch (e) {
         errEl.textContent = e.message || 'Could not load sales dashboard.';
         errEl.classList.remove('d-none');
@@ -124,11 +105,11 @@ function renderSummary(data) {
     document.getElementById('kpi-avg-sale').textContent = formatAmount(current.avg_sale_per_day);
 
     document.getElementById('sales-period-text').textContent =
-        `${formatDisplayDate(current.start_date)} → ${formatDisplayDate(current.end_date)}`;
+        `${formatReportDateTime(current.start_date)} → ${formatReportDateTime(current.end_date)}`;
     document.getElementById('sales-total-days').textContent =
         `${current.total_days} day${current.total_days === 1 ? '' : 's'}`;
     document.getElementById('sales-compare-period-text').textContent =
-        `Compared with last month: ${formatDisplayDate(previous.start_date)} → ${formatDisplayDate(previous.end_date)}`;
+        `Compared with last month: ${formatReportDateTime(previous.start_date)} → ${formatReportDateTime(previous.end_date)}`;
 
     renderCompareLine('cmp-total-sale', data.total_sale, false);
     renderCompareLine('cmp-total-cost', data.total_cost, true);
@@ -136,6 +117,68 @@ function renderSummary(data) {
     renderCompareLine('cmp-avg-sale', data.avg_sale_per_day, false);
     renderCompareLine('cmp-profit-pct', data.profit_percent, false, true);
     renderCompareTable(data);
+    renderCompareTransposedTable(data);
+}
+
+function formatMetricValue(metric, isPercent) {
+    if (!metric) return '—';
+    return isPercent ? `${formatAmount(metric)}%` : formatAmount(metric);
+}
+
+function formatChangeValue(metric, isPercent) {
+    if (!metric) return '—';
+    const prefix = metric.change > 0 ? '+' : '';
+    if (isPercent) return `${prefix}${formatAmount(metric.change)} pts`;
+    return `${prefix}${formatAmount(metric.change)}`;
+}
+
+function formatChangePercentValue(metric, isPercent) {
+    if (isPercent || !metric || metric.change_percent == null) return '—';
+    const prefix = metric.change_percent > 0 ? '+' : '';
+    return `${prefix}${formatAmount(metric.change_percent)}%`;
+}
+
+function renderCompareTransposedTable(data) {
+    const tbody = document.getElementById('sales-compare-transposed-body');
+    if (!tbody) return;
+
+    const metrics = [
+        { key: 'total_sale', label: 'Total Sale', percent: false },
+        { key: 'total_cost', label: 'Total Cost', percent: false },
+        { key: 'profit', label: 'Profit', percent: false },
+        { key: 'profit_percent', label: 'Profit %', percent: true },
+        { key: 'avg_sale_per_day', label: 'Avg Sale / Day', percent: false },
+    ];
+
+    const rows = [
+        {
+            label: 'Current',
+            className: 'row-current',
+            values: metrics.map((m) => formatMetricValue(data[m.key]?.current, m.percent)),
+        },
+        {
+            label: 'Last Month',
+            className: 'row-previous',
+            values: metrics.map((m) => formatMetricValue(data[m.key]?.previous, m.percent)),
+        },
+        {
+            label: 'Change',
+            className: 'row-change',
+            values: metrics.map((m) => formatChangeValue(data[m.key], m.percent)),
+        },
+        {
+            label: 'Change %',
+            className: 'row-change-pct',
+            values: metrics.map((m) => formatChangePercentValue(data[m.key], m.percent)),
+        },
+    ];
+
+    tbody.innerHTML = rows.map((row) => `
+        <tr class="${row.className}">
+            <td><strong>${row.label}</strong></td>
+            ${row.values.map((v) => `<td class="num">${v}</td>`).join('')}
+        </tr>
+    `).join('');
 }
 
 function renderCompareLine(elementId, metric, lowerIsBetter = false, isPercent = false) {
@@ -196,19 +239,23 @@ function renderCompareTable(data) {
     }).join('');
 }
 
-function dayOfMonth(dateStr) {
-    return new Date(dateStr).getDate();
+function chartLabelForBusinessDate(isoDate) {
+    const d = new Date(isoDate);
+    if (Number.isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
 }
 
 function renderTrendChart(trend) {
     const canvas = document.getElementById('sales-trend-chart');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const currentMap = new Map(trend.current.map((p) => [dayOfMonth(p.sale_date), p.total_sale]));
-    const previousMap = new Map(trend.previous.map((p) => [dayOfMonth(p.sale_date), p.total_sale]));
-    const days = [...new Set([...currentMap.keys(), ...previousMap.keys()])].sort((a, b) => a - b);
+    const currentMap = new Map(trend.current.map((p) => [p.sale_date, p.total_sale]));
+    const previousMap = new Map(
+        trend.previous.map((p) => [shiftIsoDateMonths(p.sale_date, 1), p.total_sale]),
+    );
+    const days = [...currentMap.keys()].sort();
 
-    const labels = days.map((d) => `Day ${d}`);
+    const labels = days.map((d) => chartLabelForBusinessDate(d));
     const currentData = days.map((d) => currentMap.get(d) ?? null);
     const previousData = days.map((d) => previousMap.get(d) ?? null);
 
@@ -278,6 +325,27 @@ function renderTopInvoices(data) {
     `).join('');
 }
 
+function renderDayWise(data) {
+    const tbody = document.getElementById('day-wise-body');
+    const noteEl = document.getElementById('day-wise-note');
+    if (noteEl && data.business_hours_note) {
+        noteEl.textContent = data.business_hours_note;
+    }
+    if (!data.items?.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No sales in range.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.items.map((row) => `
+        <tr>
+            <td><span class="small">${row.day_label || formatBusinessDayLabel(row.business_date)}</span></td>
+            <td class="num">${formatAmount(row.total_sale)}</td>
+            <td class="num">${formatAmount(row.total_cost)}</td>
+            <td class="num">${formatAmount(row.profit)}</td>
+            <td class="num">${row.invoice_count}</td>
+        </tr>
+    `).join('');
+}
+
 function formatDisplayDate(value) {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
@@ -285,4 +353,120 @@ function formatDisplayDate(value) {
         year: 'numeric', month: 'short', day: '2-digit',
         hour: '2-digit', minute: '2-digit',
     });
+}
+
+/** Parse API datetime as local wall-clock (no UTC shift). */
+function formatReportDateTime(value) {
+    if (!value) return '—';
+    const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (m) {
+        const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
+        return d.toLocaleString(undefined, {
+            year: 'numeric', month: 'short', day: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+        });
+    }
+    return formatDisplayDate(value);
+}
+
+const SALES_EMAIL_API = '/api/v1/reports/sales-dashboard/email';
+
+function initSalesDashboardEmail() {
+    document.getElementById('btn-sales-email-save')?.addEventListener('click', saveSalesEmailConfig);
+    document.getElementById('btn-sales-email-test')?.addEventListener('click', sendSalesEmailTest);
+    document.getElementById('btn-sales-email-now')?.addEventListener('click', sendSalesEmailNow);
+    loadSalesEmailStatus();
+}
+
+function setSalesEmailError(message) {
+    const el = document.getElementById('sales-email-error');
+    if (!el) return;
+    if (!message) {
+        el.classList.add('d-none');
+        el.textContent = '';
+        return;
+    }
+    el.textContent = message;
+    el.classList.remove('d-none');
+}
+
+async function loadSalesEmailStatus() {
+    try {
+        const status = await Api.get(`${SALES_EMAIL_API}/status`);
+        const config = await Api.get(`${SALES_EMAIL_API}/config`);
+        document.getElementById('sales-email-recipients').value = (config.recipients || '').replace(/, /g, ',');
+        document.getElementById('sales-email-interval').value = config.interval_minutes || 30;
+        document.getElementById('sales-email-preset').value = config.date_preset || 'this-month';
+        document.getElementById('sales-email-enabled').checked = !!config.enabled;
+
+        const badge = document.getElementById('sales-email-status-badge');
+        if (!status.smtp_configured) {
+            badge.className = 'badge bg-danger';
+            badge.textContent = 'SMTP not configured';
+        } else if (config.enabled) {
+            badge.className = 'badge bg-success';
+            badge.textContent = `On — every ${config.interval_minutes} min`;
+        } else {
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Off';
+        }
+
+        const meta = [];
+        if (status.last_email_at) meta.push(`Last email: ${formatDisplayDate(status.last_email_at)}`);
+        if (status.next_check_at && config.enabled) meta.push(`Next check: ${formatDisplayDate(status.next_check_at)}`);
+        if (status.last_check_message) meta.push(status.last_check_message);
+        if (status.last_error) meta.push(`Error: ${status.last_error}`);
+        document.getElementById('sales-email-meta').textContent = meta.join(' · ') || 'No emails sent yet.';
+        setSalesEmailError(status.smtp_configured ? '' : 'Set SMTP_ENABLED=true in .env and restart the app.');
+    } catch (err) {
+        setSalesEmailError(err.message || 'Could not load email settings.');
+    }
+}
+
+function salesEmailPayload() {
+    return {
+        enabled: document.getElementById('sales-email-enabled').checked,
+        recipients: document.getElementById('sales-email-recipients').value.trim(),
+        interval_minutes: Number(document.getElementById('sales-email-interval').value) || 30,
+        date_preset: document.getElementById('sales-email-preset').value,
+        email_subject: 'Sales Dashboard — Month-over-Month',
+    };
+}
+
+async function saveSalesEmailConfig() {
+    setSalesEmailError('');
+    try {
+        await Api.put(`${SALES_EMAIL_API}/config`, salesEmailPayload());
+        await loadSalesEmailStatus();
+        alert('Email schedule saved.');
+    } catch (err) {
+        setSalesEmailError(err.message || 'Save failed.');
+    }
+}
+
+async function sendSalesEmailTest() {
+    const email = document.getElementById('sales-email-recipients').value.split(',')[0]?.trim();
+    if (!email) {
+        setSalesEmailError('Enter your email address first.');
+        return;
+    }
+    setSalesEmailError('');
+    try {
+        const result = await Api.post(`${SALES_EMAIL_API}/test`, { to_email: email });
+        await loadSalesEmailStatus();
+        alert(result.message || 'Test email sent.');
+    } catch (err) {
+        setSalesEmailError(err.message || 'Test email failed.');
+    }
+}
+
+async function sendSalesEmailNow() {
+    setSalesEmailError('');
+    try {
+        const result = await Api.post(`${SALES_EMAIL_API}/run-now`, {});
+        await loadSalesEmailStatus();
+        alert(result.message || 'Done.');
+    } catch (err) {
+        setSalesEmailError(err.message || 'Send failed.');
+    }
 }

@@ -16,20 +16,28 @@ from app.config.site_links import get_external_links, get_internal_link_groups
 from app.logging.logger import logger
 from app.middleware.security import csrf_middleware, security_headers_middleware
 from app.scheduler.sms_email_scheduler import get_scheduler_runner
+from app.scheduler.sales_dashboard_email_scheduler import get_sales_dashboard_email_runner
+
+from app.services.email_service import EmailService
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 templates.env.globals["base_url"] = settings.base_url.rstrip("/")
 templates.env.globals["internal_link_groups"] = get_internal_link_groups()
 templates.env.globals["external_links"] = get_external_links(settings.base_url)
+templates.env.globals["smtp_configured"] = lambda: EmailService().is_configured()
+templates.env.globals["smtp_hint"] = lambda: EmailService().configuration_hint()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s [%s]", settings.app_name, settings.app_env)
     runner = get_scheduler_runner()
+    sales_email_runner = get_sales_dashboard_email_runner()
     await runner.start()
+    await sales_email_runner.start()
     yield
+    await sales_email_runner.stop()
     await runner.stop()
     logger.info("Shutting down %s", settings.app_name)
 
@@ -144,6 +152,15 @@ async def admin_change_password_page(request: Request):
     return templates.TemplateResponse(request, "admin/change-password.html", {"app_name": settings.app_name})
 
 
+@app.get("/admin/voucher-entry", response_class=HTMLResponse)
+async def admin_voucher_entry_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/voucher_entry.html",
+        {"app_name": settings.app_name},
+    )
+
+
 @app.get("/admin/fin-item-classic", response_class=HTMLResponse)
 async def admin_fin_item_classic_page(request: Request):
     return templates.TemplateResponse(request, "admin/fin_item_classic.html", {"app_name": settings.app_name})
@@ -186,6 +203,24 @@ async def admin_gl_ledger_report_page(request: Request):
     return templates.TemplateResponse(
         request,
         "admin/gl_ledger_report.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/trial-balance-d2d-mobile", response_class=HTMLResponse)
+async def admin_trial_balance_d2d_mobile_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/trial_balance_d2d_mobile.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/trial-balance-d2d", response_class=HTMLResponse)
+async def admin_trial_balance_d2d_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/trial_balance_d2d.html",
         {"app_name": settings.app_name},
     )
 

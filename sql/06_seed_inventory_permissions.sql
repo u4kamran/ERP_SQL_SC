@@ -39,7 +39,6 @@ AND NOT EXISTS (
     SELECT 1 FROM [auth].[RolePermissions] rp
     WHERE rp.RoleId = @AdminId AND rp.PermissionId = p.PermissionId
 );
-GO
 
 INSERT INTO [auth].[RolePermissions] ([RoleId], [PermissionId])
 SELECT @UserRoleId, p.PermissionId

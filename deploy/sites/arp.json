@@ -1,0 +1,15 @@
+{
+  "siteCode": "arp",
+  "displayName": "Al Haram Steel Lab",
+  "companyName": "Al Haram Steel Lab",
+  "hostname": "arp.ahsteellab.com",
+  "tunnelName": "ahsteellab-arp",
+  "port": 8001,
+  "dbServer": "shaheenhp",
+  "dbName": "NAHSL2627_AUTH",
+  "businessDbServer": "shaheenhp",
+  "businessDbName": "NAHSL2627",
+  "envTemplate": "install/env.arp",
+  "taskName": "AHSteelLab-ARP-App",
+  "tunnelServiceName": "Cloudflared-AHSteelLab-ARP"
+}

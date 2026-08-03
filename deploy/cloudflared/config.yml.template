@@ -6,5 +6,5 @@ credentials-file: {{CREDENTIALS_FILE}}
 
 ingress:
   - hostname: {{HOSTNAME}}
-    service: http://127.0.0.1:8000
+    service: http://127.0.0.1:{{PORT}}
   - service: http_status:404

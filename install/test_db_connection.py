@@ -17,7 +17,7 @@ def clean_server(value: str) -> str:
   return value
 
 
-host = clean_server(sys.argv[1] if len(sys.argv) > 1 else "shahenhp")
+host = clean_server(sys.argv[1] if len(sys.argv) > 1 else "shaheenhp")
 user = sys.argv[2] if len(sys.argv) > 2 else "sa"
 password = sys.argv[3] if len(sys.argv) > 3 else ""
 biz_db = sys.argv[4] if len(sys.argv) > 4 else "nsds2626"
@@ -26,8 +26,8 @@ auth_db = sys.argv[5] if len(sys.argv) > 5 else "NSDS2626_AUTH"
 servers = [
     host,
     f"{host}\\SQLEXPRESS",
-    "shahenhp",
-    "shahenhp\\SQLEXPRESS",
+    "shaheenhp",
+    "shaheenhp\\SQLEXPRESS",
 ]
 
 seen = set()

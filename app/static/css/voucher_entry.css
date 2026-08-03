@@ -1,0 +1,73 @@
+.voucher-app {
+    --voucher-bronze: #c98a45;
+    --voucher-tip: #f2cd6c;
+}
+
+.voucher-card {
+    border: 1px solid rgba(201, 138, 69, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.voucher-header-bar h4 {
+    color: var(--voucher-bronze);
+}
+
+.voucher-grid thead th {
+    background: var(--voucher-bronze);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+}
+
+.voucher-grid tbody tr.selected {
+    background: rgba(201, 138, 69, 0.15);
+}
+
+.tip-bar {
+    background: var(--voucher-tip);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+.nar-dropdown {
+    position: absolute;
+    z-index: 1050;
+    left: 0;
+    right: 0;
+    top: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nar-dropdown .nar-item {
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.nar-dropdown .nar-item:hover,
+.nar-dropdown .nar-item.active {
+    background: rgba(201, 138, 69, 0.12);
+}
+
+#balance-badge.unbalanced {
+    background-color: #dc3545 !important;
+}
+
+#balance-badge.balanced {
+    background-color: #198754 !important;
+}
+
+.vbc-readonly {
+    background-color: #e9ecef !important;
+    cursor: not-allowed;
+}
+
+.voucher-mode-off {
+    opacity: 0.45;
+    pointer-events: none;
+}

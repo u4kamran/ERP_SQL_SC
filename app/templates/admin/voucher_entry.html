@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Voucher Entry - {{ app_name }}{% endblock %}
+{% block extra_css %}
+<link href="/static/css/voucher_entry.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="voucher-app" id="voucher-app">
+    <div class="voucher-header-bar d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h4 class="mb-0"><i class="bi bi-journal-plus me-2"></i>Easy Voucher Entry</h4>
+            <small class="text-muted">Same database tables as VB6 — GL0002 / GL0003</small>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <span id="balance-badge" class="badge bg-secondary">Balanced</span>
+            <span id="mode-badge" class="badge bg-info text-dark">Ready</span>
+        </div>
+    </div>
+
+    <div id="alert-area"></div>
+
+    <div class="card voucher-card mb-3">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <label class="form-label">Book ID</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control" id="book_id" min="1">
+                        <button class="btn btn-outline-secondary" type="button" id="btn-book-search" title="Select book">...</button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Book</label>
+                    <input type="text" class="form-control form-control-sm" id="book_title" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">V-No</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="voucher_id" inputmode="numeric" placeholder="New" title="Monthly books: 07-537 or enter number with Fiscal month">
+                        <button class="btn btn-outline-primary" type="button" id="btn-load-voucher">Load</button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-control form-control-sm" id="voucher_date">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Fiscal</label>
+                    <input type="number" class="form-control form-control-sm" id="fiscal" min="0" max="12" value="0">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Book Balance</label>
+                    <input type="text" class="form-control form-control-sm text-end" id="book_balance" readonly>
+                    <div class="form-text" id="book_ac_label">Book A/C: —</div>
+                </div>
+            </div>
+
+            <div class="row g-2 mt-1">
+                <div class="col-md-4">
+                    <label class="form-label d-block">Voucher Mode</label>
+                    <div class="btn-group btn-group-sm" role="group" id="v_mode_group">
+                        <input type="radio" class="btn-check" name="v_mode" id="v_mode_1" value="1" checked>
+                        <label class="btn btn-outline-primary" for="v_mode_1">JV</label>
+                        <input type="radio" class="btn-check" name="v_mode" id="v_mode_2" value="2">
+                        <label class="btn btn-outline-primary" for="v_mode_2">Payment</label>
+                        <input type="radio" class="btn-check" name="v_mode" id="v_mode_3" value="3">
+                        <label class="btn btn-outline-primary" for="v_mode_3">Receipt</label>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Remarks</label>
+                    <input type="text" class="form-control form-control-sm" id="remarks" maxlength="100" placeholder="Nil">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Totals (Dr / Cr)</label>
+                    <input type="text" class="form-control form-control-sm text-end fw-bold" id="totals" readonly value="0.00 / 0.00">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card voucher-card h-100">
+                <div class="card-header py-2"><strong>Line Entry</strong></div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label">Account ID</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control" id="line_ac_id" placeholder="e.g. 01010001">
+                            <button class="btn btn-outline-secondary" type="button" id="btn-account-search">...</button>
+                        </div>
+                        <div class="form-text" id="line_ac_title">—</div>
+                    </div>
+                    <div class="mb-2 position-relative">
+                        <label class="form-label">Narration</label>
+                        <input type="text" class="form-control form-control-sm" id="line_narration" autocomplete="off">
+                        <div class="nar-dropdown d-none" id="nar-dropdown"></div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label">Debit</label>
+                            <input type="number" class="form-control form-control-sm text-end" id="line_debit" step="0.01" min="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Credit</label>
+                            <input type="number" class="form-control form-control-sm text-end" id="line_credit" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reference</label>
+                        <input type="text" class="form-control form-control-sm" id="line_reference">
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary btn-sm" type="button" id="btn-add-line">Add Line</button>
+                        <button class="btn btn-warning btn-sm" type="button" id="btn-system-entry" title="Prepare contra entry for the selected book (VB6 S-Entry)" disabled>S-Entry</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" id="btn-clear-line">Clear</button>
+                        <button class="btn btn-outline-info btn-sm" type="button" id="btn-copy-nar">Copy Nar All</button>
+                    </div>
+                    <div class="tip-bar mt-3">
+                        <small><strong>S-Entry</strong> fills book line — you Add Line · F6 = S-Entry · S-Entry rows cannot be edited</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card voucher-card h-100">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <strong>Transactions</strong>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" type="button" id="btn-repeat-last">Repeat Last</button>
+                        <button class="btn btn-success" type="button" id="btn-save">Save Voucher</button>
+                        <button class="btn btn-outline-warning" type="button" id="btn-clear">Clear</button>
+                        <button class="btn btn-outline-danger" type="button" id="btn-delete" disabled>Delete</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover voucher-grid mb-0" id="lines-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Account</th>
+                                <th>Narration</th>
+                                <th class="text-end">Debit</th>
+                                <th class="text-end">Credit</th>
+                                <th>Ref</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="lines-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="search-modal-title">Search</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-2" id="search-query" placeholder="Type to search...">
+                <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                        <thead id="search-head"></thead>
+                        <tbody id="search-results"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="serial_no" value="">
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/money_format.js"></script>
+<script src="/static/js/voucher_entry.js"></script>
+{% endblock %}

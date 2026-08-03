@@ -51,6 +51,7 @@ deploy/AHSteelLab-Deploy.zip
 AHSteelLab-UPLOAD.zip
 AHSteelLab-UNZIP-AND-RUN.zip
 secrets.txt
+app_pass.txt
 
 # Cloudflare deployment (local credentials)
 deploy/cloudflared/bin/

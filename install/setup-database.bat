@@ -28,7 +28,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-set "SQLSERVER=shahenhp"
+set "SQLSERVER=shaheenhp"
 set "SQLUSER=sa"
 set "SQLPASS=redgreen"
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import calendar
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -11,6 +10,8 @@ from app.repositories.sales_dashboard_repository import SalesDashboardRepository
 from app.schemas.sales_dashboard import (
     DailySalesPoint,
     DailySalesTrend,
+    DayWiseSalesResponse,
+    DayWiseSalesRow,
     SalesDashboardRequest,
     SalesDashboardSummary,
     SalesMetricComparison,
@@ -18,28 +19,14 @@ from app.schemas.sales_dashboard import (
     TopInvoiceRow,
     TopInvoicesResponse,
 )
-
-
-def shift_months(value: datetime, months: int) -> datetime:
-    """Move a datetime by calendar months, clamping day to month end."""
-    month_index = value.month - 1 + months
-    year = value.year + month_index // 12
-    month = month_index % 12 + 1
-    day = min(value.day, calendar.monthrange(year, month)[1])
-    return value.replace(year=year, month=month, day=day)
-
-
-def _period_days(start_date: datetime, end_date: datetime) -> int:
-    total_days = (end_date.date() - start_date.date()).days
-    return max(total_days, 1)
-
+from app.utils.business_day import align_previous_trend_dates, count_business_days, shift_business_period
 
 def _build_period(
     repo: SalesDashboardRepository,
     start_date: datetime,
     end_date: datetime,
 ) -> SalesPeriodSummary:
-    total_days = _period_days(start_date, end_date)
+    total_days = count_business_days(start_date, end_date)
     data = repo.get_summary(start_date, end_date, total_days)
     return SalesPeriodSummary(
         start_date=start_date,
@@ -69,8 +56,7 @@ class SalesDashboardService:
 
         current = _build_period(repo, params.start_date, params.end_date)
 
-        prev_start = shift_months(params.start_date, -1)
-        prev_end = shift_months(params.end_date, -1)
+        prev_start, prev_end = shift_business_period(params.start_date, params.end_date, -1)
         previous = _build_period(repo, prev_start, prev_end)
 
         current_pp = current.profit_percent or 0.0
@@ -94,9 +80,11 @@ class SalesDashboardService:
     def get_daily_trend(self, params: SalesDashboardRequest) -> DailySalesTrend:
         repo = SalesDashboardRepository(self.db)
         current_rows = repo.get_daily_sales(params.start_date, params.end_date)
-        prev_start = shift_months(params.start_date, -1)
-        prev_end = shift_months(params.end_date, -1)
-        previous_rows = repo.get_daily_sales(prev_start, prev_end)
+        prev_start, prev_end = shift_business_period(params.start_date, params.end_date, -1)
+        previous_rows = align_previous_trend_dates(
+            repo.get_daily_sales(prev_start, prev_end),
+            months=1,
+        )
         return DailySalesTrend(
             current=[DailySalesPoint(**row) for row in current_rows],
             previous=[DailySalesPoint(**row) for row in previous_rows],
@@ -107,3 +95,17 @@ class SalesDashboardService:
             params.start_date, params.end_date, limit=limit
         )
         return TopInvoicesResponse(items=[TopInvoiceRow(**row) for row in rows])
+
+    def get_day_wise_sales(self, params: SalesDashboardRequest) -> DayWiseSalesResponse:
+        rows = SalesDashboardRepository(self.db).get_day_wise_sales(
+            params.start_date, params.end_date
+        )
+        from app.config.settings import settings
+        note = (
+            f"Business day: {settings.business_day_start_hour:02d}:00"
+            f" → next day {settings.business_day_end_hour:02d}:00"
+        )
+        return DayWiseSalesResponse(
+            items=[DayWiseSalesRow(**row) for row in rows],
+            business_hours_note=note,
+        )

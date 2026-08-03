@@ -63,10 +63,11 @@ const WhatsAppShare = {
         accountLabel,
         viewUrl,
         expiresMinutes = 15,
+        reportTitle = 'GL Ledger Report',
     }) {
         const lines = [
             appName || 'ERP Report',
-            'GL Ledger Report',
+            reportTitle,
             `Period: ${dateFrom} to ${dateTo}`,
         ];
         if (accountLabel) {

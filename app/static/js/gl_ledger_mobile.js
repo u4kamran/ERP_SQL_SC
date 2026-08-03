@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadEmailStatus();
     await loadWhatsAppStatus();
     bindEvents();
+    AccountRangeSync.bind(validateAccount);
     wireSearchModalFocus('searchModal', 'search-query');
     wireSearchModalFocus('whatsappSearchModal', 'whatsapp-search-query');
     updateShareReadyState();
@@ -54,8 +55,6 @@ function bindEvents() {
     document.getElementById('btn-search-end').addEventListener('click', () => openSearch('end'));
     document.getElementById('search-query').addEventListener('input', debounce(searchAccounts, 300));
     document.getElementById('complete_report').addEventListener('change', toggleCompleteReport);
-    document.getElementById('start_ac_id').addEventListener('change', () => validateAccount('start'));
-    document.getElementById('end_ac_id').addEventListener('change', () => validateAccount('end'));
 
     document.querySelectorAll('.date-preset').forEach((btn) => {
         btn.addEventListener('click', () => applyDatePreset(btn.dataset.preset, btn));
@@ -71,6 +70,7 @@ function setDefaultAccounts() {
     const end = document.getElementById('end_ac_id');
     if (!start.value) start.value = '12010090';
     if (!end.value) end.value = start.value;
+    AccountRangeSync.reset();
     validateAccount('start');
     validateAccount('end');
 }
@@ -497,10 +497,6 @@ async function validateAccount(which) {
     try {
         const data = await Api.get(`${API}/accounts/${encodeURIComponent(id)}`);
         titleEl.textContent = data.ac_title;
-        if (which === 'start' && !document.getElementById('end_ac_id').value) {
-            document.getElementById('end_ac_id').value = id;
-            document.getElementById('end_ac_title').textContent = data.ac_title;
-        }
     } catch {
         titleEl.textContent = 'Account not found';
     }
@@ -648,8 +644,7 @@ async function searchAccounts() {
         container.className = 'list-group';
         container.querySelectorAll('.search-pick').forEach((btn) => {
             btn.addEventListener('click', () => {
-                document.getElementById(`${searchTarget}_ac_id`).value = btn.dataset.id;
-                document.getElementById(`${searchTarget}_ac_title`).textContent = btn.dataset.title;
+                AccountRangeSync.pickAccount(searchTarget, btn.dataset.id, btn.dataset.title, validateAccount);
                 searchModal.hide();
             });
         });

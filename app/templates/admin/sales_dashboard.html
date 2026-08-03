@@ -15,6 +15,9 @@
                 <span class="badge bg-light text-dark border period-badge ms-2" id="sales-total-days">—</span>
             </div>
             <div class="text-muted small mt-1" id="sales-compare-period-text">—</div>
+            <div class="text-muted small mt-1">
+                <i class="bi bi-clock me-1"></i>Business day: <strong>08:00</strong> today → <strong>05:00</strong> next morning
+            </div>
         </div>
         <button class="btn btn-sm btn-primary" type="button" id="btn-refresh-sales">
             <i class="bi bi-arrow-clockwise me-1"></i>Refresh
@@ -34,6 +37,8 @@
             <div class="col-md-6">
                 <label class="form-label small mb-1">Quick range</label>
                 <div class="d-flex flex-wrap gap-1" id="preset-buttons">
+                    <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="today">Today</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="yesterday">Yesterday</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="this-month">This Month</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="last-month">Last Month</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary preset-btn" data-preset="last-7">Last 7 Days</button>
@@ -96,7 +101,7 @@
     <div class="row g-3 mb-3">
         <div class="col-lg-8">
             <div class="chart-panel">
-                <h6 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Daily Sales Trend</h6>
+                <h6 class="mb-3"><i class="bi bi-bar-chart-line me-2"></i>Daily Sales Trend (business days)</h6>
                 <div class="chart-wrap">
                     <canvas id="sales-trend-chart"></canvas>
                 </div>
@@ -127,31 +132,140 @@
         </div>
     </div>
 
-    <div class="compare-panel">
-        <h6 class="mb-3"><i class="bi bi-arrow-left-right me-2"></i>Month-over-Month Comparison</h6>
+    <div class="compare-panel mt-3">
+        <h6 class="mb-3"><i class="bi bi-calendar3 me-2"></i>Day-wise Sales</h6>
+        <p class="text-muted small mb-2" id="day-wise-note">Each row = one business day (08:00 → next day 05:00)</p>
         <div class="table-responsive">
             <table class="table table-sm compare-table mb-0">
                 <thead>
                     <tr>
-                        <th>Metric</th>
-                        <th class="num">Current</th>
-                        <th class="num">Last Month</th>
-                        <th class="num">Change</th>
-                        <th class="num">Change %</th>
+                        <th>Business Day</th>
+                        <th class="num">Sale</th>
+                        <th class="num">Cost</th>
+                        <th class="num">Profit</th>
+                        <th class="num">Invoices</th>
                     </tr>
                 </thead>
-                <tbody id="sales-compare-table-body">
+                <tbody id="day-wise-body">
                     <tr><td colspan="5" class="text-muted">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <div class="compare-panel">
+        <ul class="nav nav-tabs sales-report-tabs mb-3" id="sales-report-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-mom-metric" data-bs-toggle="tab"
+                        data-bs-target="#panel-mom-metric" type="button" role="tab">
+                    <i class="bi bi-list-ul me-1"></i>MoM by Metric
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-mom-period" data-bs-toggle="tab"
+                        data-bs-target="#panel-mom-period" type="button" role="tab">
+                    <i class="bi bi-layout-three-columns me-1"></i>MoM by Period
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content" id="sales-report-tab-content">
+            <div class="tab-pane fade show active" id="panel-mom-metric" role="tabpanel">
+                <h6 class="mb-3"><i class="bi bi-arrow-left-right me-2"></i>Month-over-Month Comparison</h6>
+                <p class="text-muted small mb-2">Each row is a metric — compare current vs last month.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm compare-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th class="num">Current</th>
+                                <th class="num">Last Month</th>
+                                <th class="num">Change</th>
+                                <th class="num">Change %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-compare-table-body">
+                            <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="panel-mom-period" role="tabpanel">
+                <h6 class="mb-3"><i class="bi bi-table me-2"></i>Month-over-Month Comparison (Columns)</h6>
+                <p class="text-muted small mb-2">Each row is a period — metrics shown as columns.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm compare-table compare-table-transposed mb-0">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                <th class="num">Total Sale</th>
+                                <th class="num">Total Cost</th>
+                                <th class="num">Profit</th>
+                                <th class="num">Profit %</th>
+                                <th class="num">Avg Sale / Day</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-compare-transposed-body">
+                            <tr><td colspan="6" class="text-muted">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="compare-panel mt-3" id="sales-email-panel">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h6 class="mb-0"><i class="bi bi-envelope me-2"></i>Email This Report Every 30 Minutes</h6>
+            <span class="badge bg-secondary" id="sales-email-status-badge">Loading…</span>
+        </div>
+        <p class="text-muted small mb-3">
+            Sends the Month-over-Month comparison table to your email as HTML + PDF snapshot.
+            The app must stay running (or use Task Scheduler).
+        </p>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small mb-1" for="sales-email-recipients">Email to (comma-separated)</label>
+                <input type="text" class="form-control form-control-sm" id="sales-email-recipients"
+                       placeholder="you@example.com">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1" for="sales-email-interval">Every (minutes)</label>
+                <input type="number" class="form-control form-control-sm" id="sales-email-interval"
+                       min="15" max="1440" value="30">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1" for="sales-email-preset">Date range</label>
+                <select class="form-select form-select-sm" id="sales-email-preset">
+                    <option value="today">Today (business day)</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="this-month">This Month</option>
+                    <option value="last-month">Last Month</option>
+                    <option value="last-7">Last 7 Days</option>
+                    <option value="last-30">Last 30 Days</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="sales-email-enabled">
+                    <label class="form-check-label small" for="sales-email-enabled">Enable scheduled email</label>
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-sales-email-save">Save</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-sales-email-test">Send test</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="btn-sales-email-now">Send now</button>
+                </div>
+            </div>
+        </div>
+        <div class="small text-muted mt-2" id="sales-email-meta">—</div>
+        <div class="alert alert-warning py-2 small mt-2 d-none" id="sales-email-error"></div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="/static/js/business_day.js?v=4"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/js/sales_dashboard.js?v=5"></script>
+<script src="/static/js/sales_dashboard.js?v=13"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     await Auth.requireAuth();
@@ -161,6 +275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     initSalesDashboard();
+    initSalesDashboardEmail();
 });
 </script>
 {% endblock %}

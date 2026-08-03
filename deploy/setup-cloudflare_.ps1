@@ -101,7 +101,8 @@ $template = Get-Content (Join-Path $CloudflaredDir "config.yml.template") -Raw
 $config = $template `
     -replace '\{\{TUNNEL_ID\}\}', $tunnelId `
     -replace '\{\{CREDENTIALS_FILE\}\}', ($credentialsFile -replace '\\', '/') `
-    -replace '\{\{HOSTNAME\}\}', $Hostname
+    -replace '\{\{HOSTNAME\}\}', $Hostname `
+    -replace '\{\{PORT\}\}', '8000'
 Set-Content -Path $ConfigFile -Value $config -Encoding UTF8
 
 Write-Step "Production environment file"

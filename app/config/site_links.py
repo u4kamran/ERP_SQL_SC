@@ -43,6 +43,18 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
         ],
     },
     {
+        "title": "Accounting",
+        "links": [
+            {
+                "label": "Voucher Entry",
+                "path": "/admin/voucher-entry",
+                "icon": "bi-journal-plus",
+                "description": "Easy voucher entry — same GL tables as VB6",
+                "permission": "gl.voucher.view",
+            },
+        ],
+    },
+    {
         "title": "Inventory & Sales",
         "links": [
             {
@@ -50,7 +62,7 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "path": "/admin/sales-dashboard",
                 "icon": "bi-graph-up-arrow",
                 "description": "KPIs, trends, and top invoices",
-                "permission": "inventory.fin_item.view",
+                "permission": "reports.sales_dashboard.view",
             },
             {
                 "label": "Item Master (VB6)",
@@ -76,28 +88,42 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "path": "/admin/gl-ledger-mobile",
                 "icon": "bi-phone",
                 "description": "Generate and view ledger PDF on mobile",
-                "permission": "inventory.fin_item.view",
+                "permission": "reports.gl_ledger.view",
             },
             {
                 "label": "GL Ledger Report",
                 "path": "/admin/gl-ledger-report",
                 "icon": "bi-journal-text",
                 "description": "Desktop GL ledger PDF and email",
-                "permission": "inventory.fin_item.view",
+                "permission": "reports.gl_ledger.view",
             },
             {
                 "label": "Credit Summary Ledger",
                 "path": "/admin/gl-ledger-credit-summary",
                 "icon": "bi-journal-check",
                 "description": "Credit summary ledger report",
-                "permission": "inventory.fin_item.view",
+                "permission": "reports.gl_ledger.view",
+            },
+            {
+                "label": "Trial Balance D2D",
+                "path": "/admin/trial-balance-d2d",
+                "icon": "bi-table",
+                "description": "Trial Balance Date to Date report",
+                "permission": "reports.gl_ledger.view",
+            },
+            {
+                "label": "Trial Balance D2D (Mobile)",
+                "path": "/admin/trial-balance-d2d-mobile",
+                "icon": "bi-phone",
+                "description": "Generate and share trial balance PDF on mobile",
+                "permission": "reports.gl_ledger.view",
             },
             {
                 "label": "SMS Sales Email",
                 "path": "/admin/sms-email-scheduler",
                 "icon": "bi-envelope-paper",
                 "description": "Scheduled sales email automation",
-                "permission": "inventory.fin_item.view",
+                "permission": "reports.sms_email.manage",
             },
         ],
     },

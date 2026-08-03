@@ -45,6 +45,7 @@ class EmailService:
         subject: str,
         body_text: str,
         *,
+        body_html: str | None = None,
         attachment: tuple[str, bytes, str] | None = None,
     ) -> None:
         if not self.is_configured():
@@ -54,12 +55,22 @@ class EmailService:
         if not recipients:
             raise EmailDeliveryError("No recipient email addresses provided.")
 
-        msg = MIMEMultipart()
+        msg = MIMEMultipart("mixed" if attachment else ("alternative" if body_html else "mixed"))
         from_email = settings.smtp_from_email.strip() or settings.smtp_user.strip()
         msg["From"] = f"{settings.smtp_from_name} <{from_email}>"
         msg["To"] = ", ".join(recipients)
         msg["Subject"] = subject
-        msg.attach(MIMEText(body_text, "plain", "utf-8"))
+
+        if attachment and body_html:
+            alt = MIMEMultipart("alternative")
+            alt.attach(MIMEText(body_text, "plain", "utf-8"))
+            alt.attach(MIMEText(body_html, "html", "utf-8"))
+            msg.attach(alt)
+        elif body_html:
+            msg.attach(MIMEText(body_text, "plain", "utf-8"))
+            msg.attach(MIMEText(body_html, "html", "utf-8"))
+        else:
+            msg.attach(MIMEText(body_text, "plain", "utf-8"))
 
         if attachment:
             filename, content, mime_type = attachment

@@ -59,3 +59,17 @@ class TopInvoiceRow(BaseModel):
 
 class TopInvoicesResponse(BaseModel):
     items: list[TopInvoiceRow] = []
+
+
+class DayWiseSalesRow(BaseModel):
+    business_date: str
+    day_label: str
+    total_sale: float = 0
+    total_cost: float = 0
+    profit: float = 0
+    invoice_count: int = 0
+
+
+class DayWiseSalesResponse(BaseModel):
+    items: list[DayWiseSalesRow] = []
+    business_hours_note: str = "Business day: 08:00 → next day 05:00"

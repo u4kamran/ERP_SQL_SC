@@ -1,0 +1,15 @@
+{
+  "siteCode": "erp",
+  "displayName": "Shafique Center",
+  "companyName": "Shafique Departmental Store",
+  "hostname": "erp.ahsteellab.com",
+  "tunnelName": "ahsteellab-erp",
+  "port": 8000,
+  "dbServer": "shaheenhp",
+  "dbName": "NSDS2626_AUTH",
+  "businessDbServer": "shaheenhp",
+  "businessDbName": "nsds2626",
+  "envTemplate": "install/env.erp",
+  "taskName": "AHSteelLab-ERP-App",
+  "tunnelServiceName": "Cloudflared-AHSteelLab-ERP"
+}
