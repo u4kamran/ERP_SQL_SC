@@ -81,6 +81,25 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
         ],
     },
     {
+        "title": "Delivery",
+        "links": [
+            {
+                "label": "Delivery Command Center",
+                "path": "/admin/delivery",
+                "icon": "bi-truck",
+                "description": "Synchronize invoices, assign riders, and update deliveries",
+                "permission": "delivery.orders.view",
+            },
+            {
+                "label": "Register Delivery",
+                "path": "/admin/delivery-register",
+                "icon": "bi-qr-code-scan",
+                "description": "Scan GP_TIME and register an invoice for delivery",
+                "permission": "delivery.orders.update",
+            },
+        ],
+    },
+    {
         "title": "Reports",
         "links": [
             {
@@ -124,6 +143,41 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "icon": "bi-envelope-paper",
                 "description": "Scheduled sales email automation",
                 "permission": "reports.sms_email.manage",
+            },
+            {
+                "label": "CUST_SMS Master",
+                "path": "/admin/cust-sms",
+                "icon": "bi-phone-vibrate",
+                "description": "Create, edit, delete Customer SMS (CUST_SMS) records",
+                "permission": "marketing.cust_sms.view",
+            },
+            {
+                "label": "Import Customer File",
+                "path": "/admin/customer-import",
+                "icon": "bi-file-earmark-text",
+                "description": "OCR, translate, review, and import customers",
+                "permission": "marketing.cust_sms.create",
+            },
+            {
+                "label": "Customer Contacts",
+                "path": "/admin/customer-contacts",
+                "icon": "bi-people-fill",
+                "description": "Customer emails, phones, and social media for marketing",
+                "permission": "marketing.customer_contacts.view",
+            },
+            {
+                "label": "Promotion Hub",
+                "path": "/admin/promotion-hub",
+                "icon": "bi-megaphone-fill",
+                "description": "Send promotions via WhatsApp, email, and social platforms",
+                "permission": "marketing.promotion.view",
+            },
+            {
+                "label": "WhatsApp Chatbot",
+                "path": "/admin/whatsapp-bot",
+                "icon": "bi-whatsapp",
+                "description": "Offline web chat and WhatsApp Cloud API chatbot inbox",
+                "permission": "marketing.whatsapp_bot.view",
             },
         ],
     },

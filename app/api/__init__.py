@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, voucher_entry
+from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, voucher_entry, customer_contacts, customer_import, promotion_hub, cust_sms, delivery, whatsapp_bot
 
 api_router = APIRouter()
 
@@ -23,3 +23,18 @@ api_router.include_router(sales_dashboard.router, prefix="/reports/sales-dashboa
 api_router.include_router(sales_dashboard_email.router, prefix="/reports/sales-dashboard/email", tags=["Sales Dashboard Email"])
 api_router.include_router(guest_price_lookup.router, prefix="/public/price-lookup", tags=["Guest Price Lookup"])
 api_router.include_router(voucher_entry.router, prefix="/vouchers", tags=["Voucher Entry"])
+api_router.include_router(customer_contacts.router, prefix="/marketing/customer-contacts", tags=["Customer Contacts"])
+api_router.include_router(customer_import.router, prefix="/marketing/customer-import", tags=["Customer Import"])
+api_router.include_router(promotion_hub.router, prefix="/marketing/promotion", tags=["Promotion Hub"])
+api_router.include_router(cust_sms.router, prefix="/cust-sms", tags=["CUST_SMS"])
+api_router.include_router(delivery.router, prefix="/delivery", tags=["Delivery"])
+api_router.include_router(
+    whatsapp_bot.router,
+    prefix="/marketing/whatsapp-bot",
+    tags=["WhatsApp Chatbot"],
+)
+api_router.include_router(
+    whatsapp_bot.public_router,
+    prefix="/public/whatsapp",
+    tags=["WhatsApp Public"],
+)

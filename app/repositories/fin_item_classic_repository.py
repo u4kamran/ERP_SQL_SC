@@ -289,6 +289,44 @@ class FinItemClassicRepository:
         ).mappings().all()
         return [_row_to_dict(r) for r in rows]
 
+    def search_items_all_tokens(
+        self, tokens: List[str], limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """Require every token to appear in title/short/barcode fields."""
+        clean = [t.strip() for t in tokens if t and t.strip()]
+        if not clean:
+            return []
+        if len(clean) > 6:
+            clean = clean[:6]
+        clauses = []
+        params: Dict[str, Any] = {"limit": limit}
+        for idx, token in enumerate(clean):
+            key = f"t{idx}"
+            params[key] = f"%{token}%"
+            clauses.append(
+                f"""(
+                    ITEM_TITLE LIKE :{key}
+                    OR ITEM_SHORT LIKE :{key}
+                    OR barcodeid LIKE :{key}
+                    OR BARCODEID_WS LIKE :{key}
+                )"""
+            )
+        where_sql = " AND ".join(clauses)
+        rows = self.db.execute(
+            text(
+                f"""
+                SELECT TOP (:limit)
+                    ITEM_ID AS item_id, ITEM_TITLE AS Item_Title, manualid,
+                    ITEM_SHORT AS item_short, barcodeid, BARCODEID_WS AS barcodeid_ws
+                FROM FIN_ITEM
+                WHERE {where_sql}
+                ORDER BY manualid DESC
+                """
+            ),
+            params,
+        ).mappings().all()
+        return [_row_to_dict(r) for r in rows]
+
     def delete_item(self, item_id: float) -> None:
         self.db.execute(text("DELETE FROM FIN_CAT WHERE ITEM_ID = :item_id"), {"item_id": item_id})
         item = self.get_fin_item_row(item_id)

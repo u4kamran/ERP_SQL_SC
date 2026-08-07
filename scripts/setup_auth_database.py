@@ -28,6 +28,12 @@ SQL_FILES = [
     "08_seed_sms_email_scheduler_permissions.sql",
     "09_seed_voucher_permissions.sql",
     "10_seed_reports_role.sql",
+    "11_seed_phone_osint_permissions.sql",
+    "12_seed_customer_contacts_permissions.sql",
+    "13_seed_promotion_permissions.sql",
+    "14_seed_cust_sms_permissions.sql",
+    "16_seed_delivery_permissions.sql",
+    "19_seed_whatsapp_bot_permissions.sql",
 ]
 
 SITE_AUTH_DBS = {

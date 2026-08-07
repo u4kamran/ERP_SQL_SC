@@ -1,8 +1,8 @@
 """Public guest price lookup — safe fields only (no cost/GL data)."""
 
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GuestPriceLookupResponse(BaseModel):
@@ -18,3 +18,16 @@ class GuestPriceLookupResponse(BaseModel):
     gst_amount: Optional[float] = None
     market_price: Optional[float] = None
     promotion: bool = False
+
+
+class GuestPriceSearchMatch(GuestPriceLookupResponse):
+    score: float = 0.0
+    match_reason: str = ""
+
+
+class GuestPriceSearchResponse(BaseModel):
+    query: str
+    cleaned_query: str = ""
+    match_type: Literal["exact", "single", "multiple", "none"]
+    items: list[GuestPriceSearchMatch] = Field(default_factory=list)
+    message: str = ""

@@ -151,3 +151,28 @@ class WhatsAppService:
                 err.get("message") or f"WhatsApp API error {response.status_code}"
             )
         return data
+
+    def download_media(self, media_id: str) -> tuple[bytes, str]:
+        """Download inbound WhatsApp media bytes and mime type."""
+        if not self.is_configured():
+            raise WhatsAppNotConfiguredError(self.configuration_hint())
+        media_id = (media_id or "").strip()
+        if not media_id:
+            raise WhatsAppDeliveryError("Missing WhatsApp media id.")
+
+        version = settings.whatsapp_api_version.strip() or "v21.0"
+        meta_url = f"https://graph.facebook.com/{version}/{media_id}"
+        headers = {"Authorization": f"Bearer {settings.whatsapp_api_token.strip()}"}
+        with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+            meta = client.get(meta_url, headers=headers)
+            if meta.status_code >= 400:
+                raise WhatsAppDeliveryError("Could not resolve WhatsApp media.")
+            info = meta.json()
+            download_url = info.get("url")
+            mime_type = str(info.get("mime_type") or "audio/ogg")
+            if not download_url:
+                raise WhatsAppDeliveryError("WhatsApp media URL missing.")
+            binary = client.get(download_url, headers=headers)
+            if binary.status_code >= 400:
+                raise WhatsAppDeliveryError("Could not download WhatsApp media.")
+            return binary.content, mime_type

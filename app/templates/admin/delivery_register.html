@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Register Delivery - {{ app_name }}{% endblock %}
+{% block page_title %}Register Invoice for Delivery{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/delivery_register.css?v=1" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0">Invoice Delivery Registration</h5>
+        <p class="text-muted small mb-0">
+            Scan a QR value, find it in <code>FIN_INV_M.GP_TIME</code>, then register the customer mobile.
+        </p>
+    </div>
+    <a href="/admin/delivery" class="btn btn-outline-secondary">
+        <i class="bi bi-truck me-1"></i> Delivery Dashboard
+    </a>
+</div>
+
+<div id="registration-alert"></div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card card-stat h-100">
+            <div class="card-header fw-semibold">1. Scan QR or enter GP_TIME</div>
+            <div class="card-body">
+                <div id="qr-reader" class="mb-3"></div>
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-primary" id="btn-start-scan" type="button">
+                        <i class="bi bi-camera me-1"></i> Start QR Scanner
+                    </button>
+                    <button class="btn btn-outline-danger d-none" id="btn-stop-scan" type="button">
+                        Stop Scanner
+                    </button>
+                </div>
+                <label class="form-label">QR value / GP_TIME</label>
+                <div class="input-group">
+                    <input class="form-control" id="gp-time" maxlength="200"
+                           placeholder="Scan or type GP_TIME value" autocomplete="off">
+                    <button class="btn btn-outline-primary" id="btn-search-invoice" type="button">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+                <div class="form-text">The search uses an exact trimmed GP_TIME match.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card card-stat h-100">
+            <div class="card-header fw-semibold">2. Select Invoice</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th class="text-end">Amount</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoice-results">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    Scan a QR code or search GP_TIME.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-stat mt-3 d-none" id="registration-card">
+    <div class="card-header fw-semibold">3. Customer and Delivery Registration</div>
+    <div class="card-body">
+        <div class="alert alert-info py-2" id="selected-invoice"></div>
+        <form id="registration-form" class="row g-3" novalidate>
+            <input type="hidden" id="source-serial-no">
+            <div class="col-md-5">
+                <label class="form-label">Customer Mobile *</label>
+                <div class="input-group">
+                    <input class="form-control" id="customer-mobile" required maxlength="30"
+                           inputmode="tel" autocomplete="tel" value="+92"
+                           placeholder="+923xxxxxxxxx">
+                    <button class="btn btn-outline-primary" id="btn-lookup-customer" type="button">
+                        Check
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <label class="form-label">Customer Name *</label>
+                <input class="form-control" id="customer-name" required maxlength="150">
+            </div>
+            <div class="col-12">
+                <label class="form-label">Customer Address *</label>
+                <textarea class="form-control" id="customer-address" required maxlength="250" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+                <div class="alert d-none" id="customer-state"></div>
+            </div>
+            <div class="col-12 d-flex gap-2 justify-content-end">
+                <button class="btn btn-outline-secondary" id="btn-clear-registration" type="button">
+                    Clear
+                </button>
+                <button class="btn btn-success px-4" id="btn-register-delivery" type="submit">
+                    <i class="bi bi-check2-circle me-1"></i> Register for Delivery
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/static/js/delivery_register.js?v=2"></script>
+{% endblock %}

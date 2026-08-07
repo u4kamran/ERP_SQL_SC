@@ -1,0 +1,65 @@
+.customer-contacts-page .stat-card {
+    border-left: 3px solid rgba(13, 110, 253, 0.35);
+}
+
+.customer-contacts-page .finder-card .card-header {
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.customer-contacts-page .finder-card .nav-pills .nav-link {
+    color: #495057;
+}
+
+.customer-contacts-page .finder-card .nav-pills .nav-link.active {
+    background-color: #0d6efd;
+}
+
+.customer-contacts-page .lookup-result-card {
+    border-left: 4px solid #0d6efd;
+}
+
+.customer-contacts-page .lookup-result-card.not-found {
+    border-left-color: #ffc107;
+}
+
+.customer-contacts-page .social-discovery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+}
+
+.customer-contacts-page .discovery-link-card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    height: 100%;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.customer-contacts-page .discovery-link-card:hover {
+    border-color: rgba(13, 110, 253, 0.35);
+    box-shadow: 0 0.125rem 0.5rem rgba(13, 110, 253, 0.08);
+}
+
+.customer-contacts-page .contact-actions .btn {
+    padding: 0.15rem 0.4rem;
+}
+
+.customer-contacts-page .social-badges .badge {
+    font-weight: 500;
+}
+
+.customer-contacts-page .missing-contact {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+.customer-contacts-page .profile-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(13, 110, 253, 0.08);
+    font-size: 0.85rem;
+}

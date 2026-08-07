@@ -1,0 +1,123 @@
+.promotion-hub-page .platform-grid,
+.customer-contacts-page .platform-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.promotion-hub-page .platform-card,
+.customer-contacts-page .platform-card {
+    border-radius: 12px;
+    padding: 1rem;
+    color: #fff;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.promotion-hub-page .platform-card:hover,
+.customer-contacts-page .platform-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.promotion-hub-page .platform-card .platform-icon,
+.customer-contacts-page .platform-card .platform-icon {
+    font-size: 1.75rem;
+    opacity: 0.95;
+}
+
+.promotion-hub-page .platform-card .platform-name,
+.customer-contacts-page .platform-card .platform-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.promotion-hub-page .platform-card .platform-label,
+.customer-contacts-page .platform-card .platform-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    word-break: break-all;
+}
+
+.promotion-hub-page .platform-card .platform-desc,
+.customer-contacts-page .platform-card .platform-desc {
+    font-size: 0.7rem;
+    opacity: 0.85;
+    margin-top: 0.25rem;
+}
+
+.promotion-hub-page .platform-card .confidence-pill,
+.customer-contacts-page .platform-card .confidence-pill {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+    text-transform: uppercase;
+}
+
+.promotion-hub-page .platform-card .card-actions,
+.customer-contacts-page .platform-card .card-actions {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+}
+
+.promotion-hub-page .platform-card .btn-card,
+.customer-contacts-page .platform-card .btn-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 0;
+    color: #222;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+.promotion-hub-page .platform-card .btn-card:hover,
+.customer-contacts-page .platform-card .btn-card:hover {
+    background: #fff;
+}
+
+.promotion-hub-page .contact-hero {
+    border-left: 4px solid #0d6efd;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.promotion-hub-page .contact-hero .hero-name {
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.promotion-hub-page .channel-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.promotion-hub-page .channel-pill.ok {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.promotion-hub-page .channel-pill.no {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.promotion-hub-page .finder-card .nav-pills .nav-link.active {
+    background: #212529;
+}

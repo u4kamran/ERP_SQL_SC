@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Promotion Hub - {{ app_name }}{% endblock %}
+{% block page_title %}Promotion Hub{% endblock %}
+{% block extra_css %}
+<link href="/static/css/promotion_hub.css?v=2" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="promotion-hub-page">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-megaphone-fill me-2"></i>Promotion Hub</h4>
+            <p class="text-muted small mb-0">Find customers, discover social profiles, and send promotions via WhatsApp, email, and more.</p>
+        </div>
+        <a href="/admin/customer-contacts" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-people-fill me-1"></i> All Contacts
+        </a>
+    </div>
+
+    <div id="alert-area"></div>
+
+    <!-- Find customer -->
+    <div class="card border-0 shadow-sm mb-3 finder-card">
+        <div class="card-header bg-dark text-white">
+            <i class="bi bi-search me-2"></i><strong>1. Find Customer</strong>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-pills mb-3" id="lookup-tabs">
+                <li class="nav-item"><button class="nav-link active" type="button" data-type="phone"><i class="bi bi-phone me-1"></i> Mobile</button></li>
+                <li class="nav-item"><button class="nav-link" type="button" data-type="email"><i class="bi bi-envelope me-1"></i> Email</button></li>
+                <li class="nav-item"><button class="nav-link" type="button" data-type="sms_id"><i class="bi bi-hash me-1"></i> SMS ID</button></li>
+            </ul>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-9">
+                    <div id="input-phone-wrap">
+                        <label class="form-label fw-semibold">Mobile Number</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">+92</span>
+                            <input type="tel" class="form-control" id="input-phone" placeholder="300 1234567">
+                        </div>
+                    </div>
+                    <div id="input-email-wrap" class="d-none">
+                        <label class="form-label fw-semibold">Email Address</label>
+                        <input type="email" class="form-control form-control-lg" id="input-email" placeholder="customer@gmail.com">
+                    </div>
+                    <div id="input-sms-wrap" class="d-none">
+                        <label class="form-label fw-semibold">CUST_SMS ID</label>
+                        <input type="number" class="form-control form-control-lg" id="input-sms-id" placeholder="e.g. 2">
+                    </div>
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button type="button" class="btn btn-dark btn-lg" id="btn-find">
+                        <i class="bi bi-search me-1"></i> Find
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact profile -->
+    <div id="contact-panel" class="d-none mb-3"></div>
+
+    <!-- Platform cards -->
+    <div id="platforms-section" class="d-none mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-grid-3x3-gap me-1"></i> 2. Platforms &amp; Social Profiles
+            </div>
+            <div class="card-body">
+                <div id="platform-grid" class="platform-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion composer -->
+    <div id="composer-section" class="d-none">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-send me-1"></i> 3. Send Promotion
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Template</label>
+                        <select class="form-select" id="template-select"></select>
+                        <div class="mt-3" id="channel-status"></div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Email Subject</label>
+                        <input type="text" class="form-control mb-2" id="promo-subject" placeholder="Special offer...">
+                        <label class="form-label fw-semibold">Promotion Message</label>
+                        <textarea class="form-control mb-2" id="promo-message" rows="6"></textarea>
+                        <label class="form-label fw-semibold">Promotion Link</label>
+                        <input type="url" class="form-control mb-3" id="promo-link" placeholder="https://...">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-success" id="btn-send-whatsapp">
+                                <i class="bi bi-whatsapp me-1"></i> Send WhatsApp
+                            </button>
+                            <button type="button" class="btn btn-outline-success" id="btn-whatsapp-manual">
+                                <i class="bi bi-whatsapp me-1"></i> Open WhatsApp
+                            </button>
+                            <button type="button" class="btn btn-primary" id="btn-send-email">
+                                <i class="bi bi-envelope me-1"></i> Send Email
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-copy-message">
+                                <i class="bi bi-clipboard me-1"></i> Copy Message
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/promotion_hub.js?v=2"></script>
+{% endblock %}

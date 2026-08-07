@@ -14,17 +14,43 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     is_guest_scan = request.url.path.startswith("/guest")
-    camera_policy = "camera=(self)" if is_guest_scan else "camera=()"
-    response.headers["Permissions-Policy"] = f"{camera_policy}, microphone=(), geolocation=()"
-    worker_src = "worker-src 'self' blob:; " if is_guest_scan else ""
+    is_delivery_page = request.url.path == "/admin/delivery"
+    is_delivery_registration = request.url.path.startswith(
+        "/admin/delivery-register"
+    )
+    is_customer_import = request.url.path.startswith("/admin/customer-import")
+    is_ocr_asset = request.url.path.startswith("/static/vendor/tesseract/")
+    camera_policy = (
+        "camera=(self)" if is_guest_scan or is_delivery_registration else "camera=()"
+    )
+    geolocation_policy = "geolocation=(self)" if is_delivery_page else "geolocation=()"
+    response.headers["Permissions-Policy"] = (
+        f"{camera_policy}, microphone=(), {geolocation_policy}"
+    )
+    worker_src = (
+        "worker-src 'self' blob: https://cdn.jsdelivr.net; "
+        if is_guest_scan or is_customer_import or is_ocr_asset
+        else ""
+    )
     media_src = "media-src 'self' blob:; " if is_guest_scan else ""
+    connect_src = (
+        "connect-src 'self' https://cdn.jsdelivr.net "
+        "https://tessdata.projectnaptha.com; "
+        if is_customer_import
+        else "connect-src 'self'; "
+    )
+    ocr_runtime_policy = (
+        " 'wasm-unsafe-eval' 'unsafe-eval'"
+        if is_customer_import or is_ocr_asset
+        else ""
+    )
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        f"script-src 'self' 'unsafe-inline'{ocr_runtime_policy} https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "font-src 'self' https://cdn.jsdelivr.net; "
         "img-src 'self' data: blob:; "
-        "connect-src 'self'; "
+        f"{connect_src}"
         "frame-src 'self' blob:; "
         "object-src 'self' blob:; "
         f"{worker_src}"

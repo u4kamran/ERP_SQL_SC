@@ -1,10 +1,43 @@
 """Guest/public item price lookup — read-only, no authentication."""
 
+import re
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.schemas.guest_price_lookup import GuestPriceLookupResponse
 from app.services.fin_item_classic_service import FinItemClassicService
+
+_UNIT_FIXES = (
+    ("Ml", "ML"),
+    ("Kg", "KG"),
+    ("Gm", "GM"),
+    ("Gms", "GMS"),
+    ("Pcs", "PCS"),
+    ("Pc", "PC"),
+    ("Ltr", "LTR"),
+    ("Oz", "OZ"),
+    ("Pk", "PK"),
+    ("Pkt", "PKT"),
+)
+
+
+def to_proper_case(value: str | None) -> str | None:
+    """Display titles in Proper Case (e.g. DALDA OIL → Dalda Oil)."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return text
+    titled = text.title()
+    for wrong, right in _UNIT_FIXES:
+        # Allow units next to numbers (1Kg → 1KG), not only whole words.
+        titled = re.sub(
+            rf"(?<![A-Za-z]){re.escape(wrong)}(?![A-Za-z])",
+            right,
+            titled,
+        )
+    return titled
 
 
 class GuestPriceLookupService:
@@ -54,10 +87,10 @@ class GuestPriceLookupService:
             manual_id=detail.manual_id,
             barcodeid=detail.barcodeid,
             barcodeid_ws=detail.barcodeid_ws,
-            item_title=detail.item_title,
-            item_short=detail.item_short,
-            uom_title=detail.uom_title,
-            co_title=detail.co_title,
+            item_title=to_proper_case(detail.item_title) or "",
+            item_short=to_proper_case(detail.item_short),
+            uom_title=to_proper_case(detail.uom_title),
+            co_title=to_proper_case(detail.co_title),
             sales_rate=detail.sales_rate,
             sales_price_wo_gst=detail.sales_price_wo_gst,
             gst_amount=detail.gst_amount,

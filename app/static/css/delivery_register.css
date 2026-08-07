@@ -1,0 +1,33 @@
+#qr-reader {
+    width: 100%;
+    min-height: 80px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+#qr-reader video {
+    max-height: 320px;
+    object-fit: cover;
+}
+
+#btn-start-scan,
+#btn-stop-scan,
+#btn-search-invoice,
+#btn-register-delivery {
+    min-height: 44px;
+    touch-action: manipulation;
+}
+
+.invoice-select {
+    min-height: 40px;
+}
+
+@media (max-width: 768px) {
+    .admin-main {
+        padding: 0.75rem;
+    }
+
+    #registration-card {
+        scroll-margin-top: 0.75rem;
+    }
+}

@@ -15,6 +15,7 @@ from app.config.settings import settings
 from app.config.site_links import get_external_links, get_internal_link_groups
 from app.logging.logger import logger
 from app.middleware.security import csrf_middleware, security_headers_middleware
+from app.scheduler.delivery_invoice_scheduler import get_delivery_invoice_scheduler
 from app.scheduler.sms_email_scheduler import get_scheduler_runner
 from app.scheduler.sales_dashboard_email_scheduler import get_sales_dashboard_email_runner
 
@@ -34,9 +35,12 @@ async def lifespan(app: FastAPI):
     logger.info("Starting %s [%s]", settings.app_name, settings.app_env)
     runner = get_scheduler_runner()
     sales_email_runner = get_sales_dashboard_email_runner()
+    delivery_invoice_runner = get_delivery_invoice_scheduler()
     await runner.start()
     await sales_email_runner.start()
+    await delivery_invoice_runner.start()
     yield
+    await delivery_invoice_runner.stop()
     await sales_email_runner.stop()
     await runner.stop()
     logger.info("Shutting down %s", settings.app_name)
@@ -94,6 +98,18 @@ async def guest_price_scan_page(request: Request):
         request,
         "guest/price_scan.html",
         {"app_name": settings.app_name},
+    )
+
+
+@app.get("/guest/chat", response_class=HTMLResponse)
+async def guest_chat_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "guest/chat.html",
+        {
+            "app_name": settings.app_name,
+            "guest_mobile_otp_required": bool(settings.guest_mobile_otp_required),
+        },
     )
 
 
@@ -232,6 +248,74 @@ async def admin_sms_email_scheduler_page(request: Request):
         "admin/sms_email_scheduler.html",
         {"app_name": settings.app_name},
     )
+
+
+@app.get("/admin/promotion-hub", response_class=HTMLResponse)
+async def admin_promotion_hub_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/promotion_hub.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/cust-sms", response_class=HTMLResponse)
+async def admin_cust_sms_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/cust_sms.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/delivery", response_class=HTMLResponse)
+async def admin_delivery_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/delivery_dashboard.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/delivery-register", response_class=HTMLResponse)
+async def admin_delivery_register_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/delivery_register.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/customer-contacts", response_class=HTMLResponse)
+async def admin_customer_contacts_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/customer_contacts.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/customer-import", response_class=HTMLResponse)
+async def admin_customer_import_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/customer_import.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/whatsapp-bot", response_class=HTMLResponse)
+async def admin_whatsapp_bot_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/whatsapp_bot.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/phone-osint", response_class=HTMLResponse)
+async def admin_phone_osint_redirect(request: Request):
+    return RedirectResponse(url="/admin/customer-contacts", status_code=302)
 
 
 @app.get("/health")

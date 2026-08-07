@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Import Customer File - {{ app_name }}{% endblock %}
+{% block page_title %}Import Customer File{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/customer_import.css?v=1" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0">OCR Customer Import Workspace</h5>
+        <p class="text-muted small mb-0">
+            Upload an image, review translated records, then finalize into CUST_SMS.
+        </p>
+    </div>
+    <a href="/admin/cust-sms" class="btn btn-outline-secondary">
+        <i class="bi bi-phone-vibrate me-1"></i> CUST_SMS Master
+    </a>
+</div>
+
+<div id="import-alert"></div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-5">
+        <div class="card card-stat h-100">
+            <div class="card-header fw-semibold">1. Upload and read file</div>
+            <div class="card-body">
+                <label class="form-label">Image file</label>
+                <input class="form-control mb-3" id="import-file" type="file"
+                       accept="image/png,image/jpeg,image/webp">
+                <img class="img-fluid rounded border d-none mb-3" id="file-preview"
+                     alt="Uploaded document preview">
+                <button class="btn btn-success w-100 mb-2" id="btn-ai-extract" type="button">
+                    <i class="bi bi-stars me-1"></i> AI Read and Translate
+                </button>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <label class="form-label small mb-1">Form rows</label>
+                        <input class="form-control" id="form-row-count" type="number"
+                               min="1" max="50" value="20">
+                    </div>
+                    <div class="col-8 d-grid align-items-end">
+                        <button class="btn btn-primary" id="btn-extract-mobiles" type="button">
+                            <i class="bi bi-phone me-1"></i> Extract Mobile Numbers
+                        </button>
+                    </div>
+                </div>
+                <div class="progress mt-3 d-none" id="ocr-progress-wrap" role="progressbar">
+                    <div class="progress-bar" id="ocr-progress" style="width: 0%">0%</div>
+                </div>
+                <div class="form-text mt-2">
+                    AI sends the image to Google Gemini for structured extraction.
+                    Local mobile extraction remains available as a free fallback.
+                    Always review handwriting before finalizing.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card card-stat h-100">
+            <div class="card-header fw-semibold">2. OCR text</div>
+            <div class="card-body">
+                <textarea class="form-control ocr-text" id="ocr-text" rows="12"
+                          placeholder="Recognized text will appear here. You may correct it before parsing."></textarea>
+                <div class="d-flex justify-content-end mt-3">
+                    <button class="btn btn-outline-primary" id="btn-parse-text" type="button">
+                        <i class="bi bi-table me-1"></i> Parse Records
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-stat">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="fw-semibold">3. Review and edit records</span>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" id="btn-add-record" type="button">
+                <i class="bi bi-plus-lg me-1"></i> Add Record
+            </button>
+            <button class="btn btn-sm btn-success" id="btn-finalize-import" type="button">
+                <i class="bi bi-database-check me-1"></i> Finalize into CUST_SMS
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0 import-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Customer Name</th>
+                        <th>Mobile</th>
+                        <th>Original Address</th>
+                        <th>English Address</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="import-records">
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Upload a file or add a record manually.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer small text-muted" id="record-count">0 records</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/vendor/tesseract/tesseract.min.js?v=5.1.1"></script>
+<script src="/static/js/customer_import.js?v=6"></script>
+{% endblock %}

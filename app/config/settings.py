@@ -10,7 +10,7 @@ from typing import List
 
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -111,11 +111,22 @@ class Settings(BaseSettings):
     smtp_from_email: str = "noreply@ahsteellab.com"
     smtp_from_name: str = "Shafique Departmental Store"
 
-    # WhatsApp Business Cloud API (automated PDF send)
+    # WhatsApp Business Cloud API (automated PDF send + chatbot)
     whatsapp_enabled: bool = False
     whatsapp_api_token: str = ""
     whatsapp_phone_number_id: str = ""
     whatsapp_api_version: str = "v21.0"
+    whatsapp_verify_token: str = ""
+    whatsapp_app_secret: str = ""
+    whatsapp_bot_enabled: bool = True
+
+    # Guest web chat: require OTP proof of mobile ownership (WhatsApp delivery)
+    guest_mobile_otp_required: bool = True
+    guest_mobile_otp_dev_echo: bool = False
+
+    # Gemini Vision (server-side customer document extraction)
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.6-flash"
 
     # Database sync (local SQL Server -> online SQL Server)
     sync_enabled: bool = False

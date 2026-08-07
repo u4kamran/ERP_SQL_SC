@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Delivery Management - {{ app_name }}{% endblock %}
+{% block page_title %}Delivery Management{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/delivery_dashboard.css?v=2" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0">Delivery Command Center</h5>
+        <p class="text-muted small mb-0">
+            Eligible ERP invoices are copied into delivery orders without changing <code>FIN_INV_M</code>.
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" id="btn-new-rider">
+            <i class="bi bi-people me-1"></i> Manage Riders
+        </button>
+        <button class="btn btn-primary" id="btn-sync">
+            <i class="bi bi-arrow-repeat me-1"></i> Sync Recent Invoices
+        </button>
+    </div>
+</div>
+
+<div id="delivery-alert"></div>
+
+<div class="row g-3 mb-3" id="summary-cards">
+    <div class="col-6 col-lg"><div class="card card-stat h-100"><div class="card-body"><div class="summary-value" id="sum-pending">—</div><div class="text-muted small">Pending</div></div></div></div>
+    <div class="col-6 col-lg"><div class="card card-stat h-100"><div class="card-body"><div class="summary-value" id="sum-assigned">—</div><div class="text-muted small">Assigned</div></div></div></div>
+    <div class="col-6 col-lg"><div class="card card-stat h-100"><div class="card-body"><div class="summary-value" id="sum-route">—</div><div class="text-muted small">On Route</div></div></div></div>
+    <div class="col-6 col-lg"><div class="card card-stat h-100"><div class="card-body"><div class="summary-value text-success" id="sum-delivered">—</div><div class="text-muted small">Delivered Today</div></div></div></div>
+    <div class="col-6 col-lg"><div class="card card-stat h-100"><div class="card-body"><div class="summary-value text-danger" id="sum-failed">—</div><div class="text-muted small">Failed</div></div></div></div>
+</div>
+
+<div class="card card-stat mb-3">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small mb-1">Search</label>
+                <input class="form-control" id="filter-search" placeholder="Invoice, customer, mobile, address">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Status</label>
+                <select class="form-select" id="filter-status">
+                    <option value="">All statuses</option>
+                    <option>Pending</option>
+                    <option>Assigned</option>
+                    <option>On The Way</option>
+                    <option>Arrived</option>
+                    <option>Delivered</option>
+                    <option>Failed Delivery</option>
+                    <option>Cancelled</option>
+                    <option>Returned</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Rider</label>
+                <select class="form-select" id="filter-rider">
+                    <option value="">All riders</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button class="btn btn-outline-secondary" id="btn-filter" title="Apply filters">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-stat mb-3 d-none" id="bulk-actions">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-lg-4">
+                <label class="form-label small mb-1">Rider for bulk action</label>
+                <select class="form-select" id="bulk-rider-id"></select>
+            </div>
+            <div class="col-lg-3 d-grid" id="bulk-assign-container">
+                <button class="btn btn-primary" id="btn-bulk-assign" type="button">
+                    <i class="bi bi-people-fill me-1"></i> Assign Rider to All
+                </button>
+            </div>
+            <div class="col-lg-3 d-grid" id="bulk-rider-deliver-container">
+                <button class="btn btn-warning" id="btn-bulk-deliver-rider" type="button">
+                    <i class="bi bi-check2-all me-1"></i> Deliver Selected Rider
+                </button>
+            </div>
+            <div class="col-lg-2 d-grid" id="bulk-all-deliver-container">
+                <button class="btn btn-danger" id="btn-bulk-deliver-all" type="button">
+                    <i class="bi bi-check2-all me-1"></i> Deliver All
+                </button>
+            </div>
+        </div>
+        <div class="form-text mt-2">
+            Admin bulk delivery marks Assigned orders as Delivered without GPS and records an audit-history note.
+        </div>
+    </div>
+</div>
+
+<div class="card card-stat">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 delivery-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Mobile</th>
+                        <th>Address</th>
+                        <th class="text-end">Amount</th>
+                        <th>Rider</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="delivery-body">
+                    <tr><td colspan="10" class="text-center text-muted py-5">Loading deliveries…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted" id="delivery-page-info">—</small>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="delivery-prev" disabled>Previous</button>
+            <button class="btn btn-outline-secondary" id="delivery-next" disabled>Next</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="riderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rider Management</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rider-form" class="row g-2 align-items-end mb-3">
+                    <input type="hidden" id="rider-edit-id">
+                    <div class="col-md-5">
+                        <label class="form-label">Rider name</label>
+                        <input class="form-control" id="rider-name" required maxlength="100">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Mobile</label>
+                        <input class="form-control" id="rider-phone" maxlength="30" inputmode="tel">
+                    </div>
+                    <div class="col-md-3 d-grid">
+                        <button class="btn btn-primary" type="submit" id="btn-save-rider">Add Rider</button>
+                    </div>
+                </form>
+                <div class="alert alert-danger d-none" id="rider-error"></div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Status</th>
+                                <th>Last Location</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rider-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" id="assign-form">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Rider</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assign-order-id">
+                <label class="form-label">Active rider</label>
+                <select class="form-select" id="assign-rider-id" required></select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" type="submit">Assign</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" id="status-form" novalidate>
+            <div class="modal-header">
+                <h5 class="modal-title">Update Delivery Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="status-order-id">
+                <div class="alert alert-danger d-none" id="status-error" role="alert"></div>
+                <div class="small text-muted mb-2">
+                    Current status: <strong id="status-current">—</strong>
+                </div>
+                <label class="form-label">New status</label>
+                <select class="form-select mb-3" id="status-value" required></select>
+                <label class="form-label">Remarks</label>
+                <textarea class="form-control" id="status-remarks" maxlength="500" rows="3"
+                          placeholder="Required operational notes when applicable"></textarea>
+                <div class="form-text mt-2">
+                    Capture the rider's current GPS. It is mandatory for Delivered
+                    and updates the customer's saved delivery location.
+                </div>
+                <button class="btn btn-outline-primary mt-2" type="button" id="btn-capture-gps">
+                    <i class="bi bi-crosshair me-1"></i> Capture Current GPS
+                </button>
+                <div class="small mt-2 d-none" id="gps-result"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success px-4" type="button" id="btn-save-status">
+                    Save Status
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/delivery_dashboard.js?v=6"></script>
+{% endblock %}
