@@ -1,0 +1,60 @@
+Private Sub txtCoID_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+   If Val(txtCoID) = 0 Then
+
+'        TxtID.SetFocus
+
+        Exit Sub
+
+
+
+   End If
+
+   
+
+   Screen.MousePointer = vbHourglass
+
+   SQL = "SELECT * FROM co WHERE co_id = " & Val(txtCoID)
+
+   Set Rs = FetchAll(SQL)
+
+   If Not (Rs.EOF And Rs.BOF) Then
+
+      lblCoTitle.Caption = "" & Rs!co_title
+
+      
+
+    Else
+
+        Screen.MousePointer = vbNormal
+
+        Rs.Close
+
+        MsgBox "Company ID not found... ", vbInformation, "Purchase Receipt: Company ID"
+
+        Cancel = True
+
+        Exit Sub
+
+    End If
+
+    Rs.Close
+
+    Screen.MousePointer = vbDefault
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+End Sub
+
+
+
+
+

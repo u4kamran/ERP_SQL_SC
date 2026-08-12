@@ -1,0 +1,18 @@
+Private Sub txtCoID_GotFocus()
+
+'On Error GoTo TrapError
+
+'    txtCoID.SelLength = Len(txtCoID)
+
+'Exit Sub
+
+'TrapError:
+
+'    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+

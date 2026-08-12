@@ -1,0 +1,41 @@
+.umr-page .umr-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.85rem;
+    background: #fafbfc;
+}
+
+.umr-page .umr-group-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    color: #0f3d2e;
+    margin-bottom: 0.55rem;
+}
+
+.umr-page .umr-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.35rem 0.25rem 0.35rem 1.5rem;
+    border-radius: 0.45rem;
+}
+
+.umr-page .umr-item:hover {
+    background: rgba(15, 61, 46, 0.06);
+}
+
+.umr-page .umr-item-label {
+    font-weight: 600;
+}
+
+.umr-page .umr-item-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.umr-page #umr-user-select {
+    min-height: 12rem;
+}

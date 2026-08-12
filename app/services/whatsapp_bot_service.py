@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -32,6 +33,8 @@ from app.services.whatsapp_service import (
     WhatsAppService,
     normalize_pk_phone,
 )
+
+logger = logging.getLogger("ahsteellab")
 
 
 class WhatsAppBotService:
@@ -148,19 +151,34 @@ class WhatsAppBotService:
                 "Select an item below — tap your product.\n"
                 "Use More items if you need the next page."
             )
-        conversation = store.append_message(
-            conversation["conversation_id"],
-            direction="out",
-            text=reply_text,
-            channel="offline",
-            sender="bot",
+        # Cart UI is button-based — keep only a short summary, not full receipt text.
+        if any(item.style == "cart" for item in quick_replies):
+            reply_text = reply.get("short_text") or self._cart_short_text(
+                (conversation.get("context") or {}).get("cart") or [],
+                note=reply.get("note") or "",
+            )
+        # Silent cart sync (qty confirm / delete): update buttons only, no chat spam.
+        skip_bubble = bool(reply.get("silent_ui")) and any(
+            item.style == "cart" for item in quick_replies
         )
+        if not skip_bubble:
+            conversation = store.append_message(
+                conversation["conversation_id"],
+                direction="out",
+                text=reply_text,
+                channel="offline",
+                sender="bot",
+            )
+        else:
+            conversation = (
+                store.get_conversation(conversation["conversation_id"]) or conversation
+            )
         phone_verified = False
         if phone:
             phone_verified = MobileOtpService().is_verified(phone)
         return OfflineChatResponse(
             conversation=self._to_conversation(conversation),
-            reply=reply_text,
+            reply="" if skip_bubble else reply_text,
             quick_replies=quick_replies,
             phone_verified=phone_verified,
         )
@@ -177,16 +195,33 @@ class WhatsAppBotService:
             raise KeyError(conversation_id)
         config = store.load_config()
         channel = conversation.get("channel") or "offline"
-        if (
-            channel == "whatsapp"
-            and config.online_mode
-            and self.whatsapp.is_configured()
-            and conversation.get("phone")
-        ):
+        phone = (conversation.get("phone") or "").strip()
+
+        # WhatsApp chats must actually deliver via Cloud API — never fake-send.
+        if channel == "whatsapp":
+            if not phone:
+                raise RuntimeError(
+                    "This WhatsApp chat has no customer phone number, "
+                    "so the message cannot be delivered."
+                )
+            if not self.whatsapp.is_configured():
+                raise RuntimeError(
+                    "WhatsApp Cloud API is not configured. "
+                    "In .env set WHATSAPP_ENABLED=true, WHATSAPP_API_TOKEN, "
+                    "and WHATSAPP_PHONE_NUMBER_ID, then restart the app."
+                )
+            if not config.online_mode:
+                raise RuntimeError(
+                    "Online mode is OFF. Open Bot Settings, turn Online mode ON, "
+                    "save, then send the reply again."
+                )
             try:
-                self.whatsapp.send_text(conversation["phone"], body.message)
-            except (WhatsAppNotConfiguredError, WhatsAppDeliveryError) as exc:
+                self.whatsapp.send_text(phone, body.message)
+            except WhatsAppNotConfiguredError as exc:
                 raise RuntimeError(str(exc)) from exc
+            except WhatsAppDeliveryError as exc:
+                raise RuntimeError(f"WhatsApp delivery failed: {exc}") from exc
+
         conversation = store.append_message(
             conversation_id,
             direction="out",
@@ -242,8 +277,22 @@ class WhatsAppBotService:
         if config.online_mode and self.whatsapp.is_configured():
             try:
                 self.whatsapp.send_text(conversation["phone"] or phone, reply["text"])
-            except (WhatsAppNotConfiguredError, WhatsAppDeliveryError):
+            except (WhatsAppNotConfiguredError, WhatsAppDeliveryError) as exc:
+                logger.warning(
+                    "WhatsApp bot reply not delivered to %s: %s",
+                    conversation.get("phone") or phone,
+                    exc,
+                )
                 return reply["text"]
+        elif config.online_mode and not self.whatsapp.is_configured():
+            logger.warning(
+                "WhatsApp bot reply skipped — Cloud API not configured (%s)",
+                self.whatsapp.configuration_hint(),
+            )
+        elif not config.online_mode:
+            logger.warning(
+                "WhatsApp bot reply skipped — Online mode is OFF in bot settings"
+            )
         return reply["text"]
 
     def handle_inbound_whatsapp_audio(
@@ -343,8 +392,19 @@ class WhatsAppBotService:
         if config.online_mode and self.whatsapp.is_configured():
             try:
                 self.whatsapp.send_text(conversation["phone"] or phone, out)
-            except (WhatsAppNotConfiguredError, WhatsAppDeliveryError):
+            except (WhatsAppNotConfiguredError, WhatsAppDeliveryError) as exc:
+                logger.warning(
+                    "WhatsApp voice reply not delivered to %s: %s",
+                    conversation.get("phone") or phone,
+                    exc,
+                )
                 return out
+        elif not config.online_mode or not self.whatsapp.is_configured():
+            logger.warning(
+                "WhatsApp voice reply skipped — online=%s configured=%s",
+                config.online_mode,
+                self.whatsapp.is_configured(),
+            )
         return out
 
     def _build_reply(
@@ -806,22 +866,14 @@ class WhatsAppBotService:
                 "handoff": False,
             }
 
-        # Cart commands
+        # Cart commands — view + professional qty / delete controls
         if lower in {"cart", "bill", "review", "total"}:
-            store.update_context(conversation_id, context)
-            return {
-                "text": orders.format_cart(
-                    context.get("cart") or [],
-                    customer_name=context.get("customer_name") or "",
-                    customer_mobile=context.get("customer_mobile") or "",
-                    title="ORDER DRAFT",
-                    footer=(
-                        "Reply item name to add more.\n"
-                        "CONFIRM to place · REMOVE 1 to delete line · CLEAR to empty · MENU to exit"
-                    ),
-                ),
-                "handoff": False,
-            }
+            return self._cart_view_reply(
+                conversation_id,
+                context,
+                title="YOUR CART",
+                note="Use − / + on each item, or Delete. Then CONFIRM when ready.",
+            )
 
         if lower in {"clear", "empty"}:
             context["cart"] = []
@@ -842,39 +894,125 @@ class WhatsAppBotService:
                 "handoff": False,
             }
 
+        inc_match = re.fullmatch(r"(?:inc|plus|\+)\s*(\d{1,2})", lower)
+        if inc_match:
+            idx = int(inc_match.group(1))
+            before = len(context.get("cart") or [])
+            if not (1 <= idx <= before):
+                return {
+                    "text": f"No cart line {idx}. Open CART to see items.",
+                    "handoff": False,
+                }
+            context["cart"] = orders.adjust_cart_qty(
+                context.get("cart") or [], idx, 1
+            )
+            return self._cart_view_reply(
+                conversation_id,
+                context,
+                title="QUANTITY UPDATED",
+                note="",
+                silent_ui=True,
+            )
+
+        dec_match = re.fullmatch(r"(?:dec|minus|\-)\s*(\d{1,2})", lower)
+        if dec_match:
+            idx = int(dec_match.group(1))
+            before = len(context.get("cart") or [])
+            if not (1 <= idx <= before):
+                return {
+                    "text": f"No cart line {idx}. Open CART to see items.",
+                    "handoff": False,
+                }
+            context["cart"] = orders.adjust_cart_qty(
+                context.get("cart") or [], idx, -1
+            )
+            return self._cart_view_reply(
+                conversation_id,
+                context,
+                title="QUANTITY UPDATED",
+                note="",
+                silent_ui=True,
+            )
+
+        qty_set_match = re.fullmatch(
+            r"(?:qty|quantity)\s+(\d{1,2})\s+(\d+(?:\.\d+)?)",
+            lower,
+        )
+        if qty_set_match:
+            idx = int(qty_set_match.group(1))
+            qty = float(qty_set_match.group(2))
+            before = len(context.get("cart") or [])
+            if not (1 <= idx <= before):
+                return {
+                    "text": f"No cart line {idx}. Open CART to see items.",
+                    "handoff": False,
+                }
+            if qty <= 0:
+                context["cart"] = orders.remove_from_cart(
+                    context.get("cart") or [], idx
+                )
+                return self._cart_view_reply(
+                    conversation_id,
+                    context,
+                    title="ITEM REMOVED",
+                    note="",
+                    silent_ui=True,
+                )
+            context["cart"] = orders.set_cart_qty(
+                context.get("cart") or [], idx, qty
+            )
+            return self._cart_view_reply(
+                conversation_id,
+                context,
+                title="QUANTITY UPDATED",
+                note="",
+                silent_ui=True,
+            )
+
         remove_match = re.fullmatch(r"(?:remove|del|delete)\s+(\d{1,2})", lower)
         if remove_match:
             idx = int(remove_match.group(1))
+            before = len(context.get("cart") or [])
+            if not (1 <= idx <= before):
+                return {
+                    "text": f"No cart line {idx}. Open CART to see items.",
+                    "handoff": False,
+                }
             context["cart"] = orders.remove_from_cart(context.get("cart") or [], idx)
-            store.update_context(conversation_id, context)
-            return {
-                "text": orders.format_cart(
-                    context.get("cart") or [],
-                    customer_name=context.get("customer_name") or "",
-                    customer_mobile=context.get("customer_mobile") or "",
-                    title="ORDER DRAFT",
-                    footer="Item removed. Send another item or CONFIRM.",
-                ),
-                "handoff": False,
-            }
+            return self._cart_view_reply(
+                conversation_id,
+                context,
+                title="ITEM REMOVED",
+                note="",
+                silent_ui=True,
+            )
 
         if lower in {"confirm", "yes", "place", "checkout", "done"}:
-            if not (context.get("cart") or []):
+            cart = list(context.get("cart") or [])
+            if not cart:
                 return {
                     "text": "Your cart is empty. Send an item name to add products first.",
                     "handoff": False,
                 }
+            # Always re-read latest cart qty from stored context before confirming.
+            fresh = store.get_conversation(conversation_id) or {}
+            fresh_ctx = dict(fresh.get("context") or context)
+            cart = list(fresh_ctx.get("cart") or cart)
+            if not cart:
+                return {
+                    "text": "Your cart is empty. Send an item name to add products first.",
+                    "handoff": False,
+                }
+            context = fresh_ctx
+            context["cart"] = cart
             context["step"] = "await_notes"
             store.update_context(conversation_id, context)
-            draft = orders.format_cart(
-                context.get("cart") or [],
-                customer_name=context.get("customer_name") or "",
-                customer_mobile=context.get("customer_mobile") or "",
-                title="REVIEW BEFORE CONFIRM",
-            )
+            totals = orders.totals(cart)
             return {
                 "text": (
-                    f"{draft}\n\n"
+                    "Ready to place your order.\n"
+                    f"*{int(totals['item_count'])} item(s)* · "
+                    f"Total *Rs {orders._money(float(totals['order_total']))}*\n\n"
                     "Optional note for shop (or reply SKIP):\n"
                     "Example: Call before delivery"
                 ),
@@ -894,21 +1032,15 @@ class WhatsAppBotService:
             context["pending_item"] = None
             context["pending_options"] = []
             context["all_options"] = []
-            context["step"] = "browse"
-            store.update_context(conversation_id, context)
-            return {
-                "text": orders.format_cart(
-                    context["cart"],
-                    customer_name=context.get("customer_name") or "",
-                    customer_mobile=context.get("customer_mobile") or "",
-                    title="ADDED TO ORDER",
-                    footer=(
-                        f"Added: {line.item_title} × {orders._qty(line.qty)}\n"
-                        "Send another item name, CART to review, or CONFIRM to place order."
-                    ),
+            return self._cart_view_reply(
+                conversation_id,
+                context,
+                title="ADDED TO CART",
+                note=(
+                    f"Added: {line.item_title} × {orders._qty(line.qty)}\n"
+                    "Adjust qty with − / +, delete a line, add more items, or CONFIRM."
                 ),
-                "handoff": False,
-            }
+            )
 
         # Option pick from search results
         options = list(context.get("all_options") or context.get("pending_options") or [])
@@ -1258,6 +1390,100 @@ class WhatsAppBotService:
         )
         return re.sub(r"\s+", " ", cleaned).strip()
 
+    def _cart_short_text(
+        self,
+        cart: list[dict[str, Any]],
+        *,
+        note: str = "",
+    ) -> str:
+        orders = WhatsAppOrderService()
+        totals = orders.totals(cart or [])
+        lines = []
+        if note:
+            lines.append(note)
+        lines.append(
+            f"*{int(totals['item_count'])} item(s)* · "
+            f"Qty {orders._qty(float(totals['qty_total']))} · "
+            f"Total *Rs {orders._money(float(totals['order_total']))}*"
+        )
+        lines.append("Use − / + / Delete on each item, then tap Confirm.")
+        return "\n".join(lines)
+
+    def _cart_view_reply(
+        self,
+        conversation_id: str,
+        context: dict[str, Any],
+        *,
+        title: str = "YOUR CART",
+        note: str = "",
+        silent_ui: bool = False,
+    ) -> dict[str, Any]:
+        del title  # kept for call-site compatibility; UI is button-based now
+        cart = list(context.get("cart") or [])
+        if not cart:
+            context["step"] = "browse"
+            context["pending_options"] = []
+            context["all_options"] = []
+            store.update_context(conversation_id, context)
+            return {
+                "text": (
+                    "Your cart is empty.\n"
+                    "Send an item name to add products, or MENU to exit."
+                ),
+                "handoff": False,
+                "silent_ui": False,
+            }
+        context["step"] = "cart_view"
+        context["pending_item"] = None
+        context["pending_options"] = []
+        context["all_options"] = []
+        store.update_context(conversation_id, context)
+        short = self._cart_short_text(cart, note=note)
+        # Compact body only — full receipt is shown after final order place.
+        whatsapp_lines = [short, "", "QTY 1 5 · REMOVE 1 · CONFIRM · CLEAR · MENU"]
+        return {
+            "text": "\n".join(whatsapp_lines),
+            "short_text": short,
+            "note": note,
+            "silent_ui": silent_ui,
+            "handoff": False,
+        }
+
+    def _cart_line_replies(self, cart: list[dict[str, Any]]) -> list[ChatQuickReply]:
+        orders = WhatsAppOrderService()
+        buttons: list[ChatQuickReply] = []
+        for idx, raw in enumerate(cart or [], start=1):
+            title = str(raw.get("item_title") or f"Item {idx}").strip()
+            if len(title) > 80:
+                title = title[:77] + "…"
+            unit_price = float(raw.get("unit_price") or 0)
+            unit = orders._money(unit_price)
+            line_total = orders._money(float(raw.get("line_total") or 0))
+            qty = float(raw.get("qty") or 1)
+            code = raw.get("manual_id")
+            subtitle = f"Code {code} · Rs {unit} each" if code else f"Rs {unit} each"
+            buttons.append(
+                ChatQuickReply(
+                    title=title,
+                    payload=str(idx),
+                    style="cart",
+                    subtitle=subtitle,
+                    meta=f"Rs {line_total}",
+                    qty=qty,
+                    line_index=idx,
+                    unit_price=unit_price,
+                )
+            )
+        buttons.extend(
+            [
+                ChatQuickReply(title="Confirm order", payload="CONFIRM", style="action"),
+                ChatQuickReply(title="Add more items", payload="NEW", style="action"),
+                ChatQuickReply(title="Clear cart", payload="CLEAR", style="action"),
+                ChatQuickReply(title="Menu", payload="MENU", style="action"),
+            ]
+        )
+        return buttons
+
     def _order_browse_prompt(self, context: dict[str, Any]) -> str:
         name = context.get("customer_name") or "Customer"
         mobile = self._display_mobile(context.get("customer_mobile") or "")
@@ -1273,9 +1499,10 @@ class WhatsAppBotService:
                 "You may also send a *voice note*.",
                 "",
                 "Commands:",
-                "- CART — review bill and total",
+                "- CART — review bill with qty buttons",
+                "- INC 1 / DEC 1 — change quantity",
+                "- REMOVE 1 — delete a line",
                 "- CONFIRM — place order",
-                "- REMOVE 1 — remove a line",
                 "- CLEAR — empty cart",
                 "- MENU — exit ordering",
                 "",
@@ -2031,11 +2258,13 @@ class WhatsAppBotService:
                         ChatQuickReply(title="Cart", payload="CART", style="action"),
                     ],
                 )
+            if step == "cart_view" and context.get("cart"):
+                return self._cart_line_replies(context.get("cart") or [])
             buttons: list[ChatQuickReply] = []
             if context.get("cart"):
                 buttons.extend(
                     [
-                        ChatQuickReply(title="Cart", payload="CART", style="action"),
+                        ChatQuickReply(title="View cart", payload="CART", style="action"),
                         ChatQuickReply(
                             title="Confirm", payload="CONFIRM", style="action"
                         ),
@@ -2222,18 +2451,23 @@ class WhatsAppBotService:
     def _configuration_hint(self, config: WhatsAppBotConfig) -> str:
         if not settings.whatsapp_bot_enabled:
             return "Set WHATSAPP_BOT_ENABLED=true in .env and restart."
+        if not self.whatsapp.is_configured():
+            return (
+                "Customer WhatsApp delivery is OFF. "
+                "Set WHATSAPP_ENABLED=true, WHATSAPP_API_TOKEN, and "
+                "WHATSAPP_PHONE_NUMBER_ID in .env, then restart. "
+                "Staff replies will not reach the customer until this is done."
+            )
         if not config.online_mode:
             return (
-                "Offline mode is active. Web chat works now. "
-                "Turn Online mode ON after WhatsApp Cloud API credentials are set."
+                "WhatsApp API credentials are ready, but Online mode is OFF. "
+                "Turn Online mode ON in Bot Settings so replies are delivered to customers."
             )
-        if not self.whatsapp.is_configured():
-            return self.whatsapp.configuration_hint()
         if not settings.whatsapp_verify_token.strip():
             return "Set WHATSAPP_VERIFY_TOKEN in .env for Meta webhook verification."
         return (
             "Online mode ready. Configure Meta webhook to the URL shown, "
-            "using WHATSAPP_VERIFY_TOKEN."
+            "using WHATSAPP_VERIFY_TOKEN. Staff replies will send to WhatsApp."
         )
 
     @staticmethod

@@ -14,6 +14,7 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     is_guest_scan = request.url.path.startswith("/guest")
+    is_guest_chat = request.url.path.startswith("/guest/chat")
     is_delivery_page = request.url.path == "/admin/delivery"
     is_delivery_registration = request.url.path.startswith(
         "/admin/delivery-register"
@@ -23,22 +24,39 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
     camera_policy = (
         "camera=(self)" if is_guest_scan or is_delivery_registration else "camera=()"
     )
-    geolocation_policy = "geolocation=(self)" if is_delivery_page else "geolocation=()"
+    # Guest chat needs mic (voice search) and GPS pin sharing.
+    microphone_policy = "microphone=(self)" if is_guest_chat else "microphone=()"
+    geolocation_policy = (
+        "geolocation=(self)"
+        if is_delivery_page or is_guest_chat
+        else "geolocation=()"
+    )
     response.headers["Permissions-Policy"] = (
-        f"{camera_policy}, microphone=(), {geolocation_policy}"
+        f"{camera_policy}, {microphone_policy}, {geolocation_policy}"
     )
     worker_src = (
         "worker-src 'self' blob: https://cdn.jsdelivr.net; "
         if is_guest_scan or is_customer_import or is_ocr_asset
         else ""
     )
-    media_src = "media-src 'self' blob:; " if is_guest_scan else ""
-    connect_src = (
-        "connect-src 'self' https://cdn.jsdelivr.net "
-        "https://tessdata.projectnaptha.com; "
-        if is_customer_import
-        else "connect-src 'self'; "
+    # Guest chat: MediaRecorder blobs + Chrome speech network (desktop fallback).
+    media_src = (
+        "media-src 'self' blob: mediastream:; "
+        if is_guest_scan or is_guest_chat
+        else ""
     )
+    if is_customer_import:
+        connect_src = (
+            "connect-src 'self' https://cdn.jsdelivr.net "
+            "https://tessdata.projectnaptha.com; "
+        )
+    elif is_guest_chat:
+        connect_src = (
+            "connect-src 'self' https://www.google.com https://www.gstatic.com "
+            "https://*.googleapis.com https://*.google.com; "
+        )
+    else:
+        connect_src = "connect-src 'self'; "
     ocr_runtime_policy = (
         " 'wasm-unsafe-eval' 'unsafe-eval'"
         if is_customer_import or is_ocr_asset

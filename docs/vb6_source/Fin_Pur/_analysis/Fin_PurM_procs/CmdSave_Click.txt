@@ -1,0 +1,1586 @@
+Private Sub CmdSave_Click()
+
+On Error GoTo TrapError
+
+    
+
+    
+
+    'MKB 07 03 2024
+
+    
+
+    LblDiscount.Caption = "0"
+
+    
+
+    
+
+
+
+    If nCounter = 1 Then
+
+        MsgBox "No transaction to slave ", vbInformation, cSelFormId
+
+        Exit Sub
+
+    End If
+
+   If Val(TxtDocID) = 0 Then
+
+        cFoundFlag = False
+
+   End If
+
+   If Len(Trim(TxtRemarks)) = 0 Then
+
+        TxtRemarks.Text = "Nil"
+
+   End If
+
+   '03 Year Star/End Date
+
+   If TxtDocDAte.Value < cFiscalStart Or TxtDocDAte.Value > cFiscalEnd Then
+
+       MsgBox "Document/Voucher Date out of range ...  " & Chr(13) & Chr(13) & "Select between  " & cFiscalStart & "  and  " & cFiscalEnd & "  ", vbCritical, cSelFormId
+
+       Exit Sub
+
+   End If
+
+   ' Check Date mvnumbering 1= yearly, 2 Monthly
+
+''''   If MVnumbering = 2 Then
+
+''''        ' Monthly Numbering
+
+''''        If Val(TxtFiscal) <> DatePart("m", TxtDocDAte) Then
+
+''''            MsgBox "Selected 'Month' does not match with Document/Voucher 'Date' ...", vbCritical, cSelFormId
+
+''''            Exit Sub
+
+''''        End If
+
+''''   Else
+
+''''        ' Yearly Numberisng
+
+''''        If Val(TxtFiscal) <> 0 Then
+
+''''            MsgBox "Invalid Fiscal: Select 0 for Yearly Document numbering ... ", vbCritical, cSelFormId
+
+''''            Exit Sub
+
+''''        End If
+
+''''   End If
+
+   mSalesImportAmt = 0
+
+   mSalesLocalAmt = 0
+
+   Screen.MousePointer = vbHourglass
+
+   '05 Reverse Balance From Inventory
+
+   If cFoundFlag = True Then
+
+      SQL = "select * FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+
+      Set SQLDel = FetchAll(SQL)
+
+      If Not (SQLDel.EOF And SQLDel.BOF) Then
+
+        TDel_Amount = 0
+
+        Do While Not SQLDel.EOF
+
+            DelItemID = SQLDel!Item_ID
+
+            tmpQty = SQLDel!Qty
+
+            tmpAmt = SQLDel!pur_Amt
+
+            TDel_Amount = TDel_Amount + tmpAmt
+
+            SQL = "select * FROM fin_item WHERE item_id = " & DelItemID
+
+            Set RSMAST = FetchAll(SQL)
+
+            If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+                 GL_Integ = RSMAST!gl_pur_id
+
+                 'RSMAST.Edit
+
+                 RSMAST!Cqty = RSMAST!Cqty - tmpQty
+
+                 RSMAST!CAMT = RSMAST!CAMT - tmpAmt
+
+                 RSMAST!Tnot = RSMAST!Tnot - 1
+
+                 RSMAST.Update
+
+            End If
+
+            RSMAST.Close
+
+            SQLDel.MoveNext
+
+        Loop
+
+        '*****************************************************
+
+        '07 Start Reverse GL From GL Master Table
+
+        Dim DelDr, DelCr, DelAccountID As Double
+
+        SQL = "select * FROM gl0003 WHERE Serial_No = " & SerialCode
+
+        Set RsGL = FetchAll(SQL)
+
+        If Not (RsGL.EOF And RsGL.BOF) Then
+
+           RsGL.MoveFirst
+
+           DelDr = 0
+
+           DelCr = 0
+
+           Do While Not RsGL.EOF
+
+               DelAccountID = RsGL!Ac_id
+
+               DelDr = RsGL!debit
+
+               DelCr = RsGL!credit
+
+               SQL = "select * FROM gl0001 WHERE ac_id = " & DelAccountID
+
+               Set RSMAST = FetchAll(SQL)
+
+               If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+                    'RSMAST.Edit
+
+                    RSMAST!cbal = RSMAST!cbal - DelDr + DelCr
+
+                    RSMAST!Tnot = RSMAST!Tnot - 1
+
+                    RSMAST.Update
+
+               End If
+
+               RSMAST.Close
+
+               RsGL.MoveNext
+
+           Loop
+
+           RsGL.Close
+
+        End If
+
+        '*****************************************************
+
+        'End Start Reverse GL Contra Entry (Supplier)
+
+        SQLDel.Close
+
+      End If
+
+        '08 Delete Old Transactions Purchase Detail
+
+        SQL = "DELETE FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+
+        Con.Execute SQL
+
+        'see 14 2/8/2001   09 Delete Old Transactions GL
+
+   End If ' end cFoundFlag
+
+   '10 Voucher Master Edit/AddNew
+
+   SQL = "SELECT * FROM Fin_Pur_m WHERE prod_id = "
+
+   SQL = SQL & Val(TxtDocID) & " and doc_type_id = " & cDoc_Type
+
+   SQL = SQL & " and fiscal = " & MFiscal
+
+   '11
+
+'   SQL = "SELECT * FROM fin_prod_m WHERE serial_no = " & SerialCode
+
+   Set Rs = FetchAll(SQL)
+
+   If Not (Rs.EOF And Rs.BOF) Then
+
+        cFoundFlag = True
+
+   Else
+
+        cFoundFlag = False
+
+   End If
+
+   If cFoundFlag = True Then
+
+        'rs.edit
+
+        NewVoucherNo = Val(TxtDocID)
+
+   Else
+
+        ' Next Heightest Number From Relivent Table (Fin_Prod_M)
+
+        SQL = "SELECT MAX(prod_id) As [Max_NO] FROM Fin_Pur_M WHERE fiscal = " & MFiscal
+
+        Set RsDummy = FetchAll(SQL)
+
+        If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+            If IsNull(RsDummy![Max_No]) Then
+
+              NewVoucherNo = 1
+
+            Else
+
+              NewVoucherNo = RsDummy![Max_No] + 1
+
+            End If
+
+        Else
+
+            NewVoucherNo = 1
+
+        End If
+
+        RsDummy.Close
+
+        ' Auto Voucher Serial Number
+
+            SerialCode = 0
+
+            SerialCode = nSerialNo() 'RsDummy.RecordCount
+
+        
+
+'        SQL = "SELECT * from gc0002"
+
+'        Set RsDummy = FetchAll(SQL)
+
+'        RsDummy.AddNew
+
+'
+
+'        'MsgBox RsDummy!serial_no
+
+'        'SerialCode = RsDummy("Serial_No")
+
+'        SerialCode = nSerialNo() 'RsDummy.RecordCount
+
+'        RsDummy("l_uid") = cLoginID
+
+'        RsDummy("dt_lasta") = Now
+
+'
+
+''        RsDummy("Serial_No") = RsDummy("Serial_No")
+
+'        RsDummy.Update
+
+'        RsDummy.Close
+
+       
+
+        ' Add in Master Document/Voucher Table
+
+        Rs.AddNew
+
+        Rs!serial_no = SerialCode
+
+        Rs!prod_id = NewVoucherNo
+
+        Rs!fiscal = MFiscal
+
+        ' Production Type=1
+
+        Rs!Doc_Type_ID = cDoc_Type
+
+    End If
+
+    Rs!sys_status = 0
+
+    Rs!sys_use = 0
+
+    Rs!sys_print = 0
+
+    Rs!doc_date = TxtDocDAte.Value
+
+    Rs!supplier_id = Trim(TxtID.Text)
+
+    Rs!remarks = Trim(TxtRemarks.Text)
+
+    Rs!payment_type = CboPayment.ListIndex
+
+    If LblRegistration.Caption = "Registered" Then
+
+        Rs!stax_type = 0
+
+    Else
+
+        Rs!stax_type = 1
+
+    End If
+
+    If Len(Trim(TxtGPID)) = 0 Then
+
+            Rs!gp_id = " "
+
+    Else
+
+        Rs!gp_id = TxtGPID
+
+    End If
+
+    If Len(Trim(TxtTime)) = 0 Then
+
+        Rs!gp_time = " "
+
+    Else
+
+        Rs!gp_time = TxtTime
+
+    End If
+
+   ' RS!gp_id = TxtGPID
+
+   ' RS!gp_time = TxtTime
+
+    ' In case of Cash Purchase
+
+    Rs!Vendor_Title = Trim(TxtDesc)
+
+    Rs!Address = Trim(TxtAddress)
+
+    Rs!stax_id = Trim(TxtStaxID)
+
+    Rs!city_id = Val(TxtCityID)
+
+    'RS!country_id = 0 '? ? ?
+
+    Rs!remarks = Trim(TxtRemarks.Text)
+
+    '
+
+    ' to be implemented later
+
+    ' discount / charges
+
+    If HDiscount = "" Then
+
+        HDiscount = 0
+
+    End If
+
+    
+
+    'Rs!discount_amt = CDbl(HDiscount.Caption) + CDbl(LDiscount.Caption)
+
+    'change MKB 07 03 2024
+
+    Rs!discount_amt = CDbl(HDiscount.Caption) + CDbl(LDiscount.Caption)
+
+    
+
+    Rs!claim_amt = IIf(HClaim.Caption = "", 0, Val(HClaim.Caption)) 'CDbl(HClaim.Caption)
+
+    Rs!other_ded_amt = IIf(HOtherDed.Caption = "", 0, Val(HOtherDed.Caption))
+
+    Rs!loading_amt = IIf(HLoading.Caption = "", 0, Val(HLoading.Caption)) 'CDbl(HLoading.Caption)
+
+    Rs!carriage_amt = IIf(HCarriage.Caption = "", 0, Val(HCarriage.Caption)) 'CDbl(HCarriage.Caption)
+
+    Rs!other_charges_amt = IIf(HOtherCharges.Caption = "", "0", Val(HOtherCharges.Caption)) 'CDbl(HOtherCharges.Caption)
+
+    '
+
+    Rs.Update
+
+    Rs.Close
+
+    
+
+    
+
+'Integration Portion
+
+'12 Voucher GL voucher M
+
+   SQL = "SELECT * FROM gl0002 WHERE serial_no = " & SerialCode
+
+   Set Rs = FetchAll(SQL)
+
+   If Not (Rs.EOF And Rs.BOF) Then
+
+        'rs.edit
+
+   Else
+
+        Rs.AddNew
+
+        Rs!Voucher_ID = NewVoucherNo
+
+        Rs!book_id = cBookID
+
+        Rs!v_mode = MVMode
+
+        Rs!fiscal = MFiscal
+
+        Rs!book_type = MBookType
+
+        Rs!eby = cUserName
+
+        Rs!remarks = "Nil"
+
+        Rs!sys_status = 0
+
+        Rs!sys_use = 0
+
+        Rs!sys_print = 0
+
+   End If
+
+   Rs!voucher_date = TxtDocDAte.Value
+
+   Rs!serial_no = SerialCode
+
+   ' ?
+
+   Rs!Amount = T_Amount
+
+   Rs!Tnot = nCounter - 1
+
+   Rs!edit_by = cUserName
+
+   Rs.Update
+
+   Rs.Close
+
+   '13 Voucher Trans Purchase
+
+   Dim nCnt As Integer
+
+   '14 Delete Old Transactions from Finished Ledger
+
+   SQL = "DELETE FROM fin_ldgr WHERE Serial_No = " & SerialCode
+
+   Con.Execute SQL
+
+   ' Delete Old Transactions from General Ledger
+
+   SQL = "DELETE FROM gl0003 WHERE Serial_No = " & SerialCode
+
+   Con.Execute SQL
+
+   '
+
+'*****************************************************************
+
+' end new logic from Invoice
+
+    ' Balance Updation In Master Inventory and Master GL
+
+    '13 Voucher Trans Sale/Purchase
+
+    'Dim nCnt As Integer
+
+    Dim FinLRS As New ADODB.Recordset
+
+    SQL = "SELECT * FROM fin_ldgr"
+
+    Set FinLRS = FetchAll(SQL)
+
+        '
+
+    SQL = "SELECT * FROM gl0003"
+
+    Set RsGL = FetchAll(SQL)
+
+    SQL = "SELECT * FROM fin_pur_d"
+
+    Set Rs = FetchAll(SQL)
+
+    
+
+    Dim lTsale, lTSalesTax, ITDiscount, ITDiscountOI, lNetInvoice As Double
+
+    
+
+    T_Amount = 0
+
+    lTsale = 0
+
+    lTSalesTax = 0
+
+    
+
+    For nCnt = 1 To (nCounter - 1)
+
+      VGrid.Row = nCnt
+
+      VGrid.Col = 1
+
+      MItem_ID = Val(Trim(VGrid.Text))
+
+      'VGrid.Col = 2
+
+      'MNaration = VGrid.Text
+
+      VGrid.Col = 3
+
+      tmpQty = CDbl(VGrid.Text & "0")
+
+      VGrid.Col = 4
+
+      tmpRate = CDbl(VGrid.Text & "0")
+
+      VGrid.Col = 5
+
+      tmpSaleAmt = CDbl(VGrid.Text & "0")
+
+      VGrid.Col = 6
+
+      tmpStaxRate = CDbl(VGrid.Text & "0")
+
+      VGrid.Col = 7
+
+      tmpStaxAmt = CDbl(VGrid.Text & "0")
+
+'      VGrid.Col = 8
+
+'      tmpRate = CDbl(VGrid.Text & "0")
+
+      VGrid.Col = 8
+
+      tmpDiscRate = CDbl(VGrid.Text & "0")
+
+      
+
+      VGrid.Col = 9
+
+      tmpDiscAmt = CDbl(VGrid.Text & "0")
+
+      
+
+      VGrid.Col = 10
+
+      tmpDOI_Rate = CDbl(VGrid.Text & "0")
+
+      
+
+      VGrid.Col = 11
+
+      tmpDOI_Amt = CDbl(VGrid.Text & "0")
+
+      
+
+      
+
+      VGrid.Col = 12
+
+      tmpTotalAmt = CDbl(VGrid.Text & "0")
+
+      
+
+      VGrid.Col = 13
+
+      mTranRemarks = Trim(VGrid.Text)
+
+      
+
+      VGrid.Col = 14
+
+      If Trim(VGrid.Text) = "" Then
+
+        tmpExpDate = Date
+
+      Else
+
+        tmpExpDate = Trim(VGrid.Text)
+
+    End If
+
+      
+
+      
+
+      ' Insert into Invoice Datail Table
+
+      lTsale = lTsale + tmpSaleAmt
+
+      lTSalesTax = lTSalesTax + tmpStaxAmt
+
+      ITDiscount = ITDiscount + tmpDiscAmt
+
+      ITDiscountOI = ITDiscountOI + tmpDOI_Amt
+
+      'T_Amount = T_Amount + tmpSaleAmt - ITDiscount
+
+      T_Amount = (((T_Amount + tmpSaleAmt) - ITDiscount) - ITDiscountOI)
+
+      
+
+
+
+      Rs.AddNew
+
+      Rs("prod_id") = NewVoucherNo
+
+      Rs("serial_order") = nCnt
+
+      Rs("Serial_No") = SerialCode
+
+      Rs("doc_Date") = TxtDocDAte.Value
+
+      Rs("item_ID") = MItem_ID
+
+      Rs("qty") = tmpQty
+
+      Rs("rate") = tmpRate
+
+      Rs("PUR_amt") = tmpSaleAmt
+
+      Rs("stax_rate") = tmpStaxRate
+
+      Rs("stax_amt") = tmpStaxAmt
+
+      Rs("disc_Per") = tmpDiscRate
+
+      Rs("disc_amt") = tmpDiscAmt
+
+      Rs("disc_Per_oi") = tmpDOI_Rate
+
+      Rs("disc_amt_oi") = tmpDOI_Amt
+
+      
+
+      If Not MItem_ID = 0 Then
+
+        Rs("exp_date") = Format(CDate(tmpExpDate), "mm-dd-yyyy")
+
+      End If
+
+      
+
+
+
+      
+
+      
+
+      'Rs("total_amt") = tmpSaleAmt + tmpStaxAmt - tmpDiscAmt 'tmpTotalAmt
+
+      Rs("total_amt") = (((tmpSaleAmt + tmpStaxAmt) - tmpDiscAmt) - tmpDOI_Amt) 'tmpTotalAmt
+
+      Rs("remarks") = mTranRemarks
+
+      ' Average Cost
+
+      'RS("cost_amt") = tmpcostAmt
+
+      Rs.Update
+
+
+
+
+
+'Add Supplier and Item values in FIN_SUPP_ITEMS
+
+'**********************************************
+
+        Dim cSQL As String
+
+          SQL = "select * FROM FIN_SUPP_ITEMS WHERE item_id = " & MItem_ID & "  and supplier_id = " & TxtID.Text
+
+          Set RSMAST = FetchAll(SQL)
+
+          If (RSMAST.EOF And RSMAST.BOF) Then
+
+                cSQL = "insert into fin_supp_items (supplier_id, item_id, stock_bal) values(" & TxtID.Text & "," & MItem_ID & ",0" & ")"
+
+                Call UpdateV(cSQL)
+
+          End If
+
+          RSMAST.Close
+
+'**********************************************
+
+      '*********************
+
+      '14B Update Balance in Master Inventory * for sale reduce the balance *
+
+      ' FOR PURCHASE ADD BALANCE
+
+      SQL = "select * FROM fin_item WHERE item_id = " & MItem_ID
+
+      Set RSMAST = FetchAll(SQL)
+
+      If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+           ' 29-06-2002 at lahore grapho
+
+           If cSTaxType = 0 Then
+
+               GL_Integ = RSMAST!gl_pur_id
+
+           Else
+
+               GL_Integ = mCreditSalesLocalId
+
+           End If
+
+           
+
+           ' ? DISCUSS AND CHECK OTHER CLIENTS.
+
+           ' 0 is import , 1 = local, 2 = manufactured = local
+
+            ' **IMPORTANT** 16-05-2002
+
+            ''           If RSMAST!item_nature = 0 Then
+
+            ''                mSalesImportAmt = mSalesImportAmt + tmpSaleAmt
+
+            ''           Else
+
+            ''                mSalesLocalAmt = mSalesLocalAmt + tmpSaleAmt
+
+            ''           End If
+
+           mSalesLocalAmt = mSalesLocalAmt + tmpSaleAmt
+
+           'RSMAST.Edit
+
+           RSMAST!Cqty = RSMAST!Cqty + tmpQty
+
+           'RSMAST!camt = RSMAST!camt + tmpSaleAmt
+
+           
+
+           'RSMAST!CAMT = RSMAST!CAMT + (tmpSaleAmt + tmpStaxAmt - tmpDiscAmt)
+
+           RSMAST!CAMT = RSMAST!CAMT + (((tmpSaleAmt + tmpStaxAmt) - tmpDiscAmt) - tmpDOI_Amt)
+
+           
+
+'           RSMAST!camt = (tmpSaleAmt + tmpStaxAmt - tmpDiscAmt)
+
+'
+
+            'Update Cost_rate
+
+            'RSMAST!cost_Rate = (tmpSaleAmt + tmpStaxAmt - tmpDiscAmt) / tmpQty
+
+            RSMAST!cost_Rate = (((tmpSaleAmt + tmpStaxAmt) - tmpDiscAmt) - tmpDOI_Amt) / tmpQty
+
+
+
+           RSMAST!Tnot = RSMAST!Tnot + 1
+
+           
+
+           RSMAST!Tnot1 = 0
+
+           
+
+           RSMAST.Update
+
+      End If
+
+      RSMAST.Close
+
+      '*********************
+
+      ' Update Balance in Master GL
+
+      ' for staxtype = 1 see entry ???
+
+'      If cSTaxType = 0 Then ' commented on 11/09/2002 at agd
+
+         ' if amt =0 the thre sould not be any entry in ledger
+
+'mark gl 11-01-2004
+
+'         If tmpSaleAmt <> 0 Then
+
+'            SQL = "select * FROM gl0001 WHERE ac_id = " & GL_Integ
+
+'            Set RSMastGL = FETCHALL(SQL)
+
+'            If RSMastGL.RecordCount > 0 Then
+
+'                 RSMastGL.Edit
+
+'                 RSMastGL!cbal = RSMastGL!cbal + tmpSaleAmt
+
+'                 RSMastGL!Tnot = RSMastGL!Tnot + 1
+
+'                 RSMastGL.Update
+
+'            End If
+
+'            RSMastGL.Close
+
+'         End If
+
+'      End If
+
+'*********************
+
+      '15 Append in Finished Ledger Table
+
+      FinLRS.AddNew
+
+      FinLRS!Item_ID = MItem_ID
+
+      FinLRS!doc_id = NewVoucherNo
+
+      FinLRS!doc_date = TxtDocDAte.Value
+
+      FinLRS!fiscal = MFiscal
+
+      FinLRS!Doc_Type_ID = cDoc_Type
+
+      FinLRS!serial_no = SerialCode
+
+      FinLRS!Qtydr = tmpQty
+
+      FinLRS!Qtycr = 0
+
+      ' Rate/Amount Should be Average ?
+
+      FinLRS!Rate = tmpRate
+
+      FinLRS!amtdr = tmpSaleAmt
+
+      FinLRS!amtcr = 0
+
+      FinLRS!desc = Left(Trim(TxtGPID) & ": " & Trim(TxtTitle), 40)
+
+      FinLRS.Update
+
+'*****************************
+
+      ' Append in General Ledger
+
+      ' In case cstaxtype = 0 Every sale has transaction Credit Entries
+
+      ' In Case Purchase every transaction is debited to purchase account
+
+      If cSTaxType = 0 Then
+
+         If tmpSaleAmt <> 0 Then
+
+            RsGL.AddNew
+
+            RsGL!Voucher_ID = NewVoucherNo
+
+            RsGL!book_id = cBookID
+
+            RsGL!vdate = TxtDocDAte.Value
+
+            RsGL!serial_no = SerialCode
+
+            RsGL!Serial_order = nCnt
+
+            RsGL!Ac_id = GL_Integ
+
+            RsGL!adcn = Trim(TxtGPID)
+
+            RsGL!Narration = " " & TmpTitle ' ? latter decide what to do/ Item Title
+
+            RsGL!debit = tmpSaleAmt
+
+            RsGL!credit = 0
+
+            RsGL!external_id = 0
+
+            RsGL!ref_id = 0
+
+            RsGL.Update
+
+         End If
+
+      End If
+
+    Next
+
+    Rs.Close
+
+    FinLRS.Close
+
+    RsGL.Close
+
+    ' Append in General Ledger if cStaxType = 1 sumed Entry
+
+
+
+    SQL = "SELECT * FROM gl0003"
+
+    Set RsGL = FetchAll(SQL)
+
+    ' Calculate Net Amount Debited to Customer
+
+    ' Calculate Net Amount Credited to Supplier
+
+    'Change cause FBR
+
+    'lNetInvoice = lTsale - (CDbl(LDiscount) + mDiscount) + lTSalesTax + mCharges
+
+    lNetInvoice = lTsale - (CDbl(LDiscount) + CDbl(LblOffInvDisc)) + lTSalesTax + mCharges
+
+     ' Purchase Account Dr
+
+    If cSTaxType = 1 Then
+
+        ' Purchase Import
+
+        If mSalesImportAmt > 0 Then
+
+            RsGL.AddNew
+
+            RsGL!Voucher_ID = NewVoucherNo
+
+            RsGL!book_id = cBookID
+
+            RsGL!vdate = TxtDocDAte.Value
+
+            RsGL!serial_no = SerialCode
+
+            RsGL!Serial_order = 1
+
+            RsGL!Ac_id = mCreditSalesImportId
+
+            RsGL!Narration = TxtTitle
+
+            RsGL!adcn = Trim(TxtGPID)
+
+            RsGL!debit = mSalesImportAmt
+
+            RsGL!credit = 0
+
+            RsGL!external_id = 0
+
+            RsGL!ref_id = 0
+
+            RsGL.Update
+
+         End If
+
+         ' purchase local
+
+        If mSalesLocalAmt > 0 Then
+
+            RsGL.AddNew
+
+            RsGL!Voucher_ID = NewVoucherNo
+
+            RsGL!book_id = cBookID
+
+            RsGL!vdate = TxtDocDAte.Value
+
+            RsGL!serial_no = SerialCode
+
+            RsGL!Serial_order = 2
+
+            'RsGL!ac_id = mCreditSalesLocalId
+
+            RsGL!Ac_id = mCreditSalesLocalId
+
+            RsGL!Narration = TxtTitle
+
+            RsGL!adcn = Trim(TxtGPID)
+
+            RsGL!debit = mSalesLocalAmt
+
+            RsGL!credit = 0
+
+            RsGL!external_id = 0
+
+            RsGL!ref_id = 0
+
+            RsGL.Update
+
+         End If
+
+        ' Sales Tax Cr
+
+        ' Sales Tax Receivable Dr
+
+        If lTSalesTax > 0 Then
+
+            RsGL.AddNew
+
+            RsGL!Voucher_ID = NewVoucherNo
+
+            RsGL!book_id = cBookID
+
+            RsGL!vdate = TxtDocDAte.Value
+
+            RsGL!serial_no = SerialCode
+
+            RsGL!Serial_order = 3
+
+            RsGL!Ac_id = mSalesTaxPayableId
+
+            RsGL!Narration = TxtTitle.Caption
+
+            RsGL!adcn = Trim(TxtGPID)
+
+            RsGL!debit = lTSalesTax
+
+            RsGL!credit = 0
+
+            RsGL!external_id = 0
+
+            RsGL!ref_id = 0
+
+            RsGL.Update
+
+        End If
+
+    End If ' cstaxtype = 1
+
+      ' Debit Entries/expenses
+
+      If Val(HLoading) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 4
+
+         RsGL!Ac_id = mCarriageId
+
+         RsGL!Narration = TxtTitle.Caption
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = CDbl(HLoading)
+
+         RsGL!credit = 0
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+      '
+
+      If Val(HCarriage) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 5
+
+         RsGL!Ac_id = mLoadingID
+
+         RsGL!Narration = TxtTitle.Caption
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = CDbl(HCarriage)
+
+         RsGL!credit = 0
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+      '
+
+      If Val(HOtherCharges) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 6
+
+         RsGL!Ac_id = mOtherChargesID
+
+         RsGL!Narration = TxtTitle.Caption
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = CDbl(HOtherCharges)
+
+         RsGL!credit = 0
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+    ' Customer Account Dr/Supplier Account Cr
+
+    If lNetInvoice <> 0 Then
+
+      RsGL.AddNew
+
+      RsGL!Voucher_ID = NewVoucherNo
+
+      RsGL!book_id = cBookID
+
+      RsGL!vdate = TxtDocDAte.Value
+
+      RsGL!serial_no = SerialCode
+
+      RsGL!Serial_order = 7
+
+      RsGL!Ac_id = Val(TxtID)
+
+      RsGL!Narration = "GRN No. " & str(NewVoucherNo)
+
+      RsGL!adcn = Trim(TxtGPID)
+
+      RsGL!debit = 0
+
+      RsGL!credit = lNetInvoice
+
+      RsGL!external_id = 0
+
+      RsGL!ref_id = 0
+
+      RsGL.Update
+
+    End If
+
+      ' Sales Account Cr
+
+    '    If mCharges > 0 Then
+
+    
+
+    
+
+    ' Discount Accounts Dr On Invoice
+
+    
+
+    If (mDiscount + CDbl(LDiscount)) > 0 Then
+
+      ' Credit Entries
+
+      'If Val(HDiscount) > 0 Then
+
+      If CDbl(HDiscount + CDbl(LDiscount.Caption)) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 8
+
+         RsGL!Ac_id = mDiscountID
+
+         RsGL!Narration = TxtTitle & " On Invoice."
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = 0
+
+         RsGL!credit = (CDbl(HDiscount) + CDbl(LDiscount.Caption))
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+      
+
+     ' Discount Accounts Dr OFF Invoice
+
+    
+
+      If CDbl(CDbl(LblOffInvDisc.Caption)) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 9
+
+         RsGL!Ac_id = mDiscountID
+
+         RsGL!Narration = TxtTitle & " Off Invoice."
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = 0
+
+         RsGL!credit = CDbl(LblOffInvDisc.Caption)
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+      
+
+      '
+
+      If Val(HClaim) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 10
+
+         RsGL!Ac_id = mClaimId
+
+         RsGL!Narration = TxtTitle
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = 0
+
+         RsGL!credit = CDbl(HClaim)
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+      '
+
+      If Val(HOtherDed) > 0 Then
+
+         RsGL.AddNew
+
+         RsGL!Voucher_ID = NewVoucherNo
+
+         RsGL!book_id = cBookID
+
+         RsGL!vdate = TxtDocDAte.Value
+
+         RsGL!serial_no = SerialCode
+
+         RsGL!Serial_order = 11
+
+         RsGL!Ac_id = mOtherDedID
+
+         RsGL!Narration = TxtTitle
+
+         RsGL!adcn = Trim(TxtGPID)
+
+         RsGL!debit = 0
+
+         RsGL!credit = CDbl(HOtherDed)
+
+         RsGL!external_id = 0
+
+         RsGL!ref_id = 0
+
+         RsGL.Update
+
+      End If
+
+    End If
+
+    '17 Integration with GL (Update GL Master Balance)
+
+    ' In case of Purchase Credit Supplier ID
+
+'mark gl shifted bellow 11-01-2004
+
+'    SQL = "select * FROM gl0001 WHERE ac_id = " & Val(txtID)
+
+'    Set RSMastGL = FETCHALL(SQL)
+
+'    If RSMastGL.RecordCount > 0 Then
+
+'        If T_Amount <> 0 Then
+
+'            RSMastGL.Edit
+
+'            RSMastGL!cbal = RSMastGL!cbal - T_Amount
+
+'            RSMastGL!Tnot = RSMastGL!Tnot + 1
+
+'            RSMastGL.Update
+
+'        End If
+
+'    End If
+
+'    RSMastGL.Close
+
+    
+
+' end new logic from invoice
+
+'******************************************************************
+
+    '18 Append Debit balance in GL Ledger (Customer transaction)
+
+    ' Read the newly prepared voucher from gl0003 and update the gl0001 table
+
+    ' 02-08-2003 new portion added. 11-01-2004 from gl_rm
+
+    Dim mTotalDebit, mTotalCredit As Double
+
+    SQL = "select * FROM gl0003 WHERE Serial_No = " & SerialCode
+
+    Set RsGL = FetchAll(SQL)
+
+    If Not (RsGL.EOF And RsGL.BOF) Then
+
+       RsGL.MoveFirst
+
+       DelDr = 0
+
+       DelCr = 0
+
+       Do While Not RsGL.EOF
+
+           DelAccountID = RsGL!Ac_id
+
+           DelDr = RsGL!debit
+
+           DelCr = RsGL!credit
+
+           mTotalDebit = mTotalDebit + DelDr
+
+           mTotalCredit = mTotalCredit + DelCr
+
+           SQL = "select * FROM gl0001 WHERE ac_id = " & DelAccountID
+
+           Set RSMAST = FetchAll(SQL)
+
+           If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+                'RSMAST.Edit
+
+                RSMAST!cbal = RSMAST!cbal + DelDr - DelCr
+
+                RSMAST!Tnot = RSMAST!Tnot + 1
+
+                RSMAST.Update
+
+           End If
+
+           RSMAST.Close
+
+           RsGL.MoveNext
+
+       Loop
+
+       RsGL.Close
+
+       
+
+       
+
+       If mTotalDebit <> mTotalCredit Then
+
+            MsgBox "total debit " & mTotalDebit & "  total credit " & mTotalCredit
+
+       End If
+
+       
+
+       
+
+    End If
+
+   Screen.MousePointer = vbDefault
+
+   
+
+   Dim HoldProd_id As Double
+
+   
+
+   If cFoundFlag = False Then
+
+        If MFiscal = "0" Then
+
+            MsgBox "New Document/Voucher Added. No. " & cDoc_Abbr & " " & str(NewVoucherNo), vbInformation, cSelFormId
+
+        Else
+
+            MsgBox "New Document/Voucher Added. No. " & cDoc_Abbr & " " & MFiscal & "-" & str(NewVoucherNo), vbInformation, cSelFormId
+
+        End If
+
+        
+
+        HoldProd_id = NewVoucherNo
+
+   Else
+
+        If MFiscal = "0" Then
+
+            MsgBox "Document/Voucher Edited. No. " & cDoc_Abbr & " " & TxtDocID.Text, vbInformation, cSelFormId
+
+        Else
+
+            MsgBox "Document/Voucher Edited. No. " & cDoc_Abbr & " " & MFiscal & "-" & TxtDocID.Text, vbInformation, cSelFormId
+
+        End If
+
+        HoldProd_id = CDbl(TxtDocID)
+
+   End If
+
+   
+
+   With Cmd
+
+    .ActiveConnection = Con
+
+    .CommandText = "DELETE * FROM FIN_PUR_D WHERE ITEM_ID = 0"
+
+    
+
+   End With
+
+      
+
+   
+
+   
+
+   
+
+   
+
+   Call VGridClear
+
+   Call clearform
+
+   
+
+   'Add new data
+
+   If cFoundFlag = False Then
+
+        If checkDetailData(HoldProd_id) = True Then
+
+            TxtDocID.Text = HoldProd_id
+
+            TxtDocID_Validate False
+
+            Call CmdSave_Click
+
+            MsgBox "Click the save button again.", vbOKOnly + vbInformation
+
+        Else
+
+            
+
+        End If
+
+        
+
+   Else
+
+        If checkDetailData(HoldProd_id) = True Then
+
+            TxtDocID.Text = HoldProd_id
+
+            TxtDocID_Validate False
+
+            MsgBox "Click the save button again.", vbOKOnly + vbInformation
+
+            Call CmdSave_Click
+
+        Else
+
+            
+
+        End If
+
+   End If
+
+   
+
+   'end new data
+
+   
+
+   
+
+
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

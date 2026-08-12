@@ -1,0 +1,92 @@
+Private Sub Command1_Click()
+
+    Dim conn As ADODB.Connection
+
+    Dim Cmd As ADODB.Command
+
+    Dim Rs As ADODB.Recordset
+
+    Dim startDate As Date
+
+    Dim endDate As Date
+
+    Dim strSQL As String
+
+    
+
+    ' Connect to the SQL Server database
+
+'    Set conn = New ADODB.Connection
+
+'    conn.connectionString = "your_connection_string"
+
+    'con.Open
+
+    
+
+    ' Calculate the start and end dates of the last week
+
+    startDate = DateAdd("ww", -1, TxtDocDAte.Value)
+
+    endDate = DateAdd("d", 6, startDate)
+
+    
+
+    ' Prepare the SQL query
+
+    strSQL = "EXEC CalculateWeeklyReorderLevel '" & Format(startDate, "yyyy-mm-dd") & "', '" & Format(endDate, "yyyy-mm-dd") & "'"
+
+    
+
+    ' Execute the stored procedure
+
+    Set Cmd = New ADODB.Command
+
+    With Cmd
+
+        .ActiveConnection = Con
+
+        .CommandText = strSQL
+
+        .CommandType = adCmdText
+
+        Set Rs = .Execute
+
+    End With
+
+    
+
+    ' Process the result set
+
+    Do While Not Rs.EOF
+
+        Debug.Print Rs.Fields("ITEM_ID").Value, Rs.Fields("TotalWeeklySales").Value, Rs.Fields("ReorderLevel").Value
+
+        Rs.MoveNext
+
+    Loop
+
+    
+
+    ' Clean up
+
+    Rs.Close
+
+    'conn.Close
+
+    Set Rs = Nothing
+
+    Set Cmd = Nothing
+
+    Set conn = Nothing
+
+End Sub
+
+
+
+
+
+
+
+
+

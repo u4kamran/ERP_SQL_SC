@@ -100,9 +100,12 @@ class ChatQuickReply(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=120)
     payload: str = Field(..., min_length=1, max_length=200)
-    style: Literal["chip", "item", "action"] = "chip"
-    subtitle: str = Field("", max_length=80)
+    style: Literal["chip", "item", "action", "cart"] = "chip"
+    subtitle: str = Field("", max_length=120)
     meta: str = Field("", max_length=40)
+    qty: float | None = None
+    line_index: int | None = None
+    unit_price: float | None = None
 
 
 class OfflineChatResponse(BaseModel):
@@ -139,6 +142,11 @@ class MobileOtpResponse(BaseModel):
     sent_via: str | None = None
     verified: bool = False
     dev_code: str | None = None
+
+
+class VoiceTranscribeResponse(BaseModel):
+    text: str
+    message: str = ""
 
 
 class StaffReplyRequest(BaseModel):

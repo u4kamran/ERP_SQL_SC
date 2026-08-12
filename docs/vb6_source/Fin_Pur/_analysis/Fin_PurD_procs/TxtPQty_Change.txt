@@ -1,0 +1,18 @@
+Private Sub TxtPQty_Change()
+
+On Error GoTo TrapError
+
+    If (txtPQty.Text) = "" Or (txtUnit.Text) = "" Then Exit Sub
+
+    TxtQty.Text = CDbl(txtUnit.Text) * CDbl(txtPQty.Text)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

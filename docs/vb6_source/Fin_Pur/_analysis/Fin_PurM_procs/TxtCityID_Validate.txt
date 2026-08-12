@@ -1,0 +1,38 @@
+Private Sub TxtCityID_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+ SQL = "SELECT * FROM City WHERE City_id = " & Val(TxtCityID)
+
+   Set RsDummy1 = FetchAll(SQL)
+
+   If Not (RsDummy1.EOF And RsDummy1.BOF) Then
+
+     ' Assign Values to Text/Controls
+
+     TxtCityTitle.Text = "" & IIf(IsNull(RsDummy1!City_Title), "not found", RsDummy1!City_Title)
+
+    Else
+
+        RsDummy1.Close
+
+        MsgBox "City ID not found...", vbInformation, "Address: City ID"
+
+        Cancel = True
+
+        Exit Sub
+
+    End If
+
+    RsDummy1.Close
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

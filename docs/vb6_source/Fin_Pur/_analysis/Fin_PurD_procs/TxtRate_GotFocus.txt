@@ -1,0 +1,18 @@
+Private Sub TxtRate_GotFocus()
+
+On Error GoTo TrapError
+
+    TxtRate.SelLength = Len(TxtRate)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+End Sub
+
+
+

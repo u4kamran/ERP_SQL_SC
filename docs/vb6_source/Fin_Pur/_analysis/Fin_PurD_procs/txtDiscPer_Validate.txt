@@ -1,0 +1,28 @@
+Private Sub txtDiscPer_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+'    If Val(txtDiscPer) = 0 Then
+
+'        txtDiscAmt.Enabled = True
+
+'    Else
+
+'        txtDiscAmt.Enabled = False
+
+'    End If
+
+    If txtDiscPer.Text = "" Then Exit Sub
+
+    Call Calc_Rate
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

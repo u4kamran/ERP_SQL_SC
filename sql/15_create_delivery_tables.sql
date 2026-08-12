@@ -1,6 +1,7 @@
--- Delivery-management tables for the nsds2626 business database.
+-- Delivery-management tables for the business database (ERP or ARP).
 -- SQL Server 2008 compatible and safe to rerun.
 -- This script does not alter the legacy FIN_INV_M or CUST_SMS table structures.
+-- setup_delivery_module.py rewrites USE [...] to BUSINESS_DB_NAME before running.
 USE [nsds2626];
 GO
 

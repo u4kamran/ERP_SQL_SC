@@ -1,0 +1,46 @@
+Private Sub TxtRate_KeyDown(Keycode As Integer, Shift As Integer)
+
+On Error GoTo errhandler
+
+Dim Rs As New ADODB.Recordset
+
+    If Keycode = 113 Then ' F2
+
+        Screen.MousePointer = vbHourglass
+
+            If Me.Height <= 4560 Then
+
+                Me.Height = 8250 '11955
+
+                Me.Left = (Screen.Width - Me.Width) / 2
+
+                Me.Top = (Screen.Height - Me.Height) / 2
+
+            Else
+
+                Me.Height = 4560
+
+                Me.Left = (Screen.Width - Me.Width) / 2
+
+                Me.Top = (Screen.Height - Me.Height) / 2
+
+                
+
+            End If
+
+    End If
+
+Exit Sub
+
+errhandler:
+
+    MsgBox Err.Description, vbInformation, cSelFormId
+
+    Err.Clear
+
+
+
+End Sub
+
+
+

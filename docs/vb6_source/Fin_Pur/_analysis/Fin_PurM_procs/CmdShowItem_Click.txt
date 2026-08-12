@@ -1,0 +1,118 @@
+Private Sub CmdShowItem_Click()
+
+On Error GoTo TrapError
+
+Dim cSQL As String
+
+Dim Rss As New ADODB.Recordset
+
+
+
+If grd(0).Visible = False Then
+
+    grd(0).Visible = True
+
+    CmdShowItem.Caption = "Hide Items"
+
+    cmdPrintGrid.Enabled = True
+
+    With grd(0)
+
+        .Cols = 8
+
+        .TextMatrix(0, 0) = "Supplier"
+
+        .ColWidth(0) = 1900
+
+        .TextMatrix(0, 1) = "Manual ID"
+
+        .ColWidth(1) = 1000
+
+        .TextMatrix(0, 2) = "Item Title"
+
+        .ColWidth(2) = 3000
+
+        .TextMatrix(0, 3) = "TNOT"
+
+        .ColWidth(3) = 800
+
+        .TextMatrix(0, 4) = "Stock"
+
+        .ColWidth(4) = 1000
+
+        .TextMatrix(0, 5) = "Cost Rate"
+
+        .ColWidth(5) = 1000
+
+        .TextMatrix(0, 6) = "Sales Rate"
+
+        .ColWidth(6) = 1000
+
+        .TextMatrix(0, 7) = "Item ID"
+
+        .ColWidth(7) = 0
+
+        
+
+    End With
+
+    
+
+    cSQL = "select ac_title, manualid, ITEM_TITLE, TNOT, CQTY, COST_RATE, SALES_RATE,item_id from V_FIN_STOCK_SUPPLIER where supplier_id = " & TxtID.Text
+
+    'grd(0).LoadArray FetchAll("select * from v_fin_stock_supplier where supplier_id = " & TxtID.Text).GetRows
+
+    With Rss
+
+        Set Rss = FetchAll(cSQL)
+
+        If Not Rss.EOF Then
+
+'        If Not .RecordCount <= 0 Then
+
+            grd(0).LoadArray Rss.GetRows
+
+            If Not MsgBox("Print Report, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+
+                Exit Sub
+
+            Else
+
+                Call grd(0).PrintGrid(, , , 0.5, 1)
+
+            End If
+
+    
+
+        End If
+
+        
+
+    End With
+
+Else
+
+    grd(0).Visible = False
+
+    CmdShowItem.Caption = "Show Items"
+
+    cmdPrintGrid.Enabled = False
+
+End If
+
+'    Rss.Close
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+End Sub
+
+
+
+
+

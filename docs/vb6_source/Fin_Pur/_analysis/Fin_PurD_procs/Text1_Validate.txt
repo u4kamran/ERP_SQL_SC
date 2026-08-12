@@ -1,0 +1,54 @@
+Private Sub Text1_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+    Dim Rs As New ADODB.Recordset
+
+    Dim cSQL As String
+
+    If Val(Text1.Text) = 0 Or Len(Text1.Text) = 0 Then Exit Sub
+
+    With Rs
+
+'        .Open "select * from v_fin_item where manualid = " & CDbl(Text1), Con, adOpenKeyset, adLockPessimistic
+
+        cSQL = "select * from v_fin_item where manualid = " & CDbl(Text1)
+
+        Set Rs = FetchAll(cSQL)
+
+        If Not (Rs.EOF And Rs.BOF) Then
+
+            TxtID.Text = Rs!Item_ID
+
+            txtUnit.Text = Rs!visacard_rate
+
+            Call TxtID_Validate(False)
+
+'            TxtOQty.SetFocus
+
+        Else
+
+            MsgBox "Manual ID not found."
+
+        End If
+
+        Rs.Close
+
+    End With
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+
+
+
+
+

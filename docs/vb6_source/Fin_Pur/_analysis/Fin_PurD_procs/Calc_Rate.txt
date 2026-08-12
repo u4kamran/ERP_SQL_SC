@@ -1,0 +1,202 @@
+Private Sub Calc_Rate()
+
+On Error GoTo TrapError
+
+    If Val(TxtRate) = 0 And cAudit = 0 Then
+
+        MsgBox "Invalid:  Please enter Rate ...  ", vbInformation, "Purchase Receipt"
+
+        Exit Sub
+
+    End If
+
+    If Val(TxtQty) = 0 Then
+
+        MsgBox "Invalid:  Please enter Quantity ...  ", vbInformation, "Purchase Receipt"
+
+        Exit Sub
+
+    End If
+
+    'mPurAmount = Int(Val(TxtRate) * Val(TxtQty) + 0.5)
+
+    mPurAmount = (Val(TxtRate) * Val(TxtQty))
+
+    mTaxAmount = 0
+
+    TxtAmount.Caption = Format(mPurAmount, "#########.00")
+
+    
+
+    If Val(TxtRate) <> 0 Then
+
+        If Val(txtDiscPer) > 0 And mPurAmount <> 0 Then
+
+        'mDiscAmount = ((mPurAmount + mTaxAmount) * Val(txtDiscPer) / 100)
+
+            
+
+            'tmp close KAM
+
+           ' mDiscAmount = ((mPurAmount * Val(txtDiscPer) / 100))
+
+             mDiscAmount = Val(txtDiscAmt)
+
+             txtDiscPer = Format((Val(txtDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+
+            
+
+        Else
+
+            mDiscAmount = Val(txtDiscAmt)
+
+            txtDiscPer = Format((Val(txtDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+
+        End If
+
+        If Val(txtDiscPer) = 0 And mPurAmount <> 0 Then
+
+            'txtDiscPer.Text = (Val(txtDiscAmt.Text) / mPurAmount) * 100
+
+        End If
+
+    End If
+
+    
+
+    
+
+    'Stax Calculations Temporary Disable
+
+    If Val(TxtRate) <> 0 Then
+
+      If Val(TxtStaxRate) > 0 And mPurAmount <> 0 Then
+
+          'mTaxAmount = Int(mPurAmount * Val(TxtStaxRate) / 100 + 0.5)
+
+          'gross amt - discount
+
+'           TxtStaxRate = Abs(Val(TxtStaxAmount) / Val(mPurAmount) * 100)
+
+           'KAM
+
+          'mTaxAmount = ((mPurAmount - mDiscAmount) * Val(TxtStaxRate) / 100)
+
+          mTaxAmount = Format(Val(TxtStaxAmount), "#########.#0")
+
+'
+
+      Else
+
+          mTaxAmount = Format(Val(TxtStaxAmount), "#########.#0")
+
+'          TxtStaxRate = Abs(Val(TxtStaxAmount) / Val(mPurAmount) * 100)
+
+      End If
+
+    End If
+
+    'End Tax Calcualation
+
+    
+
+    'Off Invoice Discount Calculation
+
+    If Val(TxtRate) <> 0 Then
+
+        If Val(TxtOffInvDiscPer) > 0 And mPurAmount <> 0 Then
+
+        'mDiscAmount = ((mPurAmount + mTaxAmount) * Val(txtDiscPer) / 100)
+
+            
+
+            'tmp close KAM
+
+           ' mDiscAmount = ((mPurAmount * Val(txtDiscPer) / 100))
+
+             mDiscOffInvAmt = Format(Val(txtOffInvDiscAmt), "#########.#0")
+
+             TxtOffInvDiscPer = Format((Val(txtOffInvDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+
+            
+
+        Else
+
+            mDiscOffInvAmt = Format(Val(txtOffInvDiscAmt), "#########.#0")
+
+            TxtOffInvDiscPer = Format((Val(txtOffInvDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+
+        End If
+
+        If Val(txtDiscPer) = 0 And mPurAmount <> 0 Then
+
+            'txtDiscPer.Text = (Val(txtDiscAmt.Text) / mPurAmount) * 100
+
+        End If
+
+    End If
+
+    
+
+    
+
+    '
+
+'    TxtStaxAmount.Text = Format(mTaxAmount, "#########.#0")
+
+'    txtDiscAmt.Text = Format(mDiscAmount, "#########.#0")
+
+
+
+    
+
+    
+
+    
+
+    mInclAmount = mPurAmount + mTaxAmount - mDiscAmount
+
+    
+
+    
+
+    
+
+    lblExcludAmt = Format(mPurAmount - mDiscAmount, "#########.#0")
+
+    
+
+    mOffInvIncludedAmt = Format(CDbl(lblExcludAmt) + mTaxAmount, "#########.#0")
+
+    
+
+    LblOffInvIncludedAmt = Format(mOffInvIncludedAmt, "#########.#0")
+
+    
+
+    LblIncludedAmount.Caption = Format(mInclAmount, "#########.00") - mDiscOffInvAmt
+
+    
+
+    If mPurAmount > 0 Then
+
+        txtNetCost.Text = Format(((mPurAmount - mDiscAmount - mDiscOffInvAmt) / Val(TxtQty)), "#########.00")
+
+        
+
+    End If
+
+    
+
+    
+
+    
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

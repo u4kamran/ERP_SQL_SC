@@ -47,8 +47,10 @@ SKIP_FILE_NAMES = {
 }
 
 # Per-site tunnel credentials — never overwrite ARP config from ERP.
+# Note: when copying deploy/, paths are relative to deploy/ (not repo root).
 SKIP_REL_PATHS = {
     Path("deploy/cloudflared/config.yml"),
+    Path("cloudflared/config.yml"),
 }
 
 SKIP_REL_PREFIXES = ("cloudflared/bin",)

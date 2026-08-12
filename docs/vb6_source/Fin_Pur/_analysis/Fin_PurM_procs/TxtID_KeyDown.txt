@@ -1,0 +1,22 @@
+Private Sub TxtID_KeyDown(Keycode As Integer, Shift As Integer)
+
+On Error GoTo errhandler
+
+    If Keycode = 113 Then
+
+        Call TxtID_DblClick
+
+    End If
+
+Exit Sub
+
+errhandler:
+
+    MsgBox Err.Description, vbInformation, cSelFormId
+
+    Err.Clear
+
+End Sub
+
+
+

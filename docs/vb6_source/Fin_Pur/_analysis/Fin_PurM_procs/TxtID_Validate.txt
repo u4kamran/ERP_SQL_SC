@@ -1,0 +1,158 @@
+Private Sub TxtID_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+   If Val(TxtID) = 0 Then
+
+        CmdAddTrans.Enabled = False
+
+        TxtID.SetFocus
+
+        Exit Sub
+
+   Else
+
+        CmdAddTrans.Enabled = True
+
+        CmdShowAddr.Enabled = True
+
+        CmdDiscount.Enabled = True
+
+   End If
+
+   Screen.MousePointer = vbHourglass
+
+   SQL = "SELECT * FROM gl0006 WHERE Vendor_id = " & Val(TxtID)
+
+   Set Rs = FetchAll(SQL)
+
+   If Not (Rs.EOF And Rs.BOF) Then
+
+      TxtTitle.Caption = "" & Rs!Vendor_Title
+
+      TxtDesc.Text = "" & Rs!Vendor_Title
+
+      TxtAddress.Text = "" & Rs!Address
+
+      TxtStaxID.Text = "" & Rs!stax_id
+
+      TxtCityID.Text = Rs!city_id
+
+      If Rs!tag_1 = 0 Then
+
+            LblRegistration.Caption = "Registered"
+
+            If cSTaxType = 1 Then
+
+               cSalesTaxRate = mRegStaxRate
+
+            End If
+
+      Else
+
+            If Rs!tag_1 = 1 Then
+
+               LblRegistration.Caption = "Un-Registered"
+
+               If cSTaxType = 1 Then
+
+                  cSalesTaxRate = mUnRegStaxRate
+
+               End If
+
+            Else
+
+               LblRegistration.Caption = "Other"
+
+               If cSTaxType = 1 Then
+
+                  cSalesTaxRate = 0
+
+               End If
+
+            End If
+
+
+
+'            LblRegistration.Caption = "Un-Registered"
+
+'            If cSTaxType = 1 Then
+
+'               cSalesTaxRate = mUnRegStaxRate
+
+'            End If
+
+      End If
+
+      ' *****************************
+
+        If Len(TxtTitle.Caption) = 0 Then
+
+            MsgBox "Invalid Supplier ID.", vbCritical
+
+            CmdAddTrans.Enabled = False
+
+            CmdShowAddr.Enabled = False
+
+            CmdDiscount.Enabled = False
+
+            TxtID.SetFocus
+
+            Rs.Close
+
+            Screen.MousePointer = vbDefault
+
+        End If
+
+      ' *****************************
+
+       ' Add recordset for city title
+
+        SQL = "SELECT * FROM City WHERE City_id = " & Val(TxtCityID)
+
+        Set RsDummy1 = FetchAll(SQL)
+
+        If Not (RsDummy1.EOF And RsDummy1.BOF) Then
+
+          ' Assign Values to Text/Controls
+
+          TxtCityTitle.Text = "" & IIf(IsNull(RsDummy1!City_Title), "not found", RsDummy1!City_Title)
+
+         Else
+
+             RsDummy1.Close
+
+             TxtCityTitle.Text = "ID not found..."
+
+         End If
+
+         RsDummy1.Close
+
+    Else
+
+        Screen.MousePointer = vbNormal
+
+        Rs.Close
+
+        MsgBox "Supplier ID not found... ", vbInformation, "Purchase Receipt: Supplier ID"
+
+        Cancel = True
+
+        Exit Sub
+
+    End If
+
+    Rs.Close
+
+    Screen.MousePointer = vbDefault
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

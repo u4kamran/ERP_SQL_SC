@@ -1,0 +1,182 @@
+Private Sub CmdDelete_Click()
+
+On Error GoTo TrapError
+
+   '05 Reverse Balance From Inventory
+
+   If cFoundFlag = True Then
+
+   
+
+     If Not Mid(Trim(cUPwordStr), 5, 1) = 1 Then
+
+         MsgBox "Acess denied contact with administrator.", vbOKOnly + vbInformation, "System message"
+
+         'Cancel = True
+
+         Exit Sub
+
+     End If
+
+
+
+     If Not MsgBox("Discarding voucher, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+
+         Exit Sub
+
+     End If
+
+    
+
+    
+
+      
+
+      Screen.MousePointer = vbHourglass
+
+      SQL = "select * FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+
+      Set SQLDel = FetchAll(SQL)
+
+      If Not (SQLDel.EOF And SQLDel.BOF) Then
+
+            TDel_Amount = 0
+
+            Do While Not SQLDel.EOF
+
+                DelItemID = SQLDel!Item_ID
+
+                tmpQty = SQLDel!Qty
+
+                tmpAmt = SQLDel!pur_Amt
+
+                TDel_Amount = TDel_Amount + tmpAmt
+
+                SQL = "select * FROM fin_item WHERE item_id = " & DelItemID
+
+                Set RSMAST = FetchAll(SQL)
+
+                If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+                     GL_Integ = RSMAST!gl_pur_id
+
+                     'RSMAST.Edit
+
+                     RSMAST!Cqty = RSMAST!Cqty - tmpQty
+
+                     RSMAST!CAMT = RSMAST!CAMT - tmpAmt
+
+                     RSMAST!Tnot = RSMAST!Tnot - 1
+
+                     RSMAST!Tnot1 = 0
+
+                     RSMAST.Update
+
+                End If
+
+                RSMAST.Close
+
+                SQLDel.MoveNext
+
+            Loop
+
+        End If
+
+        '*****************************************************
+
+        '07 Start Reverse GL From GL Master Table
+
+        Dim DelDr, DelCr, DelAccountID As Double
+
+        SQL = "select * FROM gl0003 WHERE Serial_No = " & SerialCode
+
+        Set RsGL = FetchAll(SQL)
+
+        If Not (RsGL.EOF And RsGL.BOF) Then
+
+            RsGL.MoveFirst
+
+            DelDr = 0
+
+            DelCr = 0
+
+            Do While Not RsGL.EOF
+
+                DelAccountID = RsGL!Ac_id
+
+                DelDr = RsGL!debit
+
+                DelCr = RsGL!credit
+
+                SQL = "select * FROM gl0001 WHERE ac_id = " & DelAccountID
+
+                Set RSMAST = FetchAll(SQL)
+
+                If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+                     'RSMAST.Edit
+
+                     RSMAST!cbal = RSMAST!cbal - DelDr + DelCr
+
+                     RSMAST!Tnot = RSMAST!Tnot - 1
+
+                     RSMAST.Update
+
+                End If
+
+                RSMAST.Close
+
+                RsGL.MoveNext
+
+            Loop
+
+            RsGL.Close
+
+        End If
+
+         '*****************************************************
+
+         SQLDel.Close
+
+         '08 Delete Old Transactions from Detail Inventory Table ?
+
+         SQL = "DELETE FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+
+         Con.Execute SQL
+
+         SQL = "DELETE FROM Fin_Pur_m WHERE prod_id = " & Val(TxtDocID) & " and Serial_No = " & SerialCode
+
+         Con.Execute SQL
+
+         SQL = "DELETE FROM fin_ldgr WHERE doc_id = " & Val(TxtDocID) & " and Serial_No = " & SerialCode & " and doc_type_id = " & cDoc_Type
+
+         Con.Execute SQL
+
+         'see 14A 2-8-2001 09 Delete Old Transactions GL
+
+         SQL = "DELETE FROM gl0003 WHERE Serial_No = " & SerialCode & " and book_id = " & cBookID & " and voucher_id = " & Val(TxtDocID)
+
+         Con.Execute SQL
+
+         SQL = "DELETE FROM gl0002 WHERE Serial_No = " & SerialCode & " and book_id = " & cBookID & " and voucher_id = " & Val(TxtDocID)
+
+         Con.Execute SQL
+
+         Screen.MousePointer = vbDefault
+
+         MsgBox "Document ID: " & TxtDocID & "  has been deleted... "
+
+         Call clearform
+
+  End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

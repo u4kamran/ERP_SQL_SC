@@ -1,0 +1,20 @@
+Private Sub CmdDelete_Click()
+
+On Error GoTo TrapError
+
+     Screen.MousePointer = vbHourglass
+
+     Screen.MousePointer = vbDefault
+
+     Call clearform
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

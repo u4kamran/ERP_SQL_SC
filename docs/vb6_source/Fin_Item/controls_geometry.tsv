@@ -1,0 +1,128 @@
+Top	Left	Kind	Name	Width	Height	TabIndex	Caption	Font	Size
+15	30	Label	Line1	7950	30	67			
+30	0	Label	Line2	8010	495	99	Item Info	Arial Black	15.75
+225	1020	TextBox	TxtMin_Level1	1665	315	92			
+225	3945	TextBox	TxtMax_Level1	1665	315	93			
+285	45	Label	Label32	945	195	95	Min. Level :		
+285	2955	Label	Label33	945	195	94	Max. Level :		
+360	-69645	CommandButton	cmdOpening	1770	315	128	Opening Bal		
+420	-72000	Label	TxtGLSalesTitle	4620	315	62	General Ledger Sales Title		
+465	-73185	Label	TxtSOQty	1755	315	41			
+525	-74625	Label	LblGLSalesID	945	195	58	GL Sales ID :		
+525	-74535	Label	Label37	1320	195	39	Opening Quantity :		
+540	30	Label	Line3	7950	30	98			
+585	1020	TextBox	TxtRO_Qty1	1665	315	90			
+585	3945	TextBox	TxtCritical_Level1	1665	315	91			
+600	15	Label	Label4	1245	300	100	Status	MS Sans Serif	9.75
+600	1275	Label	LblStatus	1245	300	101	Ready	MS Sans Serif	9.75
+600	2535	Label	Label1	1245	300	103	Records	MS Sans Serif	9.75
+600	3795	Label	TxtRecCount	1245	300	102	000	MS Sans Serif	9.75
+600	5055	Label	Label2	1245	300	66	Last ID	MS Sans Serif	9.75
+600	6315	Label	TxtLastID	1680	300	65	000000	MS Sans Serif	9.75
+607	3945	CheckBox	chkPromotion	1665	270	129	Promotion		
+645	45	Label	Label30	945	195	97	&Reorder :		
+645	2955	Label	Label31	945	195	96	Critital Level :		
+720	-69645	Label	TxtOValue	1770	315	47			
+735	-73620	TextBox	TxtGLSalesID	1575	315	33			
+765	-73185	Label	TxtOQty	1770	315	50			
+780	-71325	Label	Label16	1650	195	53	Opening Values :		
+795	-72000	Label	TxtGLPurTitle	4620	315	45	General Ledger Purchase Title		
+825	-74610	Label	Label15	1395	195	54	Opening Quantity :		
+840	-73185	Label	TxtSCQty	1755	315	42			
+855	-74490	Label	Label20	795	195	46	GL Pur ID :		
+900	-74535	Label	Label36	1320	195	40	Current Quantity :		
+1050	1395	TextBox	TxtID	1665	315	106			
+1050	3090	Label	TxtTitle	4710	315	118	Item Title	Microsoft Sans Serif	8.25
+1080	-69645	Label	TxtCValue	1770	315	48			
+1110	-73620	TextBox	TxtGLPurID	1575	315	29			
+1110	-73185	Label	TxtCQty	1770	315	49			
+1110	735	Label	LblItem	600	195	104	&Item ID :		
+1140	-72000	Label	TxtGLConsTitle	4620	315	61	General Ledger Consumption Title		
+1140	-71325	Label	Label18	1650	195	51	Current Values :		
+1170	-74610	Label	Label17	1395	195	52	Current Quantity :		
+1230	-74610	Label	Label24	915	195	57	GL Cons ID :		
+1395	1395	TextBox	TxtShortName	1665	315	80			
+1395	5175	TextBox	TxtOEM	2625	315	0			
+1455	-73620	TextBox	TxtGLConsID	1575	315	32			
+1455	405	Label	Label5	930	195	105	Short Name :		
+1455	3840	Label	Label6	1305	195	107	OEM/Part/Brand :		
+1470	-73185	Label	TxtAverageCost	1770	315	36			
+1470	-69645	Label	lblLastPurPer	1770	315	38			
+1485	-72000	Label	TxtGLDiscTitle	4620	315	60	General Ledger Discount Title		
+1530	-74610	Label	Label19	1395	195	35	Average Cost :		
+1530	-71325	Label	Label35	1650	195	37	Last Pur % age :		
+1575	-74865	Label	Label25	1185	195	56	GL Discount ID :		
+1755	1395	TextBox	txtManualID	1665	315	87			
+1755	5175	TextBox	txtBarcodeID	2625	315	2			
+1800	-73620	TextBox	TxtGLDiscID	1575	315	31			
+1800	3105	CheckBox	chkFocusManBar	1080	270	124	Set Focus		
+1815	510	Label	Label3	825	195	117	Man&ual ID :		
+1815	4245	Label	Label28	900	195	1	&Barcode ID :		
+1830	-72000	Label	TxtGLStaxTitle	4620	315	59	General Ledger Sales Tax Title		
+1905	-74655	Label	Label26	975	195	55	GL S-Tax ID :		
+1965	-69645	TextBox	TxtSTaxUnReg	1770	315	27			
+1995	-73185	TextBox	TxtSTaxReg	1770	300	28			
+2040	-71325	Label	Label22	1650	195	43	Sales Tax Un-Reg.  % :		
+2055	-74610	Label	Label21	1395	195	44	Sales Tax Reg. %  :		
+2100	1395	TextBox	TxtUOMID	1665	315	82			
+2100	3105	Label	TxtUOMTitle	555	330	110	Unit		
+2115	5175	TextBox	txtWSBarcodeid	2625	315	3			
+2145	-73620	TextBox	TxtGLStaxID	1575	315	30			
+2160	405	Label	Label7	930	195	108	UOM ID :		
+2175	3930	Label	Label38	1215	195	119	&WS Barcode ID :		
+2295	-75000	CommandButton	cmdPrintRail	1125	270	72	Pri&nt Rail 		
+2295	-73830	CommandButton	cmdRailCardSM	1125	270	73	Pri&nt Rail SM		
+2295	-72120	CheckBox	chkBarPrint	675	270	127	Prin&t		
+2295	-70815	CommandButton	CmdPrnDesExp	1125	270	71	Pri&nt Des Exp		
+2295	-69645	CommandButton	CmdPrnDes	1125	270	70	Pri&nt Desc	Calibri	9.75
+2295	-68250	CommandButton	cmdPrnLabel	1125	270	69	Print Lab&el		
+2422	4455	TextBox	TxtCountryID	720	330	4			
+2422	5175	Label	LblCountryTitle	2625	330	63	Country of Origin		
+2430	1395	ComboBox	CboNature	1665	315	84			
+2490	3465	Label	Label27	945	195	116	Country :		
+2775	1395	TextBox	TxtMin_Level	1665	315	85			
+2775	4455	TextBox	TxtMax_Level	1665	315	5			
+2835	405	Label	Label11	930	195	112	Min. Level :		
+2835	3465	Label	Label10	945	195	111	Max. Level :		
+3135	1395	TextBox	TxtRO_Qty	1665	315	86			
+3135	4455	TextBox	TxtCritical_Level	1665	315	6			
+3150	6150	CheckBox	ChkEDStatus	1665	270	7	Item Disabled		
+3195	405	Label	Label13	930	195	114	&Reorder :		
+3195	3465	Label	Label12	945	195	113	Critital Level :		
+3465	1395	Frame	Frame1	5685	960	89	Store Stock Levels		
+4410	8460	CheckBox	chkCommission	1770	270	26	Commission Allowed		
+4440	1395	TextBox	TxtCost_Price	1395	315	77			
+4440	2790	Label	lblProfitPer	690	315	120	%		
+4440	4455	TextBox	TxtSales_Price	1395	315	79			
+4455	6690	TextBox	txtWSPrice	1125	315	83			
+4500	525	Label	Label8	810	195	109	C&ost Price :		
+4500	3525	Label	Label14	885	195	115	Sa&les Price :		
+4515	5985	Label	Label34	690	195	8	W.S Price :		
+4770	1395	TextBox	txtCostWOGST	1395	315	78			
+4770	4455	TextBox	TxtSalesPWoGST	1395	315	81			
+4770	6690	TextBox	txtTPRate	1125	315	122			
+4830	225	Label	Label41	1110	195	74	Cost &WO GST :		
+4830	2895	Label	Label43	1515	195	121	Sale Price WO GST :		
+4860	5985	Label	Label44	690	195	123	TP Rate :		
+5085	1395	TextBox	txtSavedCost_price	1395	315	125			
+5085	4455	TextBox	TxtMarket_Price	1395	315	10			
+5085	6690	TextBox	txtGST	1125	315	75			
+5145	15	Label	Label45	1320	195	126	Saved C&ost Price :		
+5145	3420	Label	Label40	990	195	9	Market &Price :		
+5175	5985	Label	Label42	690	195	76	GST Amt :		
+5392	1395	TextBox	TxtRemarks	1395	330	12			
+5400	4455	TextBox	txtVisaCardRate	1395	315	14			
+5400	6690	TextBox	txtNoOf	1125	315	88			
+5460	405	Label	Label9	930	195	11	Remarks :		
+5460	3225	Label	Label29	1185	195	13	Unit of Packing :		
+5460	5985	Label	Label39	690	195	15	No of Pur :		
+5745	1395	TextBox	TxtCo	720	315	17			
+5745	2160	Label	LblCoTitle	5760	315	64	Title of Company		
+5805	405	Label	Label23	930	195	16	Company :		
+8790	45	CommandButton	CmdSave	1125	375	19	&Save		
+8790	1185	CommandButton	CmdClear	1125	375	20	Clea&r		
+8790	2325	CommandButton	CmdDelete	1125	375	21	&Delete		
+8790	3450	CommandButton	CmdCategory	1125	375	22	Cate&gory		
+8790	4560	CommandButton	CmdView	1125	375	23	&View ID		
+8790	5685	CommandButton	CmdManual	1125	375	24	&Manual		
+8790	6825	CommandButton	CmdClose	1125	375	25	&Close		

@@ -1,0 +1,166 @@
+Private Sub Form_KeyDown(Keycode As Integer, Shift As Integer)
+
+On Error GoTo errhandler
+
+    If Keycode = vbKeyF5 Then ' F3
+
+        Dim X As Integer
+
+        
+
+        If MsgBox("Do you want to take a print :  are you sure ? ", vbInformation + vbYesNo, "Item Setup") = vbYes Then
+
+        
+
+            If MsgBox("Do you want to hide price :  are you sure ? ", vbInformation + vbYesNo, "Item Setup") = vbYes Then
+
+                PrintPriceZero = True
+
+            Else
+
+                PrintPriceZero = False
+
+            End If
+
+                
+
+                SQL = "select * from v_fin_item where item_id = " & TxtID.Text
+
+                cSelcriteria = SQL
+
+                'LstInvStore_short_PrnDesc.Show vbModal, Me
+
+                'Exit Sub
+
+                
+
+                
+
+'                txtNoOf = TxtQty.Text
+
+                
+
+'                For X = 1 To txtNoOf
+
+                
+
+                    With LstInvStore_short_PrnDesc
+
+                           .ARC.Refresh
+
+                           .Refresh
+
+                            .ARC.Connection = Con
+
+                            .ARC.Source = cSelcriteria
+
+                '           .ARC.DatabaseName = cAppDb_ID
+
+                '           .ARC.RecordSource = cSelcriteria
+
+                '           .MCName = cName
+
+                '           .Caption = cReportTitle
+
+                '           .Printer.PaperSize = 6
+
+                           .PageSettings.BottomMargin = 0 ' 1 inch bottom margin
+
+                           .PageSettings.TopMargin = 0 ' 1 inch top margin
+
+                           .PageSettings.LeftMargin = 0 '150 ' ½ inch left margin
+
+                           .PageSettings.RightMargin = 0 ' ½ inch right margin
+
+                            .PageSettings.PaperWidth = 2163 '72.1
+
+                            .PageSettings.PaperHeight = 1617 '10276
+
+                            '.PageSettings.PaperWidth = 72.1
+
+                            '.PageSettings.PaperHeight = 10276
+
+                           ' Printing Orientation Portrait/Landscape
+
+                           ''iOrientationSav = Printer.Orientation
+
+                           .Printer.Orientation = ddOPortrait
+
+                           .Printer.Copies = Val(TxtQty.Text)
+
+                           .PrintReport False
+
+                    End With
+
+                    Set LstInvStore_short_PrnDesc = Nothing
+
+'                Next
+
+        Else
+
+            
+
+            
+
+                    
+
+            If MsgBox("Do you want to hide price :  are you sure ? ", vbInformation + vbYesNo, "Item Setup") = vbYes Then
+
+                PrintPriceZero = True
+
+            Else
+
+                PrintPriceZero = False
+
+            End If
+
+            
+
+            SQL = "select * from v_fin_item where item_id = " & TxtID.Text
+
+            cSelcriteria = SQL
+
+    
+
+            With LstInvStore_short_PrnDesc
+
+                .PageSettings.PaperWidth = 2163 '72.1
+
+                .PageSettings.PaperHeight = 1617 '10276
+
+            End With
+
+            LstInvStore_short_PrnDesc.Show vbModal, Me
+
+        
+
+        End If
+
+        
+
+    End If
+
+'
+
+'    If KeyCode = 114 Then ' F3
+
+'        Call LblItem_Click
+
+'    End If
+
+'    If KeyCode = 113 Then ' F2
+
+'        Call TxtID_DblClick
+
+'    End If
+
+Exit Sub
+
+errhandler:
+
+    MsgBox Err.Description, vbInformation, cSelFormId
+
+    Err.Clear
+
+End Sub
+

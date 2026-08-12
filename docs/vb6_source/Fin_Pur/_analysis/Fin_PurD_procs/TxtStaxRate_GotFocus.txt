@@ -1,0 +1,16 @@
+Private Sub TxtStaxRate_GotFocus()
+
+On Error GoTo TrapError
+
+    TxtStaxRate.SelLength = Len(TxtStaxRate)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

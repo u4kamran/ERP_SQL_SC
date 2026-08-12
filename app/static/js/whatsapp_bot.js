@@ -51,7 +51,11 @@ async function loadStatus() {
         document.getElementById('st-chats').textContent = status.conversation_count;
         document.getElementById('st-unread').textContent = status.unread_total;
         document.getElementById('st-orders').textContent = status.pending_orders ?? 0;
-        document.getElementById('config-hint').textContent = status.configuration_hint;
+        const hint = document.getElementById('config-hint');
+        hint.textContent = status.configuration_hint;
+        hint.className = status.whatsapp_configured && status.online_mode
+            ? 'alert alert-success py-2 small'
+            : 'alert alert-warning py-2 small';
         document.getElementById('webhook-url').textContent = status.webhook_url;
     } catch (error) {
         Auth.showAlert('wa-bot-alert', error.message, 'danger');

@@ -1,0 +1,20 @@
+Private Sub TxtID_DblClick()
+
+On Error GoTo TrapError
+
+  cSQLId = "VENDID"
+
+  cSelFormId = "Fin_PurM"
+
+  frmLookUp.Show vbModal, Me
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

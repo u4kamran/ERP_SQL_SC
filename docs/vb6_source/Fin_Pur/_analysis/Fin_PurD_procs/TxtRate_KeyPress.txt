@@ -1,0 +1,58 @@
+Private Sub TxtRate_KeyPress(KeyAscii As Integer)
+
+On Error GoTo TrapError
+
+
+
+
+
+
+
+If KeyAscii = 27 Then
+
+               Unload Me
+
+        End If
+
+    KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+''        Dim strvalid As String
+
+''        strvalid = "0123456789."
+
+''        If KeyAscii = 8 Then
+
+''            Dim mLen As Integer
+
+''            mLen = Len(Trim(TxtRate))
+
+''            If mLen = 0 Then
+
+''                TxtRate.Text = ""
+
+''            Else
+
+''                TxtRate.Text = Left(Trim(TxtRate), mLen - 1)
+
+''                SendKeys "{END}"
+
+''            End If
+
+''            Exit Sub
+
+''        End If
+
+''        If InStr(strvalid, Chr(KeyAscii)) = 0 Then
+
+''            KeyAscii = 0
+
+''        End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

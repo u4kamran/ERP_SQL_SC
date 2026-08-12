@@ -4,20 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Chat - {{ app_name }}</title>
+    <link rel="icon" href="/static/img/favicon.png?v=20260812b" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="/static/css/whatsapp_bot.css?v=18" rel="stylesheet">
+    <link href="/static/css/whatsapp_bot.css?v=35" rel="stylesheet">
 </head>
 <body class="guest-chat-body">
 <script>
 window.GUEST_MOBILE_OTP_REQUIRED = {{ 'true' if guest_mobile_otp_required else 'false' }};
+window.GUEST_VOICE_CLOUD_ENABLED = {{ 'true' if guest_voice_cloud_enabled else 'false' }};
+window.GUEST_VOICE_PROVIDER = {{ guest_voice_provider|tojson }};
 </script>
+<div id="guest-voice-hud" class="guest-voice-hud d-none" aria-live="assertive">
+    <div class="guest-voice-hud-card">
+        <div class="guest-voice-hud-dot" aria-hidden="true"></div>
+        <div id="guest-voice-hud-text">Listening…</div>
+        <button type="button" class="btn btn-sm btn-light mt-2" id="btn-voice-hud-stop">Tap to stop</button>
+    </div>
+</div>
 <div class="guest-chat-shell">
     <div class="guest-chat-header">
-        <div>
-            <h1 class="h5 mb-0">{{ app_name }}</h1>
-            <div class="small opacity-75" id="guest-subtitle">Tap order · price · voice</div>
-            <div class="guest-identity d-none" id="guest-identity"></div>
+        <div class="d-flex align-items-center gap-2">
+            <img src="/static/img/favicon.png?v=20260812b" alt="" width="42" height="42" class="guest-chat-logo flex-shrink-0">
+            <div>
+                <h1 class="h5 mb-0">Shafique Departmental Store</h1>
+                <div class="small opacity-75" id="guest-subtitle">Tap order · price · voice</div>
+                <div class="guest-identity d-none" id="guest-identity"></div>
+            </div>
         </div>
     </div>
     <div class="guest-chat-messages" id="guest-messages"></div>
@@ -58,8 +71,19 @@ window.GUEST_MOBILE_OTP_REQUIRED = {{ 'true' if guest_mobile_otp_required else '
             <input type="text" class="form-control" id="guest-name" maxlength="100"
                    placeholder="Your name (only if new customer)" autocomplete="name">
         </div>
+        <div class="guest-voice-confirm d-none" id="guest-voice-confirm">
+            <div class="small text-white-50 mb-1">Heard (edit if needed)</div>
+            <input type="text" class="form-control form-control-sm" id="guest-voice-text" maxlength="2000">
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <button type="button" class="btn btn-sm btn-success" id="btn-voice-send">Send</button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="btn-voice-retry">Retry</button>
+                <button type="button" class="btn btn-sm btn-outline-warning" id="btn-voice-lang">Lang: EN</button>
+                <button type="button" class="btn btn-sm btn-link text-white-50" id="btn-voice-cancel">Cancel</button>
+            </div>
+        </div>
         <div class="input-group mt-2">
-            <button class="btn btn-outline-light" type="button" id="btn-mic" title="Voice search">
+            <button class="btn btn-outline-light" type="button" id="btn-mic"
+                    title="Free Chrome voice — tap and speak">
                 <i class="bi bi-mic"></i>
             </button>
             <button class="btn btn-outline-warning" type="button" id="btn-location" title="Share Google Maps location">
@@ -69,11 +93,11 @@ window.GUEST_MOBILE_OTP_REQUIRED = {{ 'true' if guest_mobile_otp_required else '
                    placeholder="Type brand/item e.g. Dalda…" required autocomplete="off">
             <button class="btn btn-success" type="submit">Send</button>
         </div>
-        <div class="form-text text-white-50 mt-1" id="mic-status">
-            OTP temporarily off — enter mobile (optional) and chat.
+        <div class="form-text guest-mic-status mt-1" id="mic-status">
+            Tap mic, speak item name, then confirm.
         </div>
     </form>
 </div>
-<script src="/static/js/guest_chat.js?v=18"></script>
+<script src="/static/js/guest_chat.js?v=32"></script>
 </body>
 </html>

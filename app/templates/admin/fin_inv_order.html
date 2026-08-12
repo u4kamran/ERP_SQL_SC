@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Purchase Order - {{ app_name }}{% endblock %}
+{% block extra_css %}
+<link href="/static/css/fin_inv_order.css?v=20260812c" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="po-form" id="po-app">
+    <div class="po-titlebar">
+        <span>Purchase Order</span>
+        <span id="status-label" class="badge bg-warning text-dark">Ready</span>
+    </div>
+
+    <div class="po-banner" id="Line2">Purchase Order</div>
+    <div id="alert-area"></div>
+
+    <!-- Row 1: P.O.# Date Ref Time Terms Registration -->
+    <div class="po-row">
+        <div class="po-field"><label for="TxtDocID">P.O. # :</label>
+            <input type="text" class="form-control form-control-sm" id="TxtDocID" maxlength="10" autocomplete="off">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-load-doc">Load</button>
+        </div>
+        <div class="po-field"><label for="TxtDocDate">Date</label>
+            <input type="date" class="form-control form-control-sm" id="TxtDocDate">
+        </div>
+        <div class="po-field"><label for="TxtGPID">Ref # :</label>
+            <input type="text" class="form-control form-control-sm" id="TxtGPID" maxlength="6">
+        </div>
+        <div class="po-field"><label for="TxtTime">Time :</label>
+            <input type="text" class="form-control form-control-sm" id="TxtTime" maxlength="8">
+        </div>
+        <div class="po-field po-field-wide"><label for="CboPayment">Terms</label>
+            <select class="form-select form-select-sm" id="CboPayment">
+                <option value="0">Terms: Credit</option>
+                <option value="1" selected>Terms: Cash Reg.</option>
+                <option value="2">Terms: Cash Un-Reg.</option>
+            </select>
+        </div>
+        <div class="po-field"><label>Registration</label>
+            <div class="po-title-box po-reg" id="LblRegistration"></div>
+        </div>
+    </div>
+
+    <!-- Row 2: Supp ID / title / order -->
+    <div class="po-row">
+        <div class="po-field"><label for="TxtCustID">Supp ID :</label>
+            <input type="text" class="form-control form-control-sm" id="TxtCustID" autocomplete="off">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-search-supplier">...</button>
+        </div>
+        <div class="po-field po-field-grow"><label>Supplier</label>
+            <div class="po-title-box" id="TxtCustTitle">—</div>
+        </div>
+        <div class="po-field"><label for="TxtCustOrder">Order</label>
+            <input type="text" class="form-control form-control-sm" id="TxtCustOrder" maxlength="100">
+        </div>
+        <div class="po-field"><label for="TxtCustOrderDate">Order Date</label>
+            <input type="text" class="form-control form-control-sm" id="TxtCustOrderDate" maxlength="10">
+        </div>
+    </div>
+
+    <!-- Grid label row (VB6 Label22 + chkBC) -->
+    <div class="po-grid-head">
+        <span class="po-grid-label">&Grid :</span>
+        <label class="po-chk"><input type="checkbox" id="chkBC"> Manual</label>
+        <span class="po-hint">F4 Item · F5 Show Items · Enter next cell</span>
+    </div>
+
+    <!-- Item banner (VB6 lblItemTitle) -->
+    <div class="po-item-banner" id="lblItemTitle">&nbsp;</div>
+    <div class="po-item-meta">
+        <span>Rate: <strong id="lblRate">—</strong></span>
+        <span>Stock: <strong id="lblStock">—</strong></span>
+    </div>
+
+    <!-- Master grid grd(0) -->
+    <div class="po-grid-wrap" id="grd0-wrap" tabindex="-1">
+        <table class="table table-sm po-grid mb-0" id="grd0">
+            <thead>
+                <tr>
+                    <th class="col-barcode">Barcode ID</th>
+                    <th class="col-manual">Manual ID</th>
+                    <th class="col-title">Item Title</th>
+                    <th class="col-qty">Qty</th>
+                    <th class="col-rate">Rate</th>
+                    <th class="col-amt">Amount</th>
+                    <th class="col-disc">Disc %</th>
+                    <th class="col-damt">D. Amt</th>
+                    <th class="col-net">Net Amt</th>
+                    <th class="col-del"></th>
+                </tr>
+            </thead>
+            <tbody id="grd0-body"></tbody>
+        </table>
+    </div>
+
+    <!-- Inline totals beside grid (VB6 mQty mAmount ...) -->
+    <div class="po-inline-totals">
+        <div class="po-inline-box"><span>Qty</span><span id="mQty" class="po-val">0.000</span></div>
+        <div class="po-inline-box"><span>Amount</span><span id="mAmount" class="po-val">0.00</span></div>
+        <div class="po-inline-box"><span>Disc</span><span id="mDiscAmt" class="po-val">0.00</span></div>
+        <div class="po-inline-box"><span>Net</span><span id="mNetAmt" class="po-val">0.00</span></div>
+    </div>
+
+    <!-- Bottom: totals | buttons | net -->
+    <div class="po-bottom">
+        <div class="po-totals">
+            <div class="po-tot-row"><span>Discount :</span><span class="tot-val" id="LblDiscount">0.00</span></div>
+            <div class="po-tot-row"><span>Charges :</span><span class="tot-val" id="LblCharges">0.00</span></div>
+            <div class="po-tot-row"><span>Diff :</span><span class="tot-val" id="LblDiff">0.00</span></div>
+        </div>
+        <div class="po-buttons">
+            <div class="po-btn-row">
+                <button type="button" class="btn btn-success btn-sm" id="CmdSave" disabled>Save</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="CmdClear">Clear</button>
+                <button type="button" class="btn btn-danger btn-sm" id="CmdDelete" disabled>Delete</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdPrint" disabled>Print</button>
+                <button type="button" class="btn btn-dark btn-sm" id="CmdClose">Close</button>
+            </div>
+            <div class="po-btn-row">
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdShowItem">Show Items</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="cmdPrintGrid" disabled>Print Grid</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdDiscount" disabled>Discount</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdShowAddr" disabled>Show Address</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="cmdVendor">Vendor</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="cmdItem">Item</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="cmdAddItem" disabled>Add Item</button>
+            </div>
+            <div class="po-btn-row po-manual-row">
+                <label class="po-chk mb-0"><input type="checkbox" id="chkPreview"> Preview</label>
+                <label class="mb-0">Manual ID</label>
+                <input type="text" class="form-control form-control-sm po-manual-in" id="txtManualID" maxlength="10">
+                <div class="po-title-box po-manual-title" id="TxtTitle">—</div>
+            </div>
+        </div>
+        <div class="po-totals">
+            <div class="po-tot-row po-net-row"><span>Net P.O. :</span><span class="tot-val" id="LblNetInvoice">0.00</span></div>
+        </div>
+    </div>
+
+    <!-- grd(1) supplier items — show/hide -->
+    <div id="supplier-items-panel" class="d-none">
+        <div class="po-grid-head"><span class="po-grid-label">Supplier Items</span></div>
+        <div class="po-grid-wrap po-grid-wrap-sm">
+            <table class="table table-sm po-grid mb-0" id="grd1">
+                <thead>
+                    <tr>
+                        <th>Supplier</th><th>Manual ID</th><th>Item Title</th><th>TNOT</th>
+                        <th>Stock</th><th>Cost Rate</th><th>Sales Rate</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="grd1-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- History tabs grd(2)(3)(4) -->
+    <ul class="nav nav-tabs po-tabs" role="tablist">
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pur" type="button">Purchase History</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-sales" type="button">Sales History</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-po" type="button">P.O History</button></li>
+    </ul>
+    <div class="tab-content po-tab-panels">
+        <div class="tab-pane fade" id="tab-pur"><table class="table table-sm po-grid mb-0"><thead><tr><th>Pur.#</th><th>Date</th><th>Supplier</th><th>Qty</th><th>Rate</th><th>Exp Date</th></tr></thead><tbody id="grd2-body"></tbody></table></div>
+        <div class="tab-pane fade" id="tab-sales"><table class="table table-sm po-grid mb-0"><thead><tr><th>Inv.#</th><th>Date</th><th>Customer</th><th>Qty</th><th>Rate</th></tr></thead><tbody id="grd3-body"></tbody></table></div>
+        <div class="tab-pane fade show active" id="tab-po"><table class="table table-sm po-grid mb-0"><thead><tr><th>P.O.#</th><th>Date</th><th>Supp ID</th><th>Supp Title</th><th>Total Amt</th></tr></thead><tbody id="grd4-body"></tbody></table></div>
+    </div>
+
+    <input type="hidden" id="HDiscount" value="0">
+    <input type="hidden" id="HClaim" value="0">
+    <input type="hidden" id="HOtherDed" value="0">
+    <input type="hidden" id="HLoading" value="0">
+    <input type="hidden" id="HCarriage" value="0">
+    <input type="hidden" id="HOtherCharges" value="0">
+    <input type="hidden" id="serial_no" value="">
+    <input type="hidden" id="cFoundFlag" value="0">
+</div>
+
+<div class="modal fade po-modal" id="addrModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title">Address</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="po-field-row"><label>Title</label><input class="form-control form-control-sm" id="TxtDesc"></div>
+            <div class="po-field-row"><label>Address</label><input class="form-control form-control-sm" id="TxtAddress"></div>
+            <div class="po-field-row"><label>S-Tax ID</label><input class="form-control form-control-sm" id="TxtStaxID"></div>
+            <div class="po-field-row"><label>City ID</label><input class="form-control form-control-sm" id="TxtCityID"></div>
+            <div class="po-field-row"><label>City</label><input class="form-control form-control-sm" id="TxtCityTitle" readonly></div>
+        </div>
+        <div class="modal-footer py-1"><button class="btn btn-primary btn-sm" data-bs-dismiss="modal">OK</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade po-modal" id="dedModal" tabindex="-1">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title">Discount / Charges</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="po-field-row"><label>Discount</label><input class="form-control form-control-sm" id="TxtDiscount" inputmode="decimal"></div>
+            <div class="po-field-row"><label>Claim</label><input class="form-control form-control-sm" id="TxtClaim" inputmode="decimal"></div>
+            <div class="po-field-row"><label>Other Ded</label><input class="form-control form-control-sm" id="TxtOtherDed" inputmode="decimal"></div>
+            <div class="po-field-row"><label>Loading</label><input class="form-control form-control-sm" id="TxtLoading" inputmode="decimal"></div>
+            <div class="po-field-row"><label>Carriage</label><input class="form-control form-control-sm" id="TxtCarriage" inputmode="decimal"></div>
+            <div class="po-field-row"><label>Other Chg</label><input class="form-control form-control-sm" id="TxtOtherCharges" inputmode="decimal"></div>
+        </div>
+        <div class="modal-footer py-1">
+            <button class="btn btn-secondary btn-sm" id="ded-clear">Clear</button>
+            <button class="btn btn-primary btn-sm" id="ded-save">OK</button>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade po-modal" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h6 class="modal-title" id="search-title">Search</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input class="form-control form-control-sm mb-2" id="search-query" placeholder="Type to search..." autocomplete="off">
+            <div class="po-grid-wrap" style="max-height:280px"><table class="table table-sm po-grid mb-0"><tbody id="search-results"></tbody></table></div>
+        </div>
+    </div></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/fin_inv_order.js?v=20260812k"></script>
+{% endblock %}

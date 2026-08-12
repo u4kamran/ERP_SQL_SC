@@ -8,16 +8,19 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _DATA_DIR = _PROJECT_ROOT / "data"
 _ORDERS_FILE = _DATA_DIR / "whatsapp_orders.json"
 _LOCK = threading.Lock()
 _MAX_ORDERS = 1000
+_PK_TZ = ZoneInfo("Asia/Karachi")
 
 
 def _now() -> datetime:
-    return datetime.utcnow()
+    """Business local time (Pakistan)."""
+    return datetime.now(_PK_TZ)
 
 
 def _ensure() -> None:

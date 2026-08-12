@@ -1,0 +1,50 @@
+Private Sub txtBarcode_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+    Dim Rs As New ADODB.Recordset
+
+    Dim cSQL As String
+
+    If Val(txtBarcode.Text) = 0 Or Len(txtBarcode.Text) = 0 Then Exit Sub
+
+    With Rs
+
+
+
+'        cSQL = "select * from v_fin_item where barcodeid = '" & txtBarcode & "'"
+
+        cSQL = "select * from v_fin_item where barcodeid = '" & txtBarcode & "'"
+
+        Set Rs = FetchAll(cSQL)
+
+        If Not (Rs.EOF And Rs.BOF) Then
+
+            TxtID.Text = Rs!Item_ID
+
+            txtUnit.Text = Rs!visacard_rate
+
+            Call TxtID_Validate(False)
+
+'            TxtOQty.SetFocus
+
+        Else
+
+            MsgBox "Barcode ID not found."
+
+        End If
+
+        Rs.Close
+
+    End With
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

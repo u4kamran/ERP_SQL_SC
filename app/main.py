@@ -15,6 +15,7 @@ from app.config.settings import settings
 from app.config.site_links import get_external_links, get_internal_link_groups
 from app.logging.logger import logger
 from app.middleware.security import csrf_middleware, security_headers_middleware
+from app.middleware.menu_guard import menu_access_guard_middleware
 from app.scheduler.delivery_invoice_scheduler import get_delivery_invoice_scheduler
 from app.scheduler.sms_email_scheduler import get_scheduler_runner
 from app.scheduler.sales_dashboard_email_scheduler import get_sales_dashboard_email_runner
@@ -69,6 +70,7 @@ app.add_middleware(
 
 app.middleware("http")(security_headers_middleware)
 app.middleware("http")(csrf_middleware)
+app.middleware("http")(menu_access_guard_middleware)
 
 static_dir = BASE_DIR / "app" / "static"
 static_dir.mkdir(parents=True, exist_ok=True)
@@ -103,12 +105,17 @@ async def guest_price_scan_page(request: Request):
 
 @app.get("/guest/chat", response_class=HTMLResponse)
 async def guest_chat_page(request: Request):
+    from app.services.speech_to_text_service import SpeechToTextService
+
+    stt = SpeechToTextService()
     return templates.TemplateResponse(
         request,
         "guest/chat.html",
         {
             "app_name": settings.app_name,
             "guest_mobile_otp_required": bool(settings.guest_mobile_otp_required),
+            "guest_voice_cloud_enabled": stt.is_configured(),
+            "guest_voice_provider": stt.provider_label(),
         },
     )
 
@@ -148,6 +155,24 @@ async def admin_roles_page(request: Request):
     return templates.TemplateResponse(request, "admin/roles.html", {"app_name": settings.app_name})
 
 
+@app.get("/admin/menu-access", response_class=HTMLResponse)
+async def admin_menu_access_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/menu_access.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/user-menu-rights", response_class=HTMLResponse)
+async def admin_user_menu_rights_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/user_menu_rights.html",
+        {"app_name": settings.app_name},
+    )
+
+
 @app.get("/admin/sessions", response_class=HTMLResponse)
 async def admin_sessions_page(request: Request):
     return templates.TemplateResponse(request, "admin/sessions.html", {"app_name": settings.app_name})
@@ -180,6 +205,36 @@ async def admin_voucher_entry_page(request: Request):
 @app.get("/admin/fin-item-classic", response_class=HTMLResponse)
 async def admin_fin_item_classic_page(request: Request):
     return templates.TemplateResponse(request, "admin/fin_item_classic.html", {"app_name": settings.app_name})
+
+
+@app.get("/admin/fin-pur", response_class=HTMLResponse)
+async def admin_fin_pur_page(request: Request):
+    return templates.TemplateResponse(request, "admin/fin_pur.html", {"app_name": settings.app_name})
+
+
+@app.get("/admin/fin-inv-order", response_class=HTMLResponse)
+async def admin_fin_inv_order_page(request: Request):
+    return templates.TemplateResponse(request, "admin/fin_inv_order.html", {"app_name": settings.app_name})
+
+
+@app.get("/admin/fin-inv-order/print", response_class=HTMLResponse)
+@app.get("/admin/fin-inv-order/print/{inv_id}", response_class=HTMLResponse)
+async def admin_fin_inv_order_print_page(request: Request, inv_id: int | None = None):
+    """Standalone A4 Purchase Order print sheet (pixel match to VB6 / PO100)."""
+    return templates.TemplateResponse(
+        request,
+        "admin/fin_inv_order_print.html",
+        {"app_name": settings.app_name, "inv_id": inv_id},
+    )
+
+
+@app.get("/admin/purchase-automation", response_class=HTMLResponse)
+async def admin_purchase_automation_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/purchase_automation.html",
+        {"app_name": settings.app_name},
+    )
 
 
 @app.get("/admin/fin-items", response_class=HTMLResponse)

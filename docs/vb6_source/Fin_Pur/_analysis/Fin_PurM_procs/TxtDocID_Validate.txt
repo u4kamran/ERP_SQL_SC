@@ -1,0 +1,566 @@
+Private Sub TxtDocID_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+'Dim blnFirst As Boolean
+
+   cFoundFlag = False
+
+   If Len(Trim(TxtDocID)) = 0 Then
+
+        Exit Sub
+
+   End If
+
+   
+
+   If mErr > 0 Then
+
+        MsgBox "Permission to Book is denied, Consult Administrator ... ", vbInformation, cSelFormId
+
+        Cancel = True
+
+        Exit Sub
+
+   End If
+
+   Screen.MousePointer = vbHourglass
+
+   '
+
+   SQL = "SELECT * FROM Fin_Pur_M WHERE prod_id = "
+
+   SQL = SQL & Val(TxtDocID) & " and doc_type_id = " & cDoc_Type
+
+   SQL = SQL & " and fiscal = " & MFiscal
+
+   Set RSMAST = FetchAll(SQL)
+
+   
+
+   If Not (RSMAST.EOF And RSMAST.BOF) Then
+
+        cFoundFlag = True
+
+                        
+
+                        
+
+        TxtID.Enabled = False 'temp block
+
+        
+
+        If Mid(Trim(cUPwordStr), 5, 1) = 1 Then
+
+            'MsgBox "Acess denied contact with administrator.", vbOKOnly + vbInformation, "System message"
+
+            'Cancel = True
+
+            TxtID.Enabled = True 'temp block
+
+        End If
+
+     
+
+        
+
+
+
+        ' Voucher Master
+
+        mOldAccount = RSMAST!supplier_id
+
+        TxtID.Text = RSMAST!supplier_id
+
+        Msys_status = RSMAST!sys_status
+
+        TxtDocDAte.Value = RSMAST!doc_date
+
+        Msys_status = RSMAST!sys_status
+
+        TxtRemarks.Text = "" & RSMAST!remarks
+
+        SerialCode = RSMAST!serial_no
+
+        TxtGPID.Text = "" & RSMAST!gp_id
+
+        TxtTime.Text = "" & RSMAST!gp_time
+
+        '
+
+        If RSMAST!stax_type = 0 Then
+
+            LblRegistration.Caption = "Registered"
+
+        Else
+
+            LblRegistration.Caption = "UN-Registered"
+
+        End If
+
+        
+
+'        Call TxtID_Validate(False)
+
+        
+
+        CboPayment.ListIndex = RSMAST!payment_type
+
+        If CboPayment.ListIndex = 0 Then
+
+            OldPayment = 0
+
+        Else
+
+            OldPayment = 1
+
+        End If
+
+
+
+        HDiscount.Caption = RSMAST!discount_amt
+
+        HClaim.Caption = RSMAST!claim_amt
+
+        HOtherDed.Caption = RSMAST!other_ded_amt
+
+        HLoading.Caption = RSMAST!loading_amt
+
+        HCarriage.Caption = RSMAST!carriage_amt
+
+        HOtherCharges.Caption = RSMAST!other_charges_amt
+
+        LblDiscount.Caption = Val(HDiscount) + Val(HClaim) + Val(HOtherDed)
+
+        LblCharges.Caption = Val(HCarriage) + Val(HLoading) + Val(HOtherCharges)
+
+        'RSMAST.Close
+
+        If Msys_status = 1 Then
+
+            Screen.MousePointer = vbDefault
+
+            RSMAST.Close
+
+            MsgBox "Document/Voucher is posted, please re-enter ...", vbCritical, cSelFormId
+
+            Cancel = True
+
+            Exit Sub
+
+        End If
+
+        '********************************************************
+
+        ' Address
+
+        SQL = "SELECT * FROM gl0006 WHERE vendor_id = " & Val(TxtID)
+
+        Set Rs = FetchAll(SQL)
+
+        If Not (Rs.EOF And Rs.BOF) Then
+
+            TxtTitle.Caption = "" & Rs!Vendor_Title
+
+            If CboPayment.ListIndex = 0 Then
+
+                 TxtDesc.Text = "" & Rs!Vendor_Title
+
+                 TxtAddress.Text = "" & Rs!Address
+
+                 TxtStaxID.Text = "" & Rs!stax_id
+
+                 TxtCityID.Text = Rs!city_id
+
+            Else
+
+                TxtDesc.Text = "" & RSMAST!Vendor_Title
+
+                TxtAddress.Text = "" & RSMAST!Address
+
+                TxtStaxID.Text = "" & RSMAST!stax_id
+
+                TxtCityID.Text = RSMAST!city_id
+
+            End If
+
+            ' ******************************** 15-11-2002
+
+            If Rs!tag_1 = 1 Then
+
+                  'LblRegistration.Caption = "Registered"
+
+                  'If cSTaxType = 1 Then
+
+                  If cSTaxType = 1 Then
+
+                     cSalesTaxRate = mRegStaxRate
+
+                  End If
+
+            Else
+
+                  If Rs!tag_1 = 0 Then ' ?
+
+                     'LblRegistration.Caption = "Un-Registered"
+
+                     If cSTaxType = 1 Then
+
+                        cSalesTaxRate = mUnRegStaxRate
+
+                     End If
+
+                  Else
+
+                     LblRegistration.Caption = "Other"
+
+                     If cSTaxType = 1 Then
+
+                        cSalesTaxRate = 0
+
+                     End If
+
+                  End If
+
+            End If
+
+            ' ********************************
+
+            Rs.Close
+
+                ' Add recordset for city title
+
+                SQL = "SELECT * FROM City WHERE City_id = " & Val(TxtCityID)
+
+                Set RsDummy1 = FetchAll(SQL)
+
+                If Not (RsDummy1.EOF And RsDummy1.BOF) Then
+
+                  ' Assign Values to Text/Controls
+
+                  TxtCityTitle.Text = "" & IIf(IsNull(RsDummy1!City_Title), "not found", RsDummy1!City_Title)
+
+                 Else
+
+                     RsDummy1.Close
+
+                     TxtCityTitle.Text = "ID not found..."
+
+                 End If
+
+                 RsDummy1.Close
+
+        Else
+
+            RSMAST.Close
+
+            Screen.MousePointer = vbDefault
+
+            MsgBox "Supplier ID Not Found ..... ", vbInformation, cSelFormId
+
+            Exit Sub
+
+        End If
+
+        RSMAST.Close
+
+        '********************************************************
+
+        ' Disable Book Portion
+
+        TxtDocID.Enabled = False
+
+        ' Voucher Trans
+
+        
+
+        
+
+        SQL = "SELECT * FROM Fin_Pur_d WHERE Serial_No = " & SerialCode & " order by serial_order"
+
+        
+
+        If blnFirst = True Then
+
+'                Rs.Close
+
+                Exit Sub
+
+           End If
+
+        Set Rs = FetchAll(SQL)
+
+        If Not (Rs.EOF And Rs.BOF) Then
+
+           Dim nCnt As Integer
+
+
+
+           nCnt = 1
+
+           Do While Not Rs.EOF
+
+                 VGrid.Row = nCnt
+
+                 VGrid.Col = 1
+
+                 VGrid.CellAlignment = 1
+
+                 VGrid.Text = Rs("item_id")
+
+                 MItem_ID = Rs("item_id")
+
+                 VGrid.Col = 2
+
+                 SQL = "select * from FIN_ITEM where item_id=" & MItem_ID
+
+                 Set RsDummy = FetchAll(SQL)
+
+                 If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+                     VGrid.Text = " " & RsDummy("item_title") & " --- " & RsDummy("manualid")
+
+                 Else
+
+                     VGrid.Text = "Item ID not found ...."
+
+                 End If
+
+                 RsDummy.Close
+
+                 VGrid.Col = 3
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("qty"), "#########.00")
+
+                 VGrid.Col = 4
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("rate"), "#########.00")
+
+                 VGrid.Col = 5
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("PUR_amt"), "#########.00")
+
+                 VGrid.Col = 6
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("STAX_RATE"), "#########.00")
+
+                 VGrid.Col = 7
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("STAX_AMT"), "#########.00")
+
+                 '
+
+                 VGrid.Col = 8
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("DISC_PER"), "#########.00")
+
+                 VGrid.Col = 9
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("DISC_AMT"), "#########.00")
+
+                 
+
+                 
+
+                 VGrid.Col = 10
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("DISC_PER_OI"), "#########.00")
+
+                 VGrid.Col = 11
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("DISC_AMT_OI"), "#########.00")
+
+                 
+
+                 VGrid.Col = 12
+
+                 VGrid.CellAlignment = 6
+
+                 VGrid.Text = Format(Rs("TOTAL_AMT"), "#########.00")
+
+                 VGrid.Col = 13
+
+                 VGrid.CellAlignment = 1
+
+                 VGrid.Text = "" & Rs("remarks")
+
+                 
+
+                 VGrid.Col = 14
+
+                 VGrid.CellAlignment = 1
+
+                 VGrid.Text = "" & Format(Rs("exp_date"), "dd/mm/yyyy")
+
+
+
+                 nCnt = nCnt + 1
+
+               Rs.MoveNext
+
+           Loop
+
+           Rs.Close
+
+           nCounter = nCnt
+
+           Call UpdateBalance
+
+           Call CalDiscount
+
+         Else
+
+            Rs.Close
+
+
+
+        End If
+
+        '*************************************************
+
+   Else
+
+        RSMAST.Close
+
+        Screen.MousePointer = vbDefault
+
+        MsgBox "Document/Voucher not found, please re-enter ...", vbInformation, cSelFormId
+
+        Cancel = True
+
+        Exit Sub
+
+  End If
+
+  blnFirst = True
+
+  
+
+  
+
+  
+
+  If HDiscount > 0 And HDiscount > CDbl(LDiscount) Then
+
+  'If HDiscount > 0 And HDiscount > CDbl(LDiscount) Then
+
+        LblDiscount.Caption = (CDbl(HDiscount) - CDbl(LDiscount)) + CDbl(HClaim) + CDbl(HOtherDed)
+
+        HDiscount = CDbl(HDiscount) - CDbl(LDiscount)
+
+        mDiscount = HDiscount
+
+  ElseIf HDiscount < CDbl(LDiscount) Then
+
+        LblDiscount.Caption = (CDbl(LDiscount) - CDbl(HDiscount)) + CDbl(HClaim) + CDbl(HOtherDed)
+
+        HDiscount = CDbl(LDiscount) - CDbl(HDiscount)
+
+        mDiscount = HDiscount
+
+  ElseIf HDiscount = CDbl(LDiscount) Then
+
+        LblDiscount.Caption = (CDbl(LDiscount) - CDbl(HDiscount)) + CDbl(HClaim) + CDbl(HOtherDed)
+
+        HDiscount = CDbl(LDiscount) - CDbl(HDiscount)
+
+        mDiscount = 0
+
+  End If
+
+  
+
+  
+
+  
+
+  
+
+    'MKB 07 03 2024
+
+    LblDiscount.Caption = "0"
+
+    HDiscount = "0"
+
+
+
+    Call UpdateBalance
+
+    Call CalDiscount
+
+
+
+
+
+  Screen.MousePointer = vbDefault
+
+  'TxtFiscal.Enabled = False
+
+  CmdSave.Enabled = True
+
+  CmdDelete.Enabled = True
+
+  CmdShowAddr.Enabled = True
+
+  CmdDiscount.Enabled = True
+
+  CmdAddTrans.Enabled = True
+
+  '************ Supplier **************
+
+  If Val(TxtID) = 0 Then
+
+        CmdAddTrans.Enabled = False
+
+        Exit Sub
+
+  Else
+
+        CmdAddTrans.Enabled = True
+
+  End If
+
+    Screen.MousePointer = vbHourglass
+
+        SQL = "SELECT * FROM gl0006 WHERE Vendor_id = " & Val(TxtID)
+
+        Set Rs = FetchAll(SQL)
+
+  If Not (Rs.EOF And Rs.BOF) Then
+
+       TxtTitle.Caption = "" & Rs!Vendor_Title
+
+'    Screen.MousePointer = vbDefault
+
+  End If
+
+    Screen.MousePointer = vbDefault
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

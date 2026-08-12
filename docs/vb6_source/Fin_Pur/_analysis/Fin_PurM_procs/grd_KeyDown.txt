@@ -1,0 +1,82 @@
+Private Sub grd_KeyDown(Index As Integer, Keycode As Integer, Shift As Integer)
+
+On Error GoTo TrapError
+
+Dim intConfirm   As Integer
+
+Dim intDeleteRow As Integer
+
+Dim Rs           As New ADODB.Recordset
+
+    With grd(0)
+
+        
+
+        
+
+        If Keycode = vbKeyDelete Then
+
+            intConfirm = MsgBox("Are you sure to delete.", vbQuestion + vbYesNo + vbSystemModal, "System message")
+
+            If intConfirm = vbNo Then Exit Sub
+
+            If .Row = 0 Then Exit Sub
+
+            If .Rows <> 2 Then
+
+                With Rs
+
+                    SQL = "delete from fin_supp_items where SUPPLIER_ID = " & TxtID.Text & " and item_id = " & grd(0).TextMatrix(grd(0).Row, 7)
+
+                    If UpdateV2(SQL) = True Then
+
+                        MsgBox "Item Successfully deleted."
+
+                    Else
+
+                        MsgBox "Item not Successfully deleted. "
+
+                    End If
+
+                End With
+
+            
+
+                 intDeleteRow = .Row
+
+                .RemoveItem .Row
+
+                .Row = intDeleteRow - 1
+
+                '
+
+
+
+
+
+            Else
+
+            
+
+            End If
+
+            
+
+        End If
+
+    End With
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+    
+
+End Sub
+
+
+
+
+

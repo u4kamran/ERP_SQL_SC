@@ -54,8 +54,13 @@ class UserRepository:
             .where(
                 UserRole.UserId == user_id,
                 UserRole.IsActive == True,  # noqa: E712
+                UserRole.IsDeleted == False,  # noqa: E712
+                Role.IsActive == True,  # noqa: E712
+                Role.IsDeleted == False,  # noqa: E712
                 RolePermission.IsActive == True,  # noqa: E712
+                RolePermission.IsDeleted == False,  # noqa: E712
                 Permission.IsActive == True,  # noqa: E712
+                Permission.IsDeleted == False,  # noqa: E712
             )
             .distinct()
         )

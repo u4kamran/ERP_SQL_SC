@@ -1,0 +1,18 @@
+Private Sub Txtid_GotFocus()
+
+   
+
+   CmdDelete.Enabled = False
+
+   CmdSave.Enabled = False
+
+   cFoundFlag = False
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

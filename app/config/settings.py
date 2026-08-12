@@ -124,9 +124,9 @@ class Settings(BaseSettings):
     guest_mobile_otp_required: bool = True
     guest_mobile_otp_dev_echo: bool = False
 
-    # Gemini Vision (server-side customer document extraction)
+    # Gemini Vision + voice STT (guest chat / WhatsApp voice notes)
     gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-3.1-flash-lite"
 
     # Database sync (local SQL Server -> online SQL Server)
     sync_enabled: bool = False

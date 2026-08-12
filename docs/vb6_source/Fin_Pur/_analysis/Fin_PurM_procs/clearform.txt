@@ -1,0 +1,104 @@
+Private Function clearform()
+
+On Error GoTo TrapError
+
+' Clear Data Fields
+
+   
+
+    Call VGridClear
+
+    If UCase(CmdShowItem.Caption) = UCase("Hide items") Then
+
+        Call CmdShowItem_Click
+
+    End If
+
+    
+
+    blnFirst = False
+
+    TxtDocID.Enabled = True
+
+    'TxtFiscal.Enabled = True
+
+    TxtDocID.Text = ""
+
+    TxtRemarks.Text = ""
+
+    TxtDocDAte = nDate
+
+    TxtDocID.Enabled = True
+
+    TxtID.Enabled = True
+
+    'TxtFiscal.Enabled = True
+
+    TxtDocID.SetFocus
+
+    TxtID.Text = ""
+
+    TxtTitle.Caption = ""
+
+    TxtGPID.Text = ""
+
+    TxtTime.Text = ""
+
+    CboPayment.ListIndex = 0
+
+    mAmount.Caption = "0.00"
+
+    mTAmount.Caption = "0.00"
+
+    mSalesTax.Caption = "0.00"
+
+    mNetAmount.Caption = "0.00"
+
+    LblDiscount.Caption = "0.00"
+
+    LblCharges.Caption = "0.00"
+
+    LblDiff.Caption = "0.00"
+
+    LDiscount.Caption = "0.00"
+
+    LStaxExclAmt.Caption = "0.00"
+
+    LblOffInvDisc.Caption = "0.00"
+
+    '
+
+    HDiscount.Caption = ""
+
+    HClaim.Caption = ""
+
+    HOtherDed.Caption = ""
+
+    HLoading.Caption = ""
+
+    HCarriage.Caption = ""
+
+    HOtherCharges.Caption = ""
+
+    '
+
+    CmdShowAddr.Enabled = False
+
+    CmdDiscount.Enabled = False
+
+    CmdSave.Enabled = False
+
+    CmdDelete.Enabled = False
+
+    CmdAddTrans.Enabled = False
+
+Exit Function
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Function
+
+
+

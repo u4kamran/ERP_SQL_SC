@@ -1,0 +1,1432 @@
+Attribute VB_Name = "Fin_PurD"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Option Explicit
+'Private tQty, tAmount As Double
+Private mPurAmount, mTaxAmount, mDiscAmount, mDiscOffInvAmt, mOffInvIncludedAmt, mInclAmount, mNetCost As Double
+Private mSaleTaxRate As Single
+Private RsDummy, RsTmp As New ADODB.Recordset
+Private mUomID, mEditRowID  As Integer
+'
+Private Sub Calc_Rate()
+On Error GoTo TrapError
+    If Val(TxtRate) = 0 And cAudit = 0 Then
+        MsgBox "Invalid:  Please enter Rate ...  ", vbInformation, "Purchase Receipt"
+        Exit Sub
+    End If
+    If Val(TxtQty) = 0 Then
+        MsgBox "Invalid:  Please enter Quantity ...  ", vbInformation, "Purchase Receipt"
+        Exit Sub
+    End If
+    'mPurAmount = Int(Val(TxtRate) * Val(TxtQty) + 0.5)
+    mPurAmount = (Val(TxtRate) * Val(TxtQty))
+    mTaxAmount = 0
+    TxtAmount.Caption = Format(mPurAmount, "#########.00")
+    
+    If Val(TxtRate) <> 0 Then
+        If Val(txtDiscPer) > 0 And mPurAmount <> 0 Then
+        'mDiscAmount = ((mPurAmount + mTaxAmount) * Val(txtDiscPer) / 100)
+            
+            'tmp close KAM
+           ' mDiscAmount = ((mPurAmount * Val(txtDiscPer) / 100))
+             mDiscAmount = Val(txtDiscAmt)
+             txtDiscPer = Format((Val(txtDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+            
+        Else
+            mDiscAmount = Val(txtDiscAmt)
+            txtDiscPer = Format((Val(txtDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+        End If
+        If Val(txtDiscPer) = 0 And mPurAmount <> 0 Then
+            'txtDiscPer.Text = (Val(txtDiscAmt.Text) / mPurAmount) * 100
+        End If
+    End If
+    
+    
+    'Stax Calculations Temporary Disable
+    If Val(TxtRate) <> 0 Then
+      If Val(TxtStaxRate) > 0 And mPurAmount <> 0 Then
+          'mTaxAmount = Int(mPurAmount * Val(TxtStaxRate) / 100 + 0.5)
+          'gross amt - discount
+'           TxtStaxRate = Abs(Val(TxtStaxAmount) / Val(mPurAmount) * 100)
+           'KAM
+          'mTaxAmount = ((mPurAmount - mDiscAmount) * Val(TxtStaxRate) / 100)
+          mTaxAmount = Format(Val(TxtStaxAmount), "#########.#0")
+'
+      Else
+          mTaxAmount = Format(Val(TxtStaxAmount), "#########.#0")
+'          TxtStaxRate = Abs(Val(TxtStaxAmount) / Val(mPurAmount) * 100)
+      End If
+    End If
+    'End Tax Calcualation
+    
+    'Off Invoice Discount Calculation
+    If Val(TxtRate) <> 0 Then
+        If Val(TxtOffInvDiscPer) > 0 And mPurAmount <> 0 Then
+        'mDiscAmount = ((mPurAmount + mTaxAmount) * Val(txtDiscPer) / 100)
+            
+            'tmp close KAM
+           ' mDiscAmount = ((mPurAmount * Val(txtDiscPer) / 100))
+             mDiscOffInvAmt = Format(Val(txtOffInvDiscAmt), "#########.#0")
+             TxtOffInvDiscPer = Format((Val(txtOffInvDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+            
+        Else
+            mDiscOffInvAmt = Format(Val(txtOffInvDiscAmt), "#########.#0")
+            TxtOffInvDiscPer = Format((Val(txtOffInvDiscAmt) / Val(mPurAmount) * 100), "#########.#0")
+        End If
+        If Val(txtDiscPer) = 0 And mPurAmount <> 0 Then
+            'txtDiscPer.Text = (Val(txtDiscAmt.Text) / mPurAmount) * 100
+        End If
+    End If
+    
+    
+    '
+'    TxtStaxAmount.Text = Format(mTaxAmount, "#########.#0")
+'    txtDiscAmt.Text = Format(mDiscAmount, "#########.#0")
+
+    
+    
+    
+    mInclAmount = mPurAmount + mTaxAmount - mDiscAmount
+    
+    
+    
+    lblExcludAmt = Format(mPurAmount - mDiscAmount, "#########.#0")
+    
+    mOffInvIncludedAmt = Format(CDbl(lblExcludAmt) + mTaxAmount, "#########.#0")
+    
+    LblOffInvIncludedAmt = Format(mOffInvIncludedAmt, "#########.#0")
+    
+    LblIncludedAmount.Caption = Format(mInclAmount, "#########.00") - mDiscOffInvAmt
+    
+    If mPurAmount > 0 Then
+        txtNetCost.Text = Format(((mPurAmount - mDiscAmount - mDiscOffInvAmt) / Val(TxtQty)), "#########.00")
+        
+    End If
+    
+    
+    
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Sub PUpdateBalance()
+On Error GoTo TrapError
+   Dim nCnt As Integer
+   Dim nQty As Double
+   Dim nAmount As Double
+   Dim nStax, nStaxPer As Double
+   Dim nDiscount As Double
+   Dim nOffInvDiscAmt As Double
+   Dim nIncludedAmount As Double
+   '
+   For nCnt = 1 To max_entries
+      Fin_PurM.VGrid.Row = nCnt
+      Fin_PurM.VGrid.Col = 3
+      nQty = nQty + CDbl(Fin_PurM.VGrid.Text & "0")
+      'amount
+      Fin_PurM.VGrid.Col = 5
+      nAmount = nAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+      
+      'sales tax per
+      Fin_PurM.VGrid.Col = 6
+      nStaxPer = CDbl(Fin_PurM.VGrid.Text & "0")
+      
+      
+      'sales tax
+      Fin_PurM.VGrid.Col = 7
+      nStax = nStax + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      'Discount
+      Fin_PurM.VGrid.Col = 9
+      nDiscount = nDiscount + CDbl(Fin_PurM.VGrid.Text & "0")
+      
+      'Discount Off Invoice
+      
+      Fin_PurM.VGrid.Col = 11
+      nOffInvDiscAmt = nOffInvDiscAmt + CDbl(Fin_PurM.VGrid.Text & "0")
+      
+      'Included Amount
+      Fin_PurM.VGrid.Col = 12
+      nIncludedAmount = nIncludedAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+      
+   Next
+   
+      Fin_PurM.mQty.Caption = Format(nQty, "##,##0.00")
+      Fin_PurM.mAmount.Caption = Format(nAmount, "##,##0.00")
+      ' other two columns ?
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Sub CmdDelete_Click()
+On Error GoTo TrapError
+     Screen.MousePointer = vbHourglass
+     Screen.MousePointer = vbDefault
+     Call clearform
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub cmdPrint_Click()
+'Call Calc_TB_Month
+End Sub
+
+
+Private Sub CmdBalance_Click()
+On Error GoTo TrapError
+
+    BalanceInv.Show vbModal, Me
+    
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub CmdItem_Click()
+On Error GoTo TrapError
+    With Fin_Item
+        .txtBarcodeID = txtBarcode.Text
+        .txtManualID = Text1.Text
+        .TxtID.Text = TxtID.Text
+'        .TxtCost_Price.SetFocus
+'        .txtManualID_Validate (False)
+    End With
+    
+    Fin_Item.Show vbModal, Me
+     Call TxtID_Validate(False)
+     
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub CmdSave_Click()
+On Error GoTo TrapError
+    Dim iCounter    As Integer
+    '
+    If Val(TxtID) = 0 Then
+        TxtID.SetFocus
+        Exit Sub
+    End If
+    'Temp block the code
+'    If Val(TxtRate) = 0 And cAudit = 0 Then
+'        MsgBox "Invalid:  Please enter Rate ...  ", vbInformation, "Production Receipt"
+'        TxtRate.SetFocus
+'        Exit Sub
+'    End If
+    If Val(TxtQty) = 0 Then
+        MsgBox "Invalid:  Please enter Quantity ...  ", vbInformation, "Production Receipt"
+        TxtQty.SetFocus
+        Exit Sub
+    End If
+   
+    If txtCoID.Text = "" Then
+        MsgBox "Invalid:  Please enter Company ID ...  ", vbInformation, "Production Receipt"
+        txtCoID.SetFocus
+        Exit Sub
+    End If
+   
+       
+        
+        
+        If Not Val(TxtID) < 0 Then
+            SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+            Set RsOld = FetchAll(SQL)
+            If Not (RsOld.EOF And RsOld.BOF) Then
+            
+            End If
+            
+        End If
+        
+        
+        
+    With Cmd
+'        MsgBox Rs!Inv_id
+        .ActiveConnection = Con
+        '.CommandText = "update fin_item set disc_p1 = " & CDbl(txtMRP.Text) & _
+                        " where item_ID = " & CDbl(TxtID.Text)
+        .CommandText = "update fin_item set disc_p1 = " & CDbl(txtMRP.Text) & " , STAX_REG = " & Val(TxtStaxRate) & " , oamt1 = " & Format(Val(TxtStaxAmount) / Val(TxtQty), "#######.00") & _
+                        " , camt1 = " & Format((Val(TxtAmount) - Val(txtDiscAmt) - Val(txtOffInvDiscAmt)) / Val(TxtQty), "#######.00") & _
+                        " , cqty1 = " & Format(CDbl(TxtRate.Text), "#######.00") & _
+                        " , co_id = " & txtCoID.Text & _
+                        " where item_ID = " & CDbl(TxtID.Text) '& " and STAX_REG = " & Val(TxtStaxRate) & " and oamt1 = " & Val(TxtStaxAmount)
+
+
+        Debug.Print .CommandText
+        .Execute
+    End With
+        
+        If Not Val(TxtID) < 0 Then
+            SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+            Set Rs = FetchAll(SQL)
+            If Not (Rs.EOF And Rs.BOF) Then
+'                Rs!disc_p1 = CDbl(txtMRP.Text)
+'                Rs!STAX_REG = Val(TxtStaxRate)
+'                Rs!oamt1 = Format(Val(TxtStaxAmount) / Val(TxtQty), "#######.00")
+'                Rs!camt1 = Format((Val(TxtAmount) - Val(txtDiscAmt) - Val(txtOffInvDiscAmt)) / Val(TxtQty), "#######.00")
+'                Rs!cqty1 = Format(CDbl(TxtRate.Text), "#######.00")
+'
+'                Rs.Update
+            End If
+        End If
+        
+        Call SaveLogData("FIN_PUR_D", Rs, RsOld, RsOld!Item_ID, RsOld!manualid)
+        
+        RsOld.Close
+        Rs.Close
+
+    
+    
+'    Call SaveLogData("PUR_ITEM", Rs, RsOld, RsOld!Item_ID, RsOld!manualid)
+    
+    ' Check Duplicate item
+    'IF CONDITION ADD BY MKB
+    'If mEditRowID > 0 Then
+    If lEdit = False Then
+        With Fin_PurM.VGrid
+                'Dim iCounter As Integer
+                iCounter = 0
+                Do While iCounter + 1 <> .Rows
+                    .Row = iCounter + 1
+                    .Col = 1
+                    If Val(.Text) = Val(TxtID) Then
+                        'MsgBox "meditrowid = " & mEditRowID & "   icounter +1 = " & iCounter + 1
+                        'IF CONDITION CLOSE BY MKB
+                        'If iCounter + 1 <> mEditRowID Then
+                            MsgBox "Duplicate: Item ID Already Exists .... ", vbInformation
+                            Exit Sub
+                        'End If
+                    End If
+                     iCounter = iCounter + 1
+                Loop
+        End With
+    End If
+    '
+    With Fin_PurM.VGrid
+        If lEdit = False Then
+            .Row = nCounter
+        Else
+            .Row = mEditRowID
+        End If
+        
+        .CellAlignment = 1
+        .Col = 1
+        .Text = " " & TxtID.Text
+        .Col = 2
+        .Text = " " & Trim(TxtTitle.Caption)
+        '
+        .Col = 3
+        .CellAlignment = 6
+        .Text = Format(Val(TxtQty), "#########.#0")
+        '
+        .Col = 4
+        .CellAlignment = 6
+        .Text = Format(Val(TxtRate), "#########.#0")
+        '
+        .Col = 5
+        .CellAlignment = 6
+        .Text = Format(Val(TxtRate) * Val(TxtQty), "#########.#0")
+        'Stax %
+        .Col = 6
+        .CellAlignment = 6
+        .Text = Format(Val(TxtStaxRate), "#########.#0")
+        'Stax amount
+        .Col = 7
+        .CellAlignment = 6
+        .Text = Format(Val(TxtStaxAmount), "#########.#0")
+        'Discount
+        .Col = 8
+        .CellAlignment = 6
+        .Text = Format(Val(txtDiscPer), "#########.#0")
+        'Discount amount
+        .Col = 9
+        .CellAlignment = 6
+        .Text = Format(Val(txtDiscAmt), "#########.#0")
+        '****************************
+        'Discount OFF Invoice
+        .Col = 10
+        .CellAlignment = 6
+        .Text = Format(Val(TxtOffInvDiscPer), "#########.#0")
+        'Discount amount
+        .Col = 11
+        .CellAlignment = 6
+        .Text = Format(Val(txtOffInvDiscAmt), "#########.#0")
+        
+        '****************************
+        
+        '
+        'Included amount
+        .Col = 12
+        .CellAlignment = 6
+        '.Text = Format(Val(TxtRate) * Val(TxtQty) + Val(TxtStaxAmount) - Val(txtDiscAmt) - Val(txtOffInvDiscAmt), "#########.#0")
+        .Text = Format((((Val(TxtRate) * Val(TxtQty)) + Val(TxtStaxAmount)) - Val(txtDiscAmt)) - Val(txtOffInvDiscAmt), "#########.#0")
+        
+        ' Remarks
+        .Col = 13
+        .CellAlignment = 1
+        .Text = TxtsRemarks
+        
+        ' Expiry Date
+        .Col = 14
+        .CellAlignment = 1
+        .Text = Format(TxtExpDate.Value, "dd/MM/yyyy")
+        
+        
+    End With
+    mEditRowID = 0
+    
+    lEdit = False
+    If lEdit = True Then
+        Unload Me
+        Exit Sub
+    Else
+        nCounter = nCounter + 1
+    End If
+   '******************************************************
+   Call PUpdateBalance
+   Call clearform
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+
+Private Sub Form_Activate()
+'On Error GoTo TrapError
+'    txtBarcode.SetFocus
+'Exit Sub
+'TrapError:
+'    Call ShowError(lngError, Me.Caption)
+    
+End Sub
+
+Private Sub Form_KeyUp(Keycode As Integer, Shift As Integer)
+'On Error GoTo TrapError
+'    Call EnterKeyEnable(Keycode)
+'Exit Sub
+'TrapError:
+'    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub Form_Paint()
+On Error GoTo TrapError
+    txtBarcode.SetFocus
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub LblItem_Click()
+On Error GoTo TrapError
+  'cSQLId = "ITEMID"
+  cSelFormId = "Fin_PurD"
+  Fin_Auto.Show vbModal, Me
+  TxtID.SetFocus
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+
+Private Sub Text1_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub Text1_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    Dim Rs As New ADODB.Recordset
+    Dim cSQL As String
+    If Val(Text1.Text) = 0 Or Len(Text1.Text) = 0 Then Exit Sub
+    With Rs
+'        .Open "select * from v_fin_item where manualid = " & CDbl(Text1), Con, adOpenKeyset, adLockPessimistic
+        cSQL = "select * from v_fin_item where manualid = " & CDbl(Text1)
+        Set Rs = FetchAll(cSQL)
+        If Not (Rs.EOF And Rs.BOF) Then
+            TxtID.Text = Rs!Item_ID
+            txtUnit.Text = Rs!visacard_rate
+            Call TxtID_Validate(False)
+'            TxtOQty.SetFocus
+        Else
+            MsgBox "Manual ID not found."
+        End If
+        Rs.Close
+    End With
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+
+
+Private Sub txtBarcode_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub txtBarcode_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    Dim Rs As New ADODB.Recordset
+    Dim cSQL As String
+    If Val(txtBarcode.Text) = 0 Or Len(txtBarcode.Text) = 0 Then Exit Sub
+    With Rs
+
+'        cSQL = "select * from v_fin_item where barcodeid = '" & txtBarcode & "'"
+        cSQL = "select * from v_fin_item where barcodeid = '" & txtBarcode & "'"
+        Set Rs = FetchAll(cSQL)
+        If Not (Rs.EOF And Rs.BOF) Then
+            TxtID.Text = Rs!Item_ID
+            txtUnit.Text = Rs!visacard_rate
+            Call TxtID_Validate(False)
+'            TxtOQty.SetFocus
+        Else
+            MsgBox "Barcode ID not found."
+        End If
+        Rs.Close
+    End With
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtBarcodeWS_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    Dim Rs As New ADODB.Recordset
+    Dim cSQL As String
+    If Val(txtBarcodeWS.Text) = 0 Or Len(txtBarcodeWS.Text) = 0 Then Exit Sub
+    With Rs
+
+'        cSQL = "select * from v_fin_item where barcodeid = '" & txtBarcode & "'"
+        cSQL = "select * from v_fin_item where barcodeid_ws = '" & txtBarcodeWS & "'"
+        Set Rs = FetchAll(cSQL)
+        If Not (Rs.EOF And Rs.BOF) Then
+            TxtID.Text = Rs!Item_ID
+            txtUnit.Text = Rs!visacard_rate
+            Call TxtID_Validate(False)
+            'WS rate
+            lblSale.Caption = Rs!disc_p4
+'            TxtOQty.SetFocus
+        Else
+            MsgBox "Barcode ID not found."
+        End If
+        Rs.Close
+    End With
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtCoID_DblClick()
+  cSQLId = "COID"
+  cSelFormId = "COID_FIN_PUR"
+  frmLookUp.Show vbModal, Me
+End Sub
+
+Private Sub txtCoID_GotFocus()
+'On Error GoTo TrapError
+'    txtCoID.SelLength = Len(txtCoID)
+'Exit Sub
+'TrapError:
+'    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub txtCoID_KeyDown(Keycode As Integer, Shift As Integer)
+    
+    '
+    If Keycode = 113 Then ' F2
+        Call txtCoID_DblClick
+    End If
+    
+    
+End Sub
+
+Private Sub txtCoID_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtCoID_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+   If Val(txtCoID) = 0 Then
+'        TxtID.SetFocus
+        Exit Sub
+
+   End If
+   
+   Screen.MousePointer = vbHourglass
+   SQL = "SELECT * FROM co WHERE co_id = " & Val(txtCoID)
+   Set Rs = FetchAll(SQL)
+   If Not (Rs.EOF And Rs.BOF) Then
+      lblCoTitle.Caption = "" & Rs!co_title
+      
+    Else
+        Screen.MousePointer = vbNormal
+        Rs.Close
+        MsgBox "Company ID not found... ", vbInformation, "Purchase Receipt: Company ID"
+        Cancel = True
+        Exit Sub
+    End If
+    Rs.Close
+    Screen.MousePointer = vbDefault
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+Private Sub txtDiscAmt_GotFocus()
+On Error GoTo TrapError
+    txtDiscAmt.SelLength = Len(txtDiscAmt)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtDiscAmt_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub txtDiscAmt_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    If txtDiscAmt.Text = "" Then Exit Sub
+    Call Calc_Rate
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub txtDiscPer_Change()
+'    If Val(txtDiscPer) = 0 Then
+'        txtDiscAmt.Enabled = True
+'    Else
+'        txtDiscAmt.Enabled = False
+'    End If
+'    If txtDiscPer.Text = "" Then Exit Sub
+'    Call Calc_Rate
+End Sub
+
+Private Sub txtDiscPer_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+'    If Val(txtDiscPer) = 0 Then
+'        txtDiscAmt.Enabled = True
+'    Else
+'        txtDiscAmt.Enabled = False
+'    End If
+    If txtDiscPer.Text = "" Then Exit Sub
+    Call Calc_Rate
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtID_DblClick()
+On Error GoTo TrapError
+  cSQLId = "Item Master"
+  cSelFormId = "Fin_PurD"
+  frmLookUp.Show vbModal, Me
+  
+  If Not TxtID.Text = "" Then
+    TxtID_Validate (False)
+  End If
+  
+  
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub CmdClear_Click()
+On Error GoTo TrapError
+    Call clearform
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub cmdClose_Click()
+On Error GoTo TrapError
+    Unload Me
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Sub Form_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+    Call EnterKeyEnable(KeyAscii)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Sub Form_KeyDown(Keycode As Integer, Shift As Integer)
+On Error GoTo errhandler
+    If Keycode = vbKeyF5 Then ' F3
+        Dim X As Integer
+        
+        If MsgBox("Do you want to take a print :  are you sure ? ", vbInformation + vbYesNo, "Item Setup") = vbYes Then
+        
+            If MsgBox("Do you want to hide price :  are you sure ? ", vbInformation + vbYesNo, "Item Setup") = vbYes Then
+                PrintPriceZero = True
+            Else
+                PrintPriceZero = False
+            End If
+                
+                SQL = "select * from v_fin_item where item_id = " & TxtID.Text
+                cSelcriteria = SQL
+                'LstInvStore_short_PrnDesc.Show vbModal, Me
+                'Exit Sub
+                
+                
+'                txtNoOf = TxtQty.Text
+                
+'                For X = 1 To txtNoOf
+                
+                    With LstInvStore_short_PrnDesc
+                           .ARC.Refresh
+                           .Refresh
+                            .ARC.Connection = Con
+                            .ARC.Source = cSelcriteria
+                '           .ARC.DatabaseName = cAppDb_ID
+                '           .ARC.RecordSource = cSelcriteria
+                '           .MCName = cName
+                '           .Caption = cReportTitle
+                '           .Printer.PaperSize = 6
+                           .PageSettings.BottomMargin = 0 ' 1 inch bottom margin
+                           .PageSettings.TopMargin = 0 ' 1 inch top margin
+                           .PageSettings.LeftMargin = 0 '150 ' ½ inch left margin
+                           .PageSettings.RightMargin = 0 ' ½ inch right margin
+                            .PageSettings.PaperWidth = 2163 '72.1
+                            .PageSettings.PaperHeight = 1617 '10276
+                            '.PageSettings.PaperWidth = 72.1
+                            '.PageSettings.PaperHeight = 10276
+                           ' Printing Orientation Portrait/Landscape
+                           ''iOrientationSav = Printer.Orientation
+                           .Printer.Orientation = ddOPortrait
+                           .Printer.Copies = Val(TxtQty.Text)
+                           .PrintReport False
+                    End With
+                    Set LstInvStore_short_PrnDesc = Nothing
+'                Next
+        Else
+            
+            
+                    
+            If MsgBox("Do you want to hide price :  are you sure ? ", vbInformation + vbYesNo, "Item Setup") = vbYes Then
+                PrintPriceZero = True
+            Else
+                PrintPriceZero = False
+            End If
+            
+            SQL = "select * from v_fin_item where item_id = " & TxtID.Text
+            cSelcriteria = SQL
+    
+            With LstInvStore_short_PrnDesc
+                .PageSettings.PaperWidth = 2163 '72.1
+                .PageSettings.PaperHeight = 1617 '10276
+            End With
+            LstInvStore_short_PrnDesc.Show vbModal, Me
+        
+        End If
+        
+    End If
+'
+'    If KeyCode = 114 Then ' F3
+'        Call LblItem_Click
+'    End If
+'    If KeyCode = 113 Then ' F2
+'        Call TxtID_DblClick
+'    End If
+Exit Sub
+errhandler:
+    MsgBox Err.Description, vbInformation, cSelFormId
+    Err.Clear
+End Sub
+Private Sub Form_Load(): Call FormDisplaySetting(Me)
+On Error GoTo TrapError
+    '
+'    If Mid(Trim(cUPwordStr), 1, 1) = 0 Then
+'        CmdItem.Enabled = False
+'    End If
+    
+    TxtExpDate.Value = nDate
+    
+    If Mid(Trim(cUPwordStr), 22, 1) = 0 Then
+       CmdItem.Enabled = False
+    End If
+  
+    
+    Caption = cName
+    TxtID.MaxLength = cFinSeg1 + cFinSeg2 + cFinSeg3 + cFinSeg4
+'    cFoundFlag = False
+   If lEdit = True Then
+        With Fin_PurM.VGrid
+            mEditRowID = .Row
+            .Col = 1
+            TxtID.Text = Trim(.Text)
+            .Col = 2
+            TxtTitle.Caption = "" & Trim(.Text)
+            .Col = 3
+            TxtQty.Text = .Text
+            .Col = 4
+            TxtRate.Text = .Text
+            .Col = 5
+            TxtAmount.Caption = .Text
+            
+            .Col = 6
+            TxtStaxRate.Text = .Text
+            .Col = 7
+            TxtStaxAmount.Text = .Text
+            
+            .Col = 8
+            txtDiscPer.Text = .Text
+            .Col = 9
+            txtDiscAmt.Text = .Text
+            
+            .Col = 10
+            TxtOffInvDiscPer.Text = .Text
+            
+            .Col = 11
+            txtOffInvDiscAmt.Text = .Text
+            
+            
+            .Col = 12
+            LblIncludedAmount = .Text
+            .Col = 13
+            TxtsRemarks.Text = .Text
+            
+            .Col = 14
+'            TxtExpDate.Value = CDate(.Text)
+            TxtExpDate.Value = Format(CDate(.Text), "dd/MM/yyyy")
+            
+            Call TxtID_Validate(False)
+            Call txtDiscAmt_Validate(False)
+            Call TxtStaxAmount_Validate(False)
+            Call txtOffInvDiscAmt_Validate(False)
+        End With
+    Else
+        mEditRowID = 0
+   End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Function clearform()
+On Error GoTo TrapError
+   ' Clear Data Fields
+   
+    With grd(0)
+        .Cols = 5
+        .TextMatrix(0, 0) = "Pur.#"
+        .ColWidth(0) = 1100
+        .TextMatrix(0, 1) = "Date"
+        .ColWidth(1) = 1300
+        .TextMatrix(0, 2) = "Qty"
+        .ColWidth(2) = 1100
+        .TextMatrix(0, 3) = "Rate"
+        .ColWidth(3) = 1100
+        .TextMatrix(0, 4) = "Item ID"
+        .ColWidth(4) = 1500
+        .Clear
+    End With
+   TxtID.Text = ""
+   TxtTitle.Caption = ""
+   LblMainTitle.Caption = ""
+   LblSubTitle.Caption = ""
+   TxtQty.Text = "0"
+   TxtRate.Text = "0"
+   txtNetCost.Text = "0"
+   txtMRP.Text = "0"
+   TxtStaxRate = "0"
+   txtDiscPer.Text = ""
+   txtDiscAmt.Text = "0"
+   TxtAmount.Caption = ""
+   TxtStaxAmount.Text = ""
+   LblIncludedAmount.Caption = ""
+   TxtUomTitle.Caption = ""
+   TxtsRemarks.Text = ""
+   Text1.Text = ""
+   txtUnit.Text = ""
+   txtPQty.Text = ""
+   TxtPRate.Text = ""
+   txtBarcode.Text = ""
+   txtBarcodeWS.Text = ""
+'   TxtID.SetFocus
+   txtBarcode.SetFocus
+   lblProfitPer.Caption = "%"
+   lblExcludAmt = "0"
+   TxtOffInvDiscPer = "0"
+   LblOffInvIncludedAmt = "0"
+   txtOffInvDiscAmt = "0"
+   txtCoID = "0"
+   lblCoTitle.Caption = ""
+   
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+Private Sub TxtItemID_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+    If KeyAscii = 27 Then
+           Unload Me
+    End If
+    KeyAscii = CheckNumOrChr(KeyAscii, True, False)
+''        Dim strvalid As String
+''        strvalid = "0123456789"
+''        If KeyAscii = 8 Then
+''            Dim mLen As Integer
+''            mLen = Len(Trim(TxtID))
+''            If mLen = 0 Then
+''                TxtID.Text = ""
+''            Else
+''                TxtID.Text = Left(Trim(TxtID), mLen - 1)
+''                SendKeys "{END}"
+''            End If
+''            Exit Sub
+''        End If
+''        If InStr(strvalid, Chr(KeyAscii)) = 0 Then
+''            KeyAscii = 0
+''        End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub Txtid_GotFocus()
+On Error GoTo TrapError
+    TxtID.SelLength = Len(TxtID)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtID_KeyDown(Keycode As Integer, Shift As Integer)
+'
+    If Keycode = 113 Then ' F2
+        Call TxtID_DblClick
+    End If
+End Sub
+
+Private Sub TxtID_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+Dim Rs As New ADODB.Recordset
+
+   If Len(Trim(TxtID)) = 0 Then
+        Exit Sub
+   End If
+   If Len(Trim(TxtID)) < 10 Then
+'   cSeg1 + cSeg2 + cSeg3 + cSeg4 Then
+        MsgBox "Invalid ID length ", vbInformation, cSelFormId
+        TxtID.SetFocus
+        Cancel = True
+        Exit Sub
+   End If
+      Screen.MousePointer = vbHourglass
+        SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+        Set RsDummy = FetchAll(SQL)
+        If Not (RsDummy.EOF And RsDummy.BOF) Then
+            Text1.Text = RsDummy!manualid
+            'TxtTitle.Caption = RsDummy!Item_Title & " --- " & RsDummy!item_short
+            TxtTitle.Caption = RsDummy!Item_Title & " --- " & RsDummy!manualid
+            txtCoID.Text = RsDummy!co_id
+            txtCoID_Validate (False)
+            '
+            If RsDummy!sales_Rate > 0 Then
+                lblSale.Caption = Format(RsDummy!sales_Rate, "########.00")
+            Else
+                lblSale.Caption = "0.00"
+            End If
+            
+            If RsDummy!Cqty > 0 Then
+                lblStock.Caption = RsDummy!Cqty
+            Else
+                lblStock.Caption = "0.00"
+            End If
+            
+            If RsDummy!disc_p1 > 0 Then
+                txtMRP.Text = RsDummy!disc_p1
+            Else
+                txtMRP.Text = "0"
+            End If
+            
+            If RsDummy!Cqty1 > 0 Then
+                TxtRate.Text = Format(RsDummy!Cqty1, "########.#000")
+            Else
+'                TxtRate.Text = "0"
+            End If
+            
+            If RsDummy!STAX_REG > 0 Then
+                TxtStaxRate.Text = RsDummy!STAX_REG
+            Else
+                TxtStaxRate.Text = "0"
+            End If
+            
+            
+            
+            
+            If lEdit = False Then
+                If RsDummy!cost_Rate > 0 Then
+                    'Temporary Close
+                    'TxtRate.Text = Format(RsDummy!cost_Rate, "########.00")
+                Else
+                    'TxtRate.Text = ""
+                End If
+                
+                
+            End If
+            mUomID = RsDummy!uom_id
+            SQL = "SELECT * FROM fin_c002 WHERE uom_id = " & mUomID
+            Set Rs = FetchAll(SQL)
+            If Not (Rs.EOF And Rs.BOF) Then
+              ' Assign Values to Text/Controls
+              TxtUomTitle.Caption = "" & Rs!uom_abbr
+            Else
+                 TxtUomTitle.Caption = "UOM ID not found ...... "
+            End If
+            Rs.Close
+            
+            If RsDummy!ed_status = 1 Then
+                Screen.MousePointer = vbDefault
+                MsgBox "Item ID is Disabled, Consultant Administrator .... ", vbInformation, cSelFormId
+                Cancel = True
+                Exit Sub
+            End If
+            If lEdit = False Then
+                If RsDummy!cost_Rate > 0 Then
+'                    TxtRate.Text = Format(RsDummy!cost_Rate, "########.00")  'RsDummy!cost_Rate
+                Else
+                    TxtRate.Text = ""
+                End If
+            End If
+            ' *************************************************
+            If cSTaxType = 0 Then
+               If Fin_PurM.LblRegistration.Caption = "Registered" Then
+                If lEdit = False Then
+'                   mSaleTaxRate = RsDummy!STAX_REG
+'                   TxtStaxRate = mSaleTaxRate
+                End If
+    
+               Else
+               If lEdit = False Then
+'                   mSaleTaxRate = RsDummy!STAX_UNREG
+'                   TxtStaxRate = mSaleTaxRate
+               End If
+               End If
+            Else
+               ' For fix Sales Tax Rate (not dependent on item)
+            If lEdit = False Then
+'               TxtStaxRate = cSalesTaxRate
+'               mSaleTaxRate = cSalesTaxRate
+            End If
+            End If
+            ' *************************************************
+'            If Not IsNull(RsDummy!ed_status) Then
+'                If RsDummy!ed_status Then
+'                   MsgBox "Account ID is Diabled, please re-enter another ... ", vbCritical, cSelFormId
+'                   TxtID.Text = ""
+'                   TxtID.SetFocus
+'                   Cancel = True
+'                   Exit Sub
+'                End If
+'            End If
+        Else
+            Screen.MousePointer = vbDefault
+            MsgBox "Item ID not found, please re-enter ... " & Chr(13) & Chr(13) & " Or Main Or Sub Account ID is selected. ", vbInformation, "Production Receipt"
+            TxtID.SetFocus
+            Cancel = True
+            Exit Sub
+        End If
+        Set RsDummy = Nothing 'KAM 06032022
+        
+        SQL = "select * from v_FIN_ITEM where item_id=" & CDbl(TxtID)
+        Set RsTmp = FetchAll(SQL)
+        If Not (RsTmp.EOF And RsTmp.BOF) Then
+             LblMainTitle.Caption = RsTmp!main_title
+             LblSubTitle.Caption = RsTmp!sub_title
+        Else
+             LblMainTitle.Caption = "Not found . "
+             LblSubTitle.Caption = "Not found. "
+        End If
+        RsTmp.Close
+        
+                'SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+                'SQL = "select top " & txtNoOf.Text & " Prod_id,doc_date,QTY,((pur_AMT - disc_amt - disc_amt_oi )/QTY) as cost_amt ,rate as TP,item_id from Fin_Pur_D " & _
+
+                SQL = "select top " & txtNoOf.Text & " Prod_id,doc_date,QTY,rate as TP,item_id from Fin_Pur_D " & _
+                        "where ITEM_ID = '" & TxtID.Text & "' " & _
+                            "order by doc_date desc"
+                Set Rs = FetchAll(SQL)
+                If Not (Rs.EOF And Rs.BOF) Then
+                    grd(0).LoadArray Rs.GetRows()
+                End If
+                With grd(0)
+                    .Cols = 5
+                    .TextMatrix(0, 0) = "Pur.#"
+                    .ColWidth(0) = 1100
+                    .TextMatrix(0, 1) = "Date"
+                    .ColWidth(1) = 1300
+                    .TextMatrix(0, 2) = "Qty"
+                    .ColWidth(2) = 1100
+                    .TextMatrix(0, 3) = "TP Rate"
+                    .ColWidth(3) = 1100
+                    .TextMatrix(0, 4) = "ITEM ID"
+                    .ColWidth(4) = 1500
+                End With
+                Set Rs = Nothing 'KAM 06032022
+        
+        Screen.MousePointer = vbDefault
+        
+        Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtOffInvDiscAmt_GotFocus()
+On Error GoTo TrapError
+    txtOffInvDiscAmt.SelLength = Len(txtOffInvDiscAmt)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtOffInvDiscAmt_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub txtOffInvDiscAmt_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    If txtOffInvDiscAmt.Text = "" Then Exit Sub
+    Call Calc_Rate
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+
+'Private Sub txtOffInvDiscAmt_Change()
+'On Error GoTo TrapError
+'    If txtOffInvDiscAmt.Text = "" Then Exit Sub
+'    Call Calc_Rate
+'Exit Sub
+'TrapError:
+'    Call ShowError(lngError, Me.Caption)
+'End Sub
+
+Private Sub TxtPQty_Change()
+On Error GoTo TrapError
+    If (txtPQty.Text) = "" Or (txtUnit.Text) = "" Then Exit Sub
+    TxtQty.Text = CDbl(txtUnit.Text) * CDbl(txtPQty.Text)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtPQty_GotFocus()
+On Error GoTo TrapError
+    If txtUnit.Text = "0" Or txtUnit.Text = "" Then
+        TxtQty.SetFocus
+        Exit Sub
+    End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub txtPQty_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub TxtPRate_Change()
+On Error GoTo TrapError
+    If (txtUnit.Text) = "" Or (TxtPRate.Text) = "" Then Exit Sub
+    TxtRate.Text = Format(CDbl(TxtPRate.Text) / CDbl(txtUnit.Text), "#########.#000")
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtPRate_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+Private Sub TxtPRate_LostFocus()
+On Error GoTo TrapError
+    TxtStaxRate.SetFocus
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub TxtQty_GotFocus()
+On Error GoTo TrapError
+    TxtQty.SelLength = Len(TxtQty)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub TxtQty_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub TxtQty_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    TxtAmount.Caption = Format(Val(TxtRate) * Val(TxtQty), "#########.#0")
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtRate_Change()
+On Error GoTo TrapError
+    If Val(TxtRate.Text) <> 0 Then
+        If lblSale.Caption <> 0 Then
+            Dim RateDiff As Integer
+            RateDiff = Val(lblSale.Caption) - Val(TxtRate.Text)
+            'lblProfitPer.Caption = Format((100 - ((Val(txtrate.text) / Val(lblsale.caption)) * 100)), "########.#0")
+            'lblProfitPer.Caption = CDbl(Format(((RateDiff * 100) / (Val(txtrate.text))), "########.#0"))
+            lblProfitPer.Caption = CDbl(Format(((RateDiff / Val(TxtRate.Text) * 100)), "########.#0"))
+        End If
+    End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtRate_GotFocus()
+On Error GoTo TrapError
+    TxtRate.SelLength = Len(TxtRate)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub TxtRate_KeyDown(Keycode As Integer, Shift As Integer)
+On Error GoTo errhandler
+Dim Rs As New ADODB.Recordset
+    If Keycode = 113 Then ' F2
+        Screen.MousePointer = vbHourglass
+            If Me.Height <= 4560 Then
+                Me.Height = 8250 '11955
+                Me.Left = (Screen.Width - Me.Width) / 2
+                Me.Top = (Screen.Height - Me.Height) / 2
+            Else
+                Me.Height = 4560
+                Me.Left = (Screen.Width - Me.Width) / 2
+                Me.Top = (Screen.Height - Me.Height) / 2
+                
+            End If
+    End If
+Exit Sub
+errhandler:
+    MsgBox Err.Description, vbInformation, cSelFormId
+    Err.Clear
+
+End Sub
+
+Private Sub TxtRate_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+
+
+
+If KeyAscii = 27 Then
+               Unload Me
+        End If
+    KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+''        Dim strvalid As String
+''        strvalid = "0123456789."
+''        If KeyAscii = 8 Then
+''            Dim mLen As Integer
+''            mLen = Len(Trim(TxtRate))
+''            If mLen = 0 Then
+''                TxtRate.Text = ""
+''            Else
+''                TxtRate.Text = Left(Trim(TxtRate), mLen - 1)
+''                SendKeys "{END}"
+''            End If
+''            Exit Sub
+''        End If
+''        If InStr(strvalid, Chr(KeyAscii)) = 0 Then
+''            KeyAscii = 0
+''        End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Sub TxtRate_LostFocus()
+On Error GoTo TrapError
+
+'Temp rate block
+'    If Val(TxtRate) = 0 And cAudit = 0 Then
+'        MsgBox "Invalid:  Please enter Rate ...  ", vbInformation, "Production Receipt"
+'        Exit Sub
+'    End If
+
+'    If TxtRate.Text <> 0 Then
+'        If lblSale.Caption <> 0 Then
+'            Dim RateDiff As Integer
+'            RateDiff = Val(lblSale.Caption) - Val(TxtRate.Text)
+'            'lblProfitPer.Caption = Format((100 - ((Val(txtrate.text) / Val(lblsale.caption)) * 100)), "########.#0")
+'            'lblProfitPer.Caption = CDbl(Format(((RateDiff * 100) / (Val(txtrate.text))), "########.#0"))
+'            lblProfitPer.Caption = CDbl(Format(((RateDiff / Val(TxtRate.Text) * 100)), "########.#0"))
+'        End If
+'    End If
+    
+
+    If Val(TxtQty) = 0 Then
+        MsgBox "Invalid:  Please enter Quantity ...  ", vbInformation, "Production Receipt"
+        Exit Sub
+    End If
+    TxtAmount.Caption = Format(Val(TxtRate) * Val(TxtQty), "#########.#0")
+    
+    Call Calc_Rate
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtStaxAmount_GotFocus()
+On Error GoTo TrapError
+    TxtStaxAmount.SelLength = Len(TxtStaxAmount)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtStaxAmount_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub TxtStaxAmount_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+    Call Calc_Rate
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtStaxRate_GotFocus()
+On Error GoTo TrapError
+    TxtStaxRate.SelLength = Len(TxtStaxRate)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtStaxRate_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub TxtStaxRate_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+'    If Val(TxtStaxRate) = 0 Then
+'        TxtStaxAmount.Enabled = True
+'    Else
+'        TxtStaxAmount.Enabled = False
+'    End If
+'    Call Calc_Rate
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+

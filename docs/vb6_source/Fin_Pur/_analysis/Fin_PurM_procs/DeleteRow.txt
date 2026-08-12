@@ -1,0 +1,204 @@
+Private Function DeleteRow()
+
+   
+
+On Error GoTo TrapError
+
+   Dim ValCol1 As String
+
+   Dim ValCol2 As String
+
+   Dim ValCol3 As String
+
+   Dim ValCol4 As String
+
+   Dim ValCol5 As String
+
+   Dim ValCol6 As String
+
+   Dim ValCol7 As String
+
+   Dim ValCol8 As String
+
+   Dim ValCol9 As String
+
+   Dim ValCol10 As String
+
+   Dim ValCol11 As String
+
+   Dim ValCol12 As String
+
+   Dim ValCol13 As String
+
+   Dim ValCol14 As String
+
+   
+
+   
+
+   Dim nCnt As Integer
+
+   If VGrid.Row = nCounter Then
+
+      VGrid.Col = 1: VGrid.Text = ""
+
+      VGrid.Col = 2: VGrid.Text = ""
+
+      VGrid.Col = 3: VGrid.Text = ""
+
+      VGrid.Col = 4: VGrid.Text = ""
+
+      VGrid.Col = 5: VGrid.Text = ""
+
+      VGrid.Col = 6: VGrid.Text = ""
+
+      VGrid.Col = 7: VGrid.Text = ""
+
+      VGrid.Col = 8: VGrid.Text = ""
+
+      VGrid.Col = 9: VGrid.Text = ""
+
+      VGrid.Col = 10: VGrid.Text = ""
+
+      VGrid.Col = 11: VGrid.Text = ""
+
+      VGrid.Col = 12: VGrid.Text = ""
+
+      VGrid.Col = 13: VGrid.Text = ""
+
+      VGrid.Col = 14: VGrid.Text = ""
+
+      
+
+      nCounter = nCounter - 1
+
+      Exit Function
+
+   End If
+
+   If VGrid.Row < nCounter Then
+
+      nCnt = VGrid.Row
+
+      Do While nCnt <= nCounter
+
+         VGrid.Row = nCnt + 1
+
+         VGrid.Col = 1: ValCol1 = VGrid.Text
+
+         VGrid.Col = 2: ValCol2 = VGrid.Text
+
+         VGrid.Col = 3: ValCol3 = VGrid.Text
+
+         VGrid.Col = 4: ValCol4 = VGrid.Text
+
+         VGrid.Col = 5: ValCol5 = VGrid.Text
+
+         VGrid.Col = 6: ValCol6 = VGrid.Text
+
+         VGrid.Col = 7: ValCol7 = VGrid.Text
+
+         VGrid.Col = 8: ValCol8 = VGrid.Text
+
+         VGrid.Col = 9: ValCol9 = VGrid.Text
+
+         VGrid.Col = 10: ValCol10 = VGrid.Text
+
+         VGrid.Col = 11: ValCol11 = VGrid.Text
+
+         VGrid.Col = 12: ValCol12 = VGrid.Text
+
+         VGrid.Col = 13: ValCol13 = VGrid.Text
+
+         VGrid.Col = 14: ValCol14 = VGrid.Text
+
+         
+
+         VGrid.Row = nCnt
+
+         VGrid.Col = 1: VGrid.Text = ValCol1
+
+         VGrid.Col = 2: VGrid.Text = ValCol2
+
+         VGrid.Col = 3: VGrid.Text = ValCol3
+
+         VGrid.Col = 4: VGrid.Text = ValCol4
+
+         VGrid.Col = 5: VGrid.Text = ValCol5
+
+         VGrid.Col = 6: VGrid.Text = ValCol6
+
+         VGrid.Col = 7: VGrid.Text = ValCol7
+
+         VGrid.Col = 8: VGrid.Text = ValCol8
+
+         VGrid.Col = 9: VGrid.Text = ValCol9
+
+         VGrid.Col = 10: VGrid.Text = ValCol10
+
+         VGrid.Col = 11: VGrid.Text = ValCol11
+
+         VGrid.Col = 12: VGrid.Text = ValCol12
+
+         VGrid.Col = 13: VGrid.Text = ValCol13
+
+         VGrid.Col = 14: VGrid.Text = ValCol14
+
+         
+
+         nCnt = nCnt + 1
+
+         If VGrid.Row = nCounter Then
+
+            VGrid.Row = nCnt
+
+            VGrid.Col = 1: VGrid.Text = ""
+
+            VGrid.Col = 2: VGrid.Text = ""
+
+            VGrid.Col = 3: VGrid.Text = ""
+
+            VGrid.Col = 4: VGrid.Text = ""
+
+            VGrid.Col = 5: VGrid.Text = ""
+
+            VGrid.Col = 6: VGrid.Text = ""
+
+            VGrid.Col = 7: VGrid.Text = ""
+
+            VGrid.Col = 8: VGrid.Text = ""
+
+            VGrid.Col = 9: VGrid.Text = ""
+
+            VGrid.Col = 10: VGrid.Text = ""
+
+            VGrid.Col = 11: VGrid.Text = ""
+
+            VGrid.Col = 12: VGrid.Text = ""
+
+            VGrid.Col = 13: VGrid.Text = ""
+
+            VGrid.Col = 14: VGrid.Text = ""
+
+            
+
+            nCounter = nCounter - 1
+
+            
+
+         End If
+
+      Loop
+
+   End If
+
+Exit Function
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Function
+
+
+

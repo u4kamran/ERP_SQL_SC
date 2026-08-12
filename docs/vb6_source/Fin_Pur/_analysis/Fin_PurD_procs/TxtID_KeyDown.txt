@@ -1,0 +1,14 @@
+Private Sub TxtID_KeyDown(Keycode As Integer, Shift As Integer)
+
+'
+
+    If Keycode = 113 Then ' F2
+
+        Call TxtID_DblClick
+
+    End If
+
+End Sub
+
+
+

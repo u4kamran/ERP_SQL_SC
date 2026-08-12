@@ -1,216 +1,292 @@
 {% extends "base.html" %}
-{% block title %}Item Master (VB6) - {{ app_name }}{% endblock %}
+{% block title %}Item Info - {{ app_name }}{% endblock %}
+{% block page_title %}Item Info{% endblock %}
 {% block extra_css %}
-<link href="/static/css/fin_item_classic.css" rel="stylesheet">
+<link href="/static/css/fin_item_classic.css?v=20260812vb6pp3" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="vbc-form">
-    <div class="vbc-title d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-window-desktop me-2"></i>Item Master — Fin_Item.frm</span>
-        <span id="status-label" class="badge bg-warning text-dark">Ready</span>
-    </div>
+{# Geometry: Fin_Item.frm Client 7965×9255 twips ≈ 531×617 px (÷15). Default SSTab = Last Purchases. #}
+<div class="vb6-shell" id="item-app">
+    <div class="vb6-form" tabindex="-1" role="application" aria-label="Item Info">
+        <div class="abs hline" style="top:1px"></div>
+        <div class="abs vb6-banner"><em>Item Info</em></div>
+        <div class="abs hline" style="top:36px"></div>
 
-    <div id="alert-area"></div>
+        {# Status strip Top=600 #}
+        <div class="abs st-lbl" style="left:1px">Status</div>
+        <div class="abs st-val" style="left:85px" id="status-label">Ready</div>
+        <div class="abs st-lbl" style="left:169px">Records</div>
+        <div class="abs st-val" style="left:252px" id="record-count">0</div>
+        <div class="abs st-lbl" style="left:337px">Last ID</div>
+        <div class="abs st-val st-last" style="left:421px" id="last-item-id">0</div>
+        <span class="d-none" id="form-status">Ready</span>
 
-    <div class="row g-2">
-        <div class="col-lg-5">
-            <div class="row g-1 align-items-end">
-                <div class="col-4"><label class="form-label">Item ID :</label></div>
-                <div class="col-8">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="item_id" maxlength="15" placeholder="System ID or Manual ID">
-                        <button class="btn btn-outline-primary btn-sm" type="button" id="btn-load-item" title="Load item">Load</button>
-                        <button class="btn btn-outline-secondary btn-sm" type="button" id="btn-search-item" title="Search">...</button>
-                    </div>
-                </div>
+        {# —— Identification —— #}
+        <label class="abs flbl" style="left:49px;top:74px;width:40px" for="item_id"><u>I</u>tem ID :</label>
+        <input type="text" class="abs tb" id="item_id" maxlength="15" data-nav="1" autocomplete="off"
+               style="left:93px;top:70px;width:111px" accesskey="i">
+        <div class="abs title-box" id="item_title" style="left:206px;top:70px;width:314px">Item Title</div>
 
-                <div class="col-4"><label class="form-label">Manual ID :</label></div>
-                <div class="col-8">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="manual_id" placeholder="Enter manual ID">
-                        <button class="btn btn-outline-primary btn-sm" type="button" id="btn-load-manual" title="Load by manual ID">Load</button>
-                    </div>
-                </div>
+        <label class="abs flbl" style="left:27px;top:97px;width:62px" for="item_short">Short Name :</label>
+        <input type="text" class="abs tb" id="item_short" maxlength="10" data-nav="2"
+               style="left:93px;top:93px;width:111px">
+        <label class="abs flbl" style="left:256px;top:97px;width:87px" for="item_oem">OEM/Part/Brand :</label>
+        <input type="text" class="abs tb" id="item_oem" data-nav="3"
+               style="left:345px;top:93px;width:175px">
 
-                <div class="col-4"><label class="form-label">Barcode ID :</label></div>
-                <div class="col-8">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="barcodeid" value="0">
-                        <button class="btn btn-outline-primary btn-sm" type="button" id="btn-load-barcode" title="Load by barcode">Load</button>
-                    </div>
-                </div>
+        <label class="abs flbl" style="left:34px;top:121px;width:55px" for="manual_id">Man<u>u</u>al ID :</label>
+        <input type="text" class="abs tb tr" id="manual_id" data-nav="4" autocomplete="off"
+               style="left:93px;top:117px;width:111px" accesskey="u">
+        <label class="abs chk" style="left:207px;top:120px;width:72px">
+            <input type="checkbox" id="chkSetFocus" checked> Set Focus
+        </label>
+        <label class="abs flbl" style="left:283px;top:121px;width:60px" for="barcodeid"><u>B</u>arcode ID :</label>
+        <input type="text" class="abs tb" id="barcodeid" value="0" data-nav="5" autocomplete="off"
+               style="left:345px;top:117px;width:175px" accesskey="b">
 
-                <div class="col-4"><label class="form-label">WS Barcode ID :</label></div>
-                <div class="col-8">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="barcodeid_ws" value="0">
-                        <button class="btn btn-outline-primary btn-sm" type="button" id="btn-load-ws-barcode" title="Load by WS barcode">Load</button>
-                    </div>
-                </div>
+        <label class="abs flbl" style="left:27px;top:144px;width:62px" for="uom_id">UOM ID :</label>
+        <input type="text" class="abs tb tr" id="uom_id" data-nav="6" inputmode="numeric"
+               style="left:93px;top:140px;width:111px">
+        <div class="abs ro-lbl" id="uom_title" style="left:207px;top:140px;width:37px"></div>
+        <label class="abs flbl" style="left:262px;top:145px;width:81px" for="barcodeid_ws"><u>W</u>S Barcode ID :</label>
+        <input type="text" class="abs tb tr" id="barcodeid_ws" value="0" data-nav="7" autocomplete="off"
+               style="left:345px;top:141px;width:175px" accesskey="w">
 
-                <div class="col-12"><label class="form-label">Item Title</label></div>
-                <div class="col-12"><div class="item-title-display" id="item_title">—</div></div>
+        <select class="abs tb" id="item_nature" data-nav="8" style="left:93px;top:162px;width:111px">
+            <option value="0">Imported</option>
+            <option value="1">Local</option>
+            <option value="2">Manufactured</option>
+        </select>
+        <label class="abs flbl" style="left:231px;top:166px;width:63px" for="country_id">Country :</label>
+        <input type="text" class="abs tb tr" id="country_id" data-nav="9" inputmode="numeric"
+               style="left:297px;top:161px;width:48px">
+        <div class="abs ro-lbl" id="country_title" style="left:345px;top:161px;width:175px">Country of Origin</div>
 
-                <div class="col-4"><label class="form-label">Short Name :</label></div>
-                <div class="col-8"><input type="text" class="form-control" id="item_short" maxlength="10"></div>
+        <label class="abs flbl" style="left:27px;top:189px;width:62px" for="min_level">Min. Level :</label>
+        <input type="text" class="abs tb tr" id="min_level" data-nav="10" inputmode="decimal"
+               style="left:93px;top:185px;width:111px">
+        <label class="abs flbl" style="left:231px;top:189px;width:63px" for="max_level">Max. Level :</label>
+        <input type="text" class="abs tb tr" id="max_level" data-nav="11" inputmode="decimal"
+               style="left:297px;top:185px;width:111px">
 
-                <div class="col-4"><label class="form-label">OEM/Part/Brand :</label></div>
-                <div class="col-8"><input type="text" class="form-control" id="item_oem"></div>
+        <label class="abs flbl" style="left:27px;top:213px;width:62px" for="ro_qty"><u>R</u>eorder :</label>
+        <input type="text" class="abs tb tr" id="ro_qty" data-nav="12" inputmode="decimal"
+               style="left:93px;top:209px;width:111px" accesskey="r">
+        <label class="abs flbl" style="left:231px;top:213px;width:63px" for="critical_level">Critital Level :</label>
+        <input type="text" class="abs tb tr" id="critical_level" data-nav="13" inputmode="decimal"
+               style="left:297px;top:209px;width:111px">
+        <label class="abs chk" style="left:410px;top:210px;width:111px">
+            <input type="checkbox" id="ed_status" data-nav="14"> Item Disabled
+        </label>
 
-                <div class="col-4"><label class="form-label">UOM ID :</label></div>
-                <div class="col-8">
-                    <div class="input-group input-group-sm">
-                        <input type="number" class="form-control" id="uom_id">
-                        <span class="input-group-text vbc-readonly" id="uom_title"></span>
-                    </div>
-                </div>
-
-                <div class="col-4"><label class="form-label">Unit of Packing :</label></div>
-                <div class="col-8"><input type="number" class="form-control" id="visacard_rate" step="0.01"></div>
-
-                <div class="col-4"><label class="form-label">Country :</label></div>
-                <div class="col-8">
-                    <div class="input-group input-group-sm">
-                        <input type="number" class="form-control" id="country_id">
-                        <span class="input-group-text vbc-readonly" id="country_title"></span>
-                    </div>
-                </div>
-
-                <div class="col-4"><label class="form-label">Nature :</label></div>
-                <div class="col-8">
-                    <select class="form-select" id="item_nature">
-                        <option value="0">Imported</option>
-                        <option value="1">Local</option>
-                        <option value="2">Manufactured</option>
-                    </select>
-                </div>
-
-                <div class="col-4"><label class="form-label">Min. Level :</label></div>
-                <div class="col-8"><input type="number" class="form-control" id="min_level" step="0.01"></div>
-
-                <div class="col-4"><label class="form-label">Max. Level :</label></div>
-                <div class="col-8"><input type="number" class="form-control" id="max_level" step="0.01"></div>
-
-                <div class="col-4"><label class="form-label">Reorder :</label></div>
-                <div class="col-8"><input type="number" class="form-control" id="ro_qty" step="0.01"></div>
-
-                <div class="col-4"><label class="form-label">Critical Level :</label></div>
-                <div class="col-8"><input type="number" class="form-control" id="critical_level" step="0.01"></div>
-
-                <div class="col-12">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="ed_status">
-                        <label class="form-check-label text-danger" for="ed_status">Item Disabled</label>
-                    </div>
-                </div>
-            </div>
-
-            <fieldset class="vbc-frame mt-2">
-                <legend>Store Stock Levels</legend>
-                <div class="row g-1">
-                    <div class="col-6"><label class="form-label">Min. Level :</label><input type="number" class="form-control" id="min_level1" step="0.01"></div>
-                    <div class="col-6"><label class="form-label">Max. Level :</label><input type="number" class="form-control" id="max_level1" step="0.01"></div>
-                    <div class="col-6"><label class="form-label">Reorder :</label><input type="number" class="form-control" id="ro_qty1" step="0.01"></div>
-                    <div class="col-6"><div class="form-check mt-4"><input class="form-check-input" type="checkbox" id="promotion"><label class="form-check-label" for="promotion">Promotion</label></div></div>
-                </div>
-            </fieldset>
+        {# Frame1 Store Stock Levels — Min / Max / Reorder / Promotion all inside #}
+        <div class="abs vb6-frame" style="left:93px;top:226px;width:410px;height:68px">
+            <div class="vb6-frame-cap">Store Stock Levels</div>
+            <table class="store-tbl" role="presentation">
+                <tr>
+                    <td class="flbl">Min. Level :</td>
+                    <td><input type="text" class="tb tr w111" id="min_level1" data-nav="15" inputmode="decimal"></td>
+                    <td class="flbl">Max. Level :</td>
+                    <td><input type="text" class="tb tr w111" id="max_level1" data-nav="16" inputmode="decimal"></td>
+                </tr>
+                <tr>
+                    <td class="flbl"><u>R</u>eorder :</td>
+                    <td><input type="text" class="tb tr w111" id="ro_qty1" data-nav="17" inputmode="decimal"></td>
+                    <td colspan="2">
+                        <label class="chk">
+                            <input type="checkbox" id="promotion" data-nav="18"> Promotion
+                        </label>
+                    </td>
+                </tr>
+            </table>
+            {# TxtCritical_Level1 Visible=False in VB6; critical_level1 stored via Promotion #}
+            <input type="hidden" id="critical_level1" value="">
         </div>
 
-        <div class="col-lg-7">
-            <div class="row g-1 mb-2">
-                <div class="col-md-4"><label class="form-label">Cost Price :</label><input type="number" class="form-control vbc-readonly" id="cost_rate" step="0.01" readonly></div>
-                <div class="col-md-4"><label class="form-label">Sales Price :</label><input type="number" class="form-control" id="sales_rate" step="0.01"></div>
-                <div class="col-md-4"><label class="form-label">Sale Price WO GST :</label><input type="number" class="form-control vbc-readonly" id="sales_price_wo_gst" step="0.01" readonly></div>
-                <div class="col-md-4"><label class="form-label">Cost WO GST :</label><input type="number" class="form-control vbc-readonly" id="cost_wo_gst" step="0.01" readonly></div>
-                <div class="col-md-4"><label class="form-label">GST Amt :</label><input type="number" class="form-control vbc-readonly" id="gst_amount" step="0.01" readonly></div>
-                <div class="col-md-4"><label class="form-label">Market Price :</label><input type="number" class="form-control" id="market_price" step="0.01"></div>
-                <div class="col-md-4"><label class="form-label">W.S Price :</label><input type="number" class="form-control" id="ws_price" step="0.01"></div>
-                <div class="col-md-4"><label class="form-label">Saved Cost Price :</label><input type="number" class="form-control vbc-readonly" id="saved_cost_price" step="0.01" readonly></div>
-                <div class="col-md-4"><label class="form-label">TP Rate :</label><input type="number" class="form-control vbc-readonly" id="tp_rate" step="0.01" readonly></div>
-                <div class="col-md-4"><label class="form-label">Average Cost :</label><input type="text" class="form-control vbc-readonly" id="average_cost" readonly></div>
-                <div class="col-md-4"><label class="form-label">Profit % :</label><input type="text" class="form-control vbc-readonly" id="profit_percent" readonly></div>
-                <div class="col-md-8"><label class="form-label">Remarks :</label><input type="text" class="form-control" id="remarks" maxlength="50"></div>
-                <div class="col-md-4">
-                    <label class="form-label">Company :</label>
-                    <div class="input-group input-group-sm">
-                        <input type="number" class="form-control" id="co_id">
-                        <span class="input-group-text vbc-readonly" id="co_title"></span>
-                    </div>
-                </div>
-            </div>
+        {# Pricing row Y≈296 #}
+        <label class="abs flbl" style="left:35px;top:300px;width:54px" for="cost_rate">C<u>o</u>st Price :</label>
+        <input type="text" class="abs tb tr ro" id="cost_rate" readonly style="left:93px;top:296px;width:93px">
+        <div class="abs ro-lbl ctr" id="profit_percent" title="Profit %" style="left:186px;top:296px;width:46px">%</div>
+        <span class="d-none" id="average_cost">0</span>
+        <label class="abs flbl" style="left:235px;top:300px;width:59px" for="sales_rate">Sa<u>l</u>es Price :</label>
+        <input type="text" class="abs tb tr" id="sales_rate" data-nav="19" inputmode="decimal"
+               style="left:297px;top:296px;width:93px" accesskey="l">
+        <label class="abs flbl" style="left:399px;top:301px;width:46px" for="ws_price">W.S Price :</label>
+        <input type="text" class="abs tb tr" id="ws_price" data-nav="20" inputmode="decimal"
+               style="left:446px;top:296px;width:75px">
 
-            <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-1">
-                <ul class="nav nav-tabs mb-0" id="item-tabs" role="tablist">
-                <li class="nav-item"><button class="nav-link active" type="button" data-bs-toggle="tab" data-bs-target="#tab-gl">General Ledger</button></li>
-                <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#tab-bal">Balances/S.Tax</button></li>
-                <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#tab-pur">Last Purchases</button></li>
-                <li class="nav-item"><button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#tab-sales">Last Sales</button></li>
-                </ul>
-                <div class="d-flex align-items-center gap-2">
-                    <label class="form-label mb-0" for="no_of_pur">No of Pur :</label>
-                    <input type="number" class="form-control form-control-sm" id="no_of_pur" value="5" min="1" max="50" style="width:5rem">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-history" title="Refresh purchase/sales history">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                </div>
-            </div>
+        <label class="abs flbl" style="left:15px;top:322px;width:74px" for="cost_wo_gst">Cost <u>W</u>O GST :</label>
+        <input type="text" class="abs tb tr ro" id="cost_wo_gst" readonly style="left:93px;top:318px;width:93px">
+        <label class="abs flbl" style="left:193px;top:322px;width:101px" for="sales_price_wo_gst">Sale Price WO GST :</label>
+        <input type="text" class="abs tb tr ro" id="sales_price_wo_gst" readonly style="left:297px;top:318px;width:93px">
+        <label class="abs flbl" style="left:399px;top:324px;width:46px" for="tp_rate">TP Rate :</label>
+        <input type="text" class="abs tb tr ro" id="tp_rate" readonly style="left:446px;top:318px;width:75px">
 
-            <div class="tab-content border border-top-0 p-2 bg-white">
-                <div class="tab-pane fade show active" id="tab-gl">
-                    <div class="row g-1">
-                        <div class="col-md-6"><label class="form-label">GL Sales ID</label><div class="input-group input-group-sm"><input type="number" class="form-control gl-field" id="gl_sales_id"><span class="input-group-text vbc-readonly gl-title" id="gl_sales_title"></span></div></div>
-                        <div class="col-md-6"><label class="form-label">GL Pur ID</label><div class="input-group input-group-sm"><input type="number" class="form-control gl-field" id="gl_pur_id"><span class="input-group-text vbc-readonly gl-title" id="gl_pur_title"></span></div></div>
-                        <div class="col-md-6"><label class="form-label">GL Cons ID</label><div class="input-group input-group-sm"><input type="number" class="form-control gl-field" id="gl_cons_id"><span class="input-group-text vbc-readonly gl-title" id="gl_cons_title"></span></div></div>
-                        <div class="col-md-6"><label class="form-label">GL Discount ID</label><div class="input-group input-group-sm"><input type="number" class="form-control gl-field" id="gl_disc_id"><span class="input-group-text vbc-readonly gl-title" id="gl_disc_title"></span></div></div>
-                        <div class="col-md-6"><label class="form-label">GL S-Tax ID</label><div class="input-group input-group-sm"><input type="number" class="form-control gl-field" id="gl_stax_id"><span class="input-group-text vbc-readonly gl-title" id="gl_stax_title"></span></div></div>
-                        <div class="col-12"><button type="button" class="btn btn-sm btn-outline-primary" id="btn-copy-gl">Copy GL Sales to all GL fields</button></div>
+        <label class="abs flbl" style="left:1px;top:343px;width:88px" for="saved_cost_price">Saved C<u>o</u>st Price :</label>
+        <input type="text" class="abs tb tr ro" id="saved_cost_price" readonly style="left:93px;top:339px;width:93px">
+        <label class="abs flbl" style="left:228px;top:343px;width:66px" for="market_price">Market <u>P</u>rice :</label>
+        <input type="text" class="abs tb tr" id="market_price" data-nav="21" inputmode="decimal"
+               style="left:297px;top:339px;width:93px" accesskey="p">
+        <label class="abs flbl" style="left:399px;top:345px;width:46px" for="gst_amount">GST Amt :</label>
+        <input type="text" class="abs tb tr ro" id="gst_amount" readonly style="left:446px;top:339px;width:75px">
+
+        <label class="abs flbl" style="left:27px;top:364px;width:62px" for="remarks">Remarks :</label>
+        <input type="text" class="abs tb" id="remarks" maxlength="50" data-nav="22"
+               style="left:93px;top:360px;width:93px">
+        <label class="abs flbl" style="left:215px;top:364px;width:79px" for="visacard_rate">Unit of Packing :</label>
+        <input type="text" class="abs tb tr" id="visacard_rate" data-nav="23" inputmode="decimal"
+               style="left:297px;top:360px;width:93px">
+        <label class="abs flbl" style="left:399px;top:364px;width:46px" for="no_of_pur">No of Pur :</label>
+        <input type="text" class="abs tb tr" id="no_of_pur" value="5" data-nav="24" inputmode="numeric"
+               style="left:446px;top:360px;width:75px">
+        <button type="button" class="d-none" id="btn-refresh-history" tabindex="-1">↻</button>
+
+        <label class="abs flbl" style="left:27px;top:387px;width:62px" for="co_id">Company :</label>
+        <input type="text" class="abs tb tr" id="co_id" data-nav="25" inputmode="numeric"
+               style="left:93px;top:383px;width:48px">
+        <div class="abs ro-lbl" id="co_title" style="left:144px;top:383px;width:384px">Title of Company</div>
+
+        <div id="alert-area"></div>
+
+        {# SSTab — Left 3 Top 408 W 528 H 176; default Tab=3 Last Purchases #}
+        <div class="abs vb6-sstab" style="left:3px;top:408px;width:528px;height:176px">
+            <div class="sstab-headers" role="tablist">
+                <button type="button" class="sstab" data-bs-toggle="tab" data-bs-target="#tab-gl" role="tab">General Ledger</button>
+                <button type="button" class="sstab" data-bs-toggle="tab" data-bs-target="#tab-bal" role="tab">Balances/S.Tax</button>
+                <button type="button" class="sstab" data-bs-toggle="tab" data-bs-target="#tab-store" role="tab">Store Balances</button>
+                <button type="button" class="sstab active" data-bs-toggle="tab" data-bs-target="#tab-pur" role="tab">Last Purchases</button>
+                <button type="button" class="sstab" data-bs-toggle="tab" data-bs-target="#tab-sales" role="tab">Last Sales</button>
+            </div>
+            <div class="sstab-body tab-content">
+                <div class="tab-pane fade" id="tab-gl">
+                    <div class="gl-row">
+                        <span>GL Sales ID :</span>
+                        <input type="text" class="tb gl-field" id="gl_sales_id" data-nav="30">
+                        <span class="ro-lbl gl-title" id="gl_sales_title"></span>
                     </div>
+                    <div class="gl-row">
+                        <span>GL Pur ID :</span>
+                        <input type="text" class="tb gl-field" id="gl_pur_id" data-nav="31">
+                        <span class="ro-lbl gl-title" id="gl_pur_title"></span>
+                    </div>
+                    <div class="gl-row">
+                        <span>GL Cons ID :</span>
+                        <input type="text" class="tb gl-field" id="gl_cons_id" data-nav="32">
+                        <span class="ro-lbl gl-title" id="gl_cons_title"></span>
+                    </div>
+                    <div class="gl-row">
+                        <span>GL Discount ID :</span>
+                        <input type="text" class="tb gl-field" id="gl_disc_id" data-nav="33">
+                        <span class="ro-lbl gl-title" id="gl_disc_title"></span>
+                    </div>
+                    <div class="gl-row">
+                        <span>GL S-Tax ID :</span>
+                        <input type="text" class="tb gl-field" id="gl_stax_id" data-nav="34">
+                        <span class="ro-lbl gl-title" id="gl_stax_title"></span>
+                    </div>
+                    <button type="button" class="vb6-btn sm" id="btn-copy-gl">Copy GL Sales to all</button>
                 </div>
                 <div class="tab-pane fade" id="tab-bal">
-                    <div class="row g-1">
-                        <div class="col-md-3"><label class="form-label">Opening Qty</label><input class="form-control vbc-readonly" id="oqty" readonly></div>
-                        <div class="col-md-3"><label class="form-label">Current Qty</label><input class="form-control vbc-readonly" id="cqty" readonly></div>
-                        <div class="col-md-3"><label class="form-label">Opening Value</label><input class="form-control vbc-readonly" id="oamt" readonly></div>
-                        <div class="col-md-3"><label class="form-label">Current Value</label><input class="form-control vbc-readonly" id="camt" readonly></div>
-                        <div class="col-md-6"><label class="form-label">Sales Tax Reg. %</label><input type="number" class="form-control" id="stax_reg" step="0.01"></div>
-                        <div class="col-md-6"><label class="form-label">Sales Tax Un-Reg. %</label><input type="number" class="form-control" id="stax_unreg" step="0.01"></div>
+                    <table class="bal-grid" role="presentation">
+                        <tr>
+                            <td class="flbl">Opening Quantity :</td>
+                            <td><input type="text" class="tb tr ro bal" id="oqty" readonly></td>
+                            <td class="flbl">Opening Values :</td>
+                            <td><input type="text" class="tb tr ro bal" id="oamt" readonly></td>
+                        </tr>
+                        <tr>
+                            <td class="flbl">Current Quantity :</td>
+                            <td><input type="text" class="tb tr ro bal" id="cqty" readonly></td>
+                            <td class="flbl">Current Values :</td>
+                            <td><input type="text" class="tb tr ro bal" id="camt" readonly></td>
+                        </tr>
+                        <tr>
+                            <td class="flbl">Average Cost :</td>
+                            <td><input type="text" class="tb tr ro bal" id="avg_cost_bal" readonly></td>
+                            <td class="flbl">Last Pur % age :</td>
+                            <td><input type="text" class="tb tr ro bal" id="last_pur_pct" value="0.00" readonly></td>
+                        </tr>
+                        <tr>
+                            <td class="flbl">Sales Tax Reg. % :</td>
+                            <td><input type="text" class="tb tr" id="stax_reg" data-nav="35" inputmode="decimal"></td>
+                            <td class="flbl">Sales Tax Un-Reg. % :</td>
+                            <td><input type="text" class="tb tr" id="stax_unreg" data-nav="36" inputmode="decimal"></td>
+                        </tr>
+                    </table>
+                    <div class="bal-actions">
+                        <button type="button" class="vb6-btn sm" id="btn-print-rail">Pri<u>n</u>t Rail</button>
+                        <button type="button" class="vb6-btn sm" id="btn-print-rail-sm">Pri<u>n</u>t Rail SM</button>
+                        <button type="button" class="vb6-btn sm" id="btn-print-des-exp">Pri<u>n</u>t Des Exp</button>
+                        <button type="button" class="vb6-btn sm" id="btn-print-desc">Pri<u>n</u>t Desc</button>
+                        <button type="button" class="vb6-btn sm" id="btn-print-label">Print Lab<u>e</u>l</button>
+                        <label class="chk"><input type="checkbox" id="chkBarPrint"> Prin<u>t</u></label>
+                        <button type="button" class="vb6-btn sm" id="btn-opening-bal">Opening Bal</button>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="tab-pur">
-                    <div class="table-responsive"><table class="table table-sm grid-table mb-0" id="grid-purchases"><thead><tr><th>Pur.#</th><th>Date</th><th>Supplier</th><th>Qty</th><th>Rate</th><th>Exp Date</th></tr></thead><tbody></tbody></table></div>
+                <div class="tab-pane fade" id="tab-store">
+                    {# VB6 Store Balances tab ControlCount=0 — intentionally empty #}
+                    <div style="padding:8px;color:#666;font-size:11px">Store Balances</div>
+                    <span class="d-none" id="oqty1"></span>
+                    <span class="d-none" id="cqty1"></span>
+                    <span class="d-none" id="store_min_disp"></span>
+                    <span class="d-none" id="store_max_disp"></span>
+                </div>
+                <div class="tab-pane fade show active" id="tab-pur">
+                    <div class="vb6-grid-wrap">
+                        <table class="vb6-grid" id="grid-purchases">
+                            <thead><tr><th>Pur.#</th><th>Date</th><th>Supplier</th><th>Qty</th><th>Rate</th><th>Ex</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="tab-sales">
-                    <div class="table-responsive"><table class="table table-sm grid-table mb-0" id="grid-sales"><thead><tr><th>Inv.#</th><th>Date</th><th>Customer</th><th>Qty</th><th>Sales Price</th></tr></thead><tbody></tbody></table></div>
+                    <div class="vb6-grid-wrap">
+                        <table class="vb6-grid" id="grid-sales">
+                            <thead><tr><th>Inv.#</th><th>Date</th><th>Customer</th><th>Qty</th><th>Sales Price</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="vbc-btnbar d-flex flex-wrap gap-2 mt-3">
-        <button class="btn btn-primary" id="btn-save" data-perm="inventory.fin_item.create">Save</button>
-        <button class="btn btn-secondary" id="btn-clear">Clear</button>
-        <button class="btn btn-danger" id="btn-delete" data-perm="inventory.fin_item.delete">Delete</button>
-        <button class="btn btn-secondary" id="btn-manual">Manual</button>
-        <button class="btn btn-secondary" id="btn-view">View ID</button>
-        <a href="/dashboard" class="btn btn-outline-dark ms-auto">Close</a>
-    </div>
+        {# Buttons Top=586 W=75 H=25 #}
+        <button type="button" class="abs vb6-btn" id="btn-save" data-perm="inventory.fin_item.create" accesskey="s"
+                style="left:3px;top:586px"><u>S</u>ave</button>
+        <button type="button" class="abs vb6-btn" id="btn-clear" accesskey="r"
+                style="left:79px;top:586px">Clea<u>r</u></button>
+        <button type="button" class="abs vb6-btn" id="btn-delete" data-perm="inventory.fin_item.delete" accesskey="d"
+                style="left:155px;top:586px"><u>D</u>elete</button>
+        <button type="button" class="abs vb6-btn" id="btn-category" disabled accesskey="g"
+                style="left:230px;top:586px">Cate<u>g</u>ory</button>
+        <button type="button" class="abs vb6-btn" id="btn-view" accesskey="v"
+                style="left:304px;top:586px"><u>V</u>iew ID</button>
+        <button type="button" class="abs vb6-btn" id="btn-manual" accesskey="m"
+                style="left:379px;top:586px"><u>M</u>anual</button>
+        <a href="/dashboard" class="abs vb6-btn" id="btn-close" accesskey="c"
+           style="left:455px;top:586px"><u>C</u>lose</a>
 
-    <div class="vbc-statusbar mt-2">
-        <span>Records: <strong id="record-count">0</strong></span>
-        <span>Last ID: <strong id="last-item-id">0</strong></span>
-        <span>Status: <strong id="form-status">Ready</strong></span>
+        {# Hidden load hooks (no … buttons on VB6 form — Enter / View ID) #}
+        <button type="button" class="d-none" id="btn-load-item" tabindex="-1"></button>
+        <button type="button" class="d-none" id="btn-search-item" tabindex="-1"></button>
+        <button type="button" class="d-none" id="btn-load-manual" tabindex="-1"></button>
+        <button type="button" class="d-none" id="btn-load-barcode" tabindex="-1"></button>
+        <button type="button" class="d-none" id="btn-load-ws-barcode" tabindex="-1"></button>
     </div>
 </div>
 
-<!-- Search Modal -->
 <div class="modal fade" id="searchModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">View Item ID</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <input type="text" class="form-control mb-2" id="search-query" placeholder="Search by item ID, manual ID, title, short name, or barcode...">
-                <div class="table-responsive" id="search-results"></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content vb6-modal">
+            <div class="modal-header py-1">
+                <h6 class="modal-title mb-0">View Item ID</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <input type="text" class="tb" id="search-query" style="width:100%;height:22px;margin-bottom:6px"
+                       placeholder="Search item ID / manual / title / barcode…">
+                <div class="vb6-grid-wrap" id="search-results" style="max-height:320px;height:320px"></div>
             </div>
         </div>
     </div>
@@ -218,5 +294,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/fin_item_classic.js?v=13"></script>
+<script src="/static/js/fin_item_classic.js?v=20260812vb6pp3"></script>
 {% endblock %}

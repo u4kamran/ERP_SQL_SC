@@ -1,0 +1,18 @@
+Private Sub Form_Activate()
+
+'On Error GoTo TrapError
+
+'    txtBarcode.SetFocus
+
+'Exit Sub
+
+'TrapError:
+
+'    Call ShowError(lngError, Me.Caption)
+
+    
+
+End Sub
+
+
+

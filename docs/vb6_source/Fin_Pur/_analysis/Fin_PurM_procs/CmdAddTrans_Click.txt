@@ -1,0 +1,60 @@
+Private Sub CmdAddTrans_Click()
+
+On Error GoTo TrapError
+
+   'If Val(TxtFiscal) = 0 Then
+
+'temp
+
+'        MsgBox "Month not selected .... ", vbInformation, cSelFormId
+
+'        TxtFiscal.SetFocus
+
+'        Exit Sub
+
+   'End If
+
+   If nCounter <= max_entries Then
+
+      lEdit = False
+
+      Fin_PurD.Show vbModal, Me
+
+      Call UpdateBalance
+
+'      Call CalDiscount
+
+      'TxtFiscal.Enabled = False
+
+      If nCounter > 1 Then
+
+        TxtDocID.Enabled = False
+
+        'TxtFiscal.Enabled = False
+
+        CmdSave.Enabled = True
+
+        CmdDelete.Enabled = True
+
+        CmdDiscount.Enabled = True
+
+      End If
+
+   Else
+
+        MsgBox "Limit of Transactions exahausted " & Chr(13) & "Consult default values ...", vbInformation, "Production Receipt"
+
+        Exit Sub
+
+   End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

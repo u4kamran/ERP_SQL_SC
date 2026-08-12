@@ -1,0 +1,60 @@
+Private Function VGridClear()
+
+On Error GoTo TrapError
+
+    Dim nCnt As Integer
+
+    For nCnt = 1 To max_entries
+
+       VGrid.Row = nCnt
+
+       VGrid.Col = 1: VGrid.Text = ""
+
+       VGrid.Col = 2: VGrid.Text = ""
+
+       VGrid.Col = 3: VGrid.Text = ""
+
+       VGrid.Col = 4: VGrid.Text = ""
+
+       VGrid.Col = 5: VGrid.Text = ""
+
+       VGrid.Col = 6: VGrid.Text = ""
+
+       VGrid.Col = 7: VGrid.Text = ""
+
+       VGrid.Col = 8: VGrid.Text = ""
+
+       VGrid.Col = 9: VGrid.Text = ""
+
+       VGrid.Col = 10: VGrid.Text = ""
+
+       VGrid.Col = 11: VGrid.Text = ""
+
+       VGrid.Col = 12: VGrid.Text = ""
+
+       VGrid.Col = 13: VGrid.Text = ""
+
+       VGrid.Col = 14: VGrid.Text = ""
+
+       
+
+    Next
+
+    mAmount.Caption = "0.00"
+
+    mQty.Caption = "0.00"
+
+    nCounter = 1
+
+    VGrid.Col = 1
+
+    VGrid.Row = 1
+
+Exit Function
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Function
+

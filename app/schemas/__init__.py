@@ -100,6 +100,11 @@ class RoleResponse(BaseModel):
     is_active: bool = Field(validation_alias="IsActive")
 
 
+class RoleDetailResponse(RoleResponse):
+    permission_ids: List[int] = []
+    permission_codes: List[str] = []
+
+
 class RoleCreate(BaseModel):
     role_code: str = Field(..., min_length=2, max_length=50)
     role_name: str = Field(..., min_length=2, max_length=100)
@@ -112,6 +117,12 @@ class RoleUpdate(BaseModel):
     description: Optional[str] = None
     is_active: Optional[bool] = None
     permission_ids: Optional[List[int]] = None
+
+
+class RoleCloneRequest(BaseModel):
+    role_code: str = Field(..., min_length=2, max_length=50)
+    role_name: str = Field(..., min_length=2, max_length=100)
+    description: Optional[str] = None
 
 
 class PermissionResponse(BaseModel):
@@ -176,3 +187,6 @@ class ProfileResponse(BaseModel):
     permissions: List[str]
     is_super_admin: bool = False
     preferences: dict = {}
+    menu_access_enforced: bool = False
+    allowed_menu_paths: List[str] = []
+    allowed_menu_codes: List[str] = []

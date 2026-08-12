@@ -1,31 +1,39 @@
 .guest-scan-body {
     min-height: 100vh;
-    background: linear-gradient(180deg, #e8f1ff 0%, #f8f9fa 45%, #ffffff 100%);
+    background: linear-gradient(180deg, #eaf0fb 0%, #f8f9fa 45%, #ffffff 100%);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 .guest-header {
-    padding: 1.5rem 1rem 1rem;
+    padding: 1.25rem 1rem 0.75rem;
+}
+
+.guest-logo-hero {
+    width: min(92%, 320px);
+    margin: 0 auto 0.75rem;
+    background: #fff;
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    box-shadow: 0 10px 28px rgba(0, 59, 149, 0.12);
+    border: 1px solid rgba(0, 59, 149, 0.08);
+}
+
+.guest-logo-hero img {
+    width: 100%;
+    height: auto;
+    max-height: 220px;
+    object-fit: contain;
+    display: block;
 }
 
 .guest-logo {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 0.75rem;
-    border-radius: 50%;
-    background: #0d6efd;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    box-shadow: 0 8px 24px rgba(13, 110, 253, 0.25);
+    display: none;
 }
 
 .guest-store-name {
     font-size: 1.35rem;
     font-weight: 700;
-    color: #0b3d91;
+    color: #003b95;
     margin-bottom: 0.25rem;
 }
 

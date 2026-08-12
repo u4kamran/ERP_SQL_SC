@@ -1,0 +1,18 @@
+Private Sub TxtQty_GotFocus()
+
+On Error GoTo TrapError
+
+    TxtQty.SelLength = Len(TxtQty)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+End Sub
+
+
+

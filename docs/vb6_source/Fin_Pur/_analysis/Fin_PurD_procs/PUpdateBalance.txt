@@ -1,0 +1,98 @@
+Private Sub PUpdateBalance()
+
+On Error GoTo TrapError
+
+   Dim nCnt As Integer
+
+   Dim nQty As Double
+
+   Dim nAmount As Double
+
+   Dim nStax, nStaxPer As Double
+
+   Dim nDiscount As Double
+
+   Dim nOffInvDiscAmt As Double
+
+   Dim nIncludedAmount As Double
+
+   '
+
+   For nCnt = 1 To max_entries
+
+      Fin_PurM.VGrid.Row = nCnt
+
+      Fin_PurM.VGrid.Col = 3
+
+      nQty = nQty + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      'amount
+
+      Fin_PurM.VGrid.Col = 5
+
+      nAmount = nAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      
+
+      'sales tax per
+
+      Fin_PurM.VGrid.Col = 6
+
+      nStaxPer = CDbl(Fin_PurM.VGrid.Text & "0")
+
+      
+
+      
+
+      'sales tax
+
+      Fin_PurM.VGrid.Col = 7
+
+      nStax = nStax + CDbl(Fin_PurM.VGrid.Text & "0")
+
+
+
+      'Discount
+
+      Fin_PurM.VGrid.Col = 9
+
+      nDiscount = nDiscount + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      
+
+      'Discount Off Invoice
+
+      
+
+      Fin_PurM.VGrid.Col = 11
+
+      nOffInvDiscAmt = nOffInvDiscAmt + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      
+
+      'Included Amount
+
+      Fin_PurM.VGrid.Col = 12
+
+      nIncludedAmount = nIncludedAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      
+
+   Next
+
+   
+
+      Fin_PurM.mQty.Caption = Format(nQty, "##,##0.00")
+
+      Fin_PurM.mAmount.Caption = Format(nAmount, "##,##0.00")
+
+      ' other two columns ?
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

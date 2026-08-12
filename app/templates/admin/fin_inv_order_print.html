@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Purchase Order Print</title>
+    <link href="/static/css/fin_inv_order_print.css?v=20260812printfix" rel="stylesheet">
+</head>
+<body class="po-sheet">
+    <div class="po-toolbar" id="po-toolbar">
+        <strong>Purchase Order Preview</strong>
+        <button type="button" id="btn-print">Print</button>
+        <button type="button" id="btn-close">Close</button>
+        <span id="po-status" style="margin-left:auto;color:#666"></span>
+    </div>
+    <div class="po-preview-wrap">
+        <div class="po-preview-page">
+            <div class="sheet" id="po-sheet-root">
+                <div id="po-loading">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+(function () {
+    const API = '/api/v1/fin-inv-order';
+    const params = new URLSearchParams(location.search);
+    const invId = params.get('inv_id') || location.pathname.split('/').pop();
+    const autoPrint = params.get('autoprint') === '1';
+
+    function getToken() {
+        return localStorage.getItem('access_token') || '';
+    }
+
+    function esc(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function qty(n) {
+        return (Number(n) || 0).toFixed(2);
+    }
+
+    function normalize(data) {
+        if (data && data.header) return data;
+        const rows = Array.isArray(data) ? data : [];
+        const total = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+        return {
+            header: {
+                inv_id: rows[0]?.inv_id || invId,
+                supplier_title: '',
+                cust_order: '',
+                full_name: '',
+                total_qty: total,
+                company_name: 'Shafique Departmental Store.',
+                company_address: '193-A, QAMAR PARK SHAD BAGH LAHORE.',
+                company_phone: 'Ph No.+92-42-37603151-2',
+                company_ntn: '3973706-3',
+                company_strn: '0300397370614',
+                print_note: 'Goods will be received as per the purchase order and only 18% GST Invoices will be accepted. If the company is exampted from WHT, Provide the examption certificate.',
+            },
+            lines: rows.map((r) => ({ item_title: r.item_title || '', qty: r.qty || 0 })),
+        };
+    }
+
+    function render(data) {
+        const { header: h, lines } = normalize(data);
+        const noteRaw = h.print_note || '';
+        const noteBody = /^Note\s*:/i.test(noteRaw)
+            ? noteRaw.replace(/^Note\s*:\s*/i, '')
+            : noteRaw;
+
+        const rows = (lines || []).map((r) => `
+            <tr>
+                <td class="desc">${esc(r.item_title)}</td>
+                <td class="qty">${qty(r.qty)}</td>
+            </tr>`).join('');
+
+        document.getElementById('po-sheet-root').innerHTML = `
+            <div class="po-letterhead">
+                <img class="po-company-logo" src="/static/img/sds-logo.png?v=20260812b" alt="Shafique Departmental Store">
+            </div>
+            <div class="po-address">${esc(h.company_address)}</div>
+            <div class="po-phone">${esc(h.company_phone)}</div>
+
+            <div class="po-row-meta">
+                <span class="m1">Purchase Order</span>
+                <span class="m2">NTN ${esc(h.company_ntn)}</span>
+                <span class="m3">STRN ${esc(h.company_strn)}</span>
+            </div>
+
+            <div class="po-row-po">
+                <span class="po-num">P.O # ${esc(h.inv_id)}</span>
+                <span class="po-booker">Order Booker: ${esc(h.cust_order)}</span>
+            </div>
+
+            <div class="po-supplier">${esc(h.supplier_title)}</div>
+
+            <table class="po-table">
+                <colgroup>
+                    <col class="c-desc">
+                    <col class="c-qty">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="desc">Description</th>
+                        <th class="qty">Qty.</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+
+            <div class="po-total">
+                <span class="po-total-label">Total :</span>
+                <span class="po-total-val">${qty(h.total_qty)}</span>
+            </div>
+
+            <hr class="po-sign-line">
+            <div class="po-sign-name">${esc(h.full_name)}</div>
+            <div class="po-note"><span class="lbl">Note :</span> <span class="txt">${esc(noteBody)}</span></div>
+        `;
+        document.title = 'P.O. ' + h.inv_id;
+    }
+
+    function waitForImages(root) {
+        const imgs = Array.from(root.querySelectorAll('img'));
+        if (!imgs.length) return Promise.resolve();
+        return Promise.all(imgs.map((img) => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise((resolve) => {
+                img.addEventListener('load', resolve, { once: true });
+                img.addEventListener('error', resolve, { once: true });
+            });
+        }));
+    }
+
+    async function triggerPrint() {
+        const root = document.getElementById('po-sheet-root');
+        await waitForImages(root);
+        // Let layout settle so Chromium print preview captures content.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        window.print();
+    }
+
+    async function load() {
+        const status = document.getElementById('po-status');
+        try {
+            status.textContent = 'Loading P.O. ' + invId + '…';
+            const res = await fetch(API + '/print/' + encodeURIComponent(invId), {
+                headers: {
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
+            const raw = await res.text();
+            let data;
+            try { data = raw ? JSON.parse(raw) : {}; } catch { data = { detail: raw }; }
+            if (!res.ok) throw new Error(data.detail || data.message || 'Print load failed');
+            render(data);
+            status.textContent = '';
+            if (autoPrint) {
+                await triggerPrint();
+            }
+        } catch (err) {
+            document.getElementById('po-sheet-root').innerHTML =
+                '<div style="color:#c00;font-family:Arial;padding:12px">' + esc(err.message) + '</div>';
+            status.textContent = 'Error';
+        }
+    }
+
+    document.getElementById('btn-print').addEventListener('click', () => { triggerPrint(); });
+    document.getElementById('btn-close').addEventListener('click', () => window.close());
+    load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+.menu-access-page .list-group-item-action.active {
+    background: #003b95;
+    border-color: #003b95;
+}
+
+.menu-access-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.85rem;
+    background: #fafbfc;
+}
+
+.menu-access-group h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.65rem;
+    color: #003b95;
+}
+
+.menu-access-table thead th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6b7280;
+    border-bottom-width: 1px;
+    white-space: nowrap;
+}
+
+.menu-access-table tbody tr.is-missing {
+    opacity: 0.65;
+}
+
+.menu-access-item-label {
+    font-weight: 600;
+    color: #111827;
+}
+
+.menu-access-item-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.menu-access-table .form-check-input {
+    margin: 0;
+    cursor: pointer;
+}

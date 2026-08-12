@@ -1,0 +1,14 @@
+Private Sub txtCoID_DblClick()
+
+  cSQLId = "COID"
+
+  cSelFormId = "COID_FIN_PUR"
+
+  frmLookUp.Show vbModal, Me
+
+End Sub
+
+
+
+
+

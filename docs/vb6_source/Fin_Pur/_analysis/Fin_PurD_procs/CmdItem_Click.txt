@@ -1,0 +1,36 @@
+Private Sub CmdItem_Click()
+
+On Error GoTo TrapError
+
+    With Fin_Item
+
+        .txtBarcodeID = txtBarcode.Text
+
+        .txtManualID = Text1.Text
+
+        .TxtID.Text = TxtID.Text
+
+'        .TxtCost_Price.SetFocus
+
+'        .txtManualID_Validate (False)
+
+    End With
+
+    
+
+    Fin_Item.Show vbModal, Me
+
+     Call TxtID_Validate(False)
+
+     
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

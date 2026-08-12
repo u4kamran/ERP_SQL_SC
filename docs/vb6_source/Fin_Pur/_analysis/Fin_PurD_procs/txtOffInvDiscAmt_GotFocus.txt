@@ -1,0 +1,16 @@
+Private Sub txtOffInvDiscAmt_GotFocus()
+
+On Error GoTo TrapError
+
+    txtOffInvDiscAmt.SelLength = Len(txtOffInvDiscAmt)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

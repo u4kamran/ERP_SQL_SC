@@ -7,7 +7,18 @@ import hmac
 import json
 import logging
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, require_permission
@@ -24,10 +35,12 @@ from app.schemas.whatsapp_bot import (
     OfflineChatRequest,
     OfflineChatResponse,
     StaffReplyRequest,
+    VoiceTranscribeResponse,
     WhatsAppBotConfig,
     WhatsAppBotConfigUpdate,
     WhatsAppBotStatus,
 )
+from app.services.speech_to_text_service import SpeechToTextError, SpeechToTextService
 from app.schemas.whatsapp_order import ChatOrder, ChatOrderStatusUpdate, ChatOrderSummary
 from app.services.mobile_otp_service import MobileOtpService
 from app.services.whatsapp_bot_service import WhatsAppBotService
@@ -134,6 +147,47 @@ async def whatsapp_webhook_receive(
                 except Exception:
                     logger.exception("WhatsApp inbound handling failed")
     return {"status": "ok"}
+
+
+@public_router.post("/voice-transcribe", response_model=VoiceTranscribeResponse)
+async def public_voice_transcribe(
+    file: UploadFile = File(...),
+) -> VoiceTranscribeResponse:
+    """Transcribe guest-chat voice notes (mobile-friendly MediaRecorder upload)."""
+    if not settings.whatsapp_bot_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Chatbot is disabled.",
+        )
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty audio file.",
+        )
+    if len(raw) > 4_000_000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Voice note is too large. Keep it under 15 seconds.",
+        )
+    mime = (file.content_type or "audio/webm").split(";")[0].strip() or "audio/webm"
+    stt = SpeechToTextService()
+    if not stt.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Voice STT not configured. Set GEMINI_API_KEY in .env.",
+        )
+    try:
+        text = stt.transcribe_audio(raw, mime_type=mime)
+    except SpeechToTextError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    return VoiceTranscribeResponse(
+        text=text,
+        message=f"Voice transcribed ({stt.provider_label()}).",
+    )
 
 
 @public_router.post("/offline-chat", response_model=OfflineChatResponse)
