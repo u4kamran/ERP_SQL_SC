@@ -5,10 +5,11 @@ const VOICE_TRANSCRIBE_API = '/api/v1/public/whatsapp/voice-transcribe';
 const STORAGE_KEY = 'guest-chat-conversation-id';
 const PROFILE_KEY = 'guest-chat-profile';
 const VOICE_LANGS = [
-    { code: 'en-US', label: 'EN' },
-    { code: 'ur-PK', label: 'UR' },
-    { code: 'en-GB', label: 'EN-GB' },
+    { code: 'en-US', label: 'EN', hint: 'English (Pakistan/US), product names' },
+    { code: 'ur-PK', label: 'UR', hint: 'Urdu and Roman Urdu (Pakistan)' },
+    { code: 'en-GB', label: 'EN-GB', hint: 'English, product brand names' },
 ];
+let recordStartedAt = 0;
 
 // Fresh chat thread each page load (avoid stale order/price lists).
 localStorage.removeItem(STORAGE_KEY);
@@ -36,6 +37,11 @@ function isVoiceCloudBlocked() {
 
 function markVoiceCloudBlocked() {
     try { sessionStorage.setItem(VOICE_CLOUD_BLOCK_KEY, '1'); }
+    catch (error) { /* ignore */ }
+}
+
+function clearVoiceCloudBlocked() {
+    try { sessionStorage.removeItem(VOICE_CLOUD_BLOCK_KEY); }
     catch (error) { /* ignore */ }
 }
 
@@ -94,6 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'bot',
         );
         renderQuickReplies(MAIN_MENU);
+        applyInputPrompt(
+            'Tap a menu option, or type 1–6…',
+            'Main menu — Delivery · Price · Order · My order',
+            MAIN_MENU,
+        );
         if (document.getElementById('guest-phone').value.trim()) {
             const input = document.getElementById('guest-message');
             input.value = 'MENU';
@@ -555,11 +566,11 @@ function setupSpeech() {
     }
     micBtn.disabled = false;
     if (VOICE_CLOUD_ENABLED) {
-        micBtn.title = 'Tap mic, speak, tap again to stop (Gemini voice)';
-        setVoiceStatus('Tap mic → speak → tap STOP (Gemini voice).');
+        micBtn.title = 'Tap mic, speak, tap again to stop';
+        setVoiceStatus('Tap mic → speak → tap STOP.');
     } else {
         micBtn.title = 'Tap mic and speak item name';
-        setVoiceStatus('Tap mic and speak the item name (free Chrome voice).');
+        setVoiceStatus('Tap mic and speak the item name.');
     }
 }
 
@@ -578,9 +589,9 @@ function hideVoiceConfirm() {
     document.getElementById('guest-voice-confirm').classList.add('d-none');
     document.getElementById('guest-voice-text').value = '';
     if (VOICE_CLOUD_ENABLED) {
-        setVoiceStatus('Tap mic → speak → tap STOP (Gemini voice).');
+        setVoiceStatus('Tap mic → speak → tap STOP.');
     } else {
-        setVoiceStatus('Tap mic and speak the item name (free Chrome voice).');
+        setVoiceStatus('Tap mic and speak the item name.');
     }
 }
 
@@ -684,8 +695,9 @@ async function startMediaRecording() {
         }
     }
     recording = true;
+    recordStartedAt = Date.now();
     setMicActive(true);
-    showVoiceHud('Recording… speak item name, then tap STOP');
+    showVoiceHud('Recording… speak item name (~2s), then tap STOP');
 }
 
 function stopMediaRecording() {
@@ -715,18 +727,36 @@ function stopMediaRecording() {
 
 function friendlyVoiceError(raw) {
     const msg = String(raw || '');
-    if (/quota|rate.?limit|billing/i.test(msg)) {
+    if (/quota|rate.?limit|billing|credits are empty/i.test(msg)) {
         markVoiceCloudBlocked();
-        return 'Gemini quota full. Using free Chrome voice — speak now.';
+        return {
+            note: 'Cloud voice unavailable. Using phone mic — speak now.',
+            fallbackChrome: true,
+        };
     }
-    if (/GEMINI_API_KEY|not configured|no longer available/i.test(msg)) {
+    if (/API key rejected|GEMINI_API_KEY|not configured|AI is not configured/i.test(msg)) {
         markVoiceCloudBlocked();
-        return 'Gemini voice unavailable. Using free Chrome voice — speak now.';
+        return {
+            note: 'Cloud voice unavailable. Using phone mic — speak now.',
+            fallbackChrome: true,
+        };
     }
-    if (/Voice convert failed/i.test(msg)) {
-        return 'Cloud voice failed. Using free Chrome voice — speak now.';
+    if (/too short/i.test(msg)) {
+        return {
+            note: 'Hold mic 1–2 seconds and speak the item name, then STOP.',
+            fallbackChrome: false,
+        };
     }
-    return msg || 'Cloud voice failed. Using free Chrome voice — speak now.';
+    if (/No speech|No words/i.test(msg)) {
+        return {
+            note: 'No speech heard. Speak closer, then tap STOP.',
+            fallbackChrome: false,
+        };
+    }
+    return {
+        note: msg || 'Voice failed. Tap mic to retry, or type the item.',
+        fallbackChrome: false,
+    };
 }
 
 async function uploadRecordedVoice(blob) {
@@ -736,13 +766,25 @@ async function uploadRecordedVoice(blob) {
         setVoiceStatus('No audio captured. Hold mic longer and speak.');
         return;
     }
+    const elapsed = recordStartedAt ? (Date.now() - recordStartedAt) : 0;
+    if (elapsed > 0 && elapsed < 900) {
+        hideVoiceHud();
+        setVoiceStatus('Too short. Hold mic ~2 seconds, speak, then STOP.');
+        return;
+    }
     voiceBusy = true;
-    showVoiceHud('Converting voice to text…');
+    showVoiceHud('Converting voice…');
     try {
         const form = new FormData();
         const ext = (blob.type || '').includes('mp4') ? 'm4a' : 'webm';
         form.append('file', blob, `voice.${ext}`);
-        const response = await fetch(VOICE_TRANSCRIBE_API, {
+        const mobile = formatLocalMobile(
+            document.getElementById('guest-phone').value.trim(),
+        );
+        if (mobile) form.append('mobile', mobile);
+        const lang = currentVoiceLang();
+        const hint = encodeURIComponent(lang.hint || 'Urdu or English (Pakistan)');
+        const response = await fetch(`${VOICE_TRANSCRIBE_API}?language_hint=${hint}`, {
             method: 'POST',
             body: form,
         });
@@ -756,21 +798,23 @@ async function uploadRecordedVoice(blob) {
         }
         const text = (data.text || '').trim();
         if (!text) throw new Error('No words detected. Speak clearly and retry.');
+        clearVoiceCloudBlocked();
         hideVoiceHud();
         showVoiceConfirm(text);
+        setVoiceStatus(`Heard: ${text}`);
     } catch (error) {
         voiceBusy = false;
         hideVoiceHud();
-        const note = friendlyVoiceError(error && error.message);
-        setVoiceStatus(note);
-        // Cloud STT (Gemini) often hits quota — fall back to free Chrome speech.
-        if (getSpeechRecognitionCtor()) {
+        const info = friendlyVoiceError(error && error.message);
+        setVoiceStatus(info.note);
+        // Only auto-switch to on-device speech when cloud voice is unavailable.
+        if (info.fallbackChrome && getSpeechRecognitionCtor()) {
             window.setTimeout(() => startWebSpeech(), 250);
             return;
         }
-        setVoiceStatus(`${note} Please type the item name.`);
     } finally {
         voiceBusy = false;
+        recordStartedAt = 0;
     }
 }
 
@@ -827,14 +871,22 @@ function toggleVoice(event) {
     }
 
     hideVoiceConfirm();
-    // If Gemini quota/model is blocked, use free Chrome speech immediately.
+    const phoneForVoice = formatLocalMobile(
+        document.getElementById('guest-phone').value.trim(),
+    );
+    if (!phoneForVoice) {
+        setVoiceStatus('Enter your mobile number before using voice search.');
+        showManualPhoneInput();
+        return;
+    }
+    // If cloud voice is blocked, use on-device speech immediately.
     if (VOICE_CLOUD_ENABLED && !isVoiceCloudBlocked()) {
         startMediaRecording();
         return;
     }
     if (getSpeechRecognitionCtor()) {
         if (isVoiceCloudBlocked()) {
-            showVoiceHud('Gemini quota full — free mic on. Speak now.');
+            showVoiceHud('Cloud voice unavailable — phone mic on. Speak now.');
         }
         startWebSpeech();
         return;
@@ -1065,19 +1117,25 @@ async function sendMessage(event, geo = null) {
         // Silent cart sync (qty confirm/delete): refresh buttons only, no new chat lines.
         if (isCartUi && !replyText) {
             renderQuickReplies(replies);
-            document.getElementById('mic-status').textContent =
-                'Cart updated. Change qty with − / +, then Confirm on the item.';
+            applyInputPrompt(
+                data.input_placeholder,
+                data.input_hint || 'Cart updated. Change qty with − / +, then Confirm on the item.',
+                replies,
+            );
         } else if (isCartUi) {
             // First open / add-to-cart: one short summary only (never full receipt).
             appendBubble('out', replyText, 'bot');
             renderQuickReplies(replies);
+            applyInputPrompt(data.input_placeholder, data.input_hint, replies);
         } else {
             appendBubble('out', data.reply, 'bot');
             renderQuickReplies(replies);
+            applyInputPrompt(data.input_placeholder, data.input_hint, replies);
         }
     } catch (error) {
         appendBubble('out', error.message || 'Could not send message.', 'system');
         renderQuickReplies(MAIN_MENU);
+        applyInputPrompt('', '', MAIN_MENU);
     } finally {
         sending = false;
         input.disabled = false;
@@ -1101,6 +1159,52 @@ function ensureMainMenuChips(items) {
         }
     });
     return rows;
+}
+
+function applyInputPrompt(placeholder, hint, replies) {
+    const input = document.getElementById('guest-message');
+    const subtitle = document.getElementById('guest-subtitle');
+    const status = document.getElementById('mic-status');
+    const rows = replies || [];
+    const payloads = new Set(rows.map((item) => String(item.payload || '').trim().toUpperCase()));
+    const hasItems = rows.some((item) => (item.style || '') === 'item');
+    const hasCart = rows.some((item) => (item.style || '') === 'cart');
+    const looksLikeMainMenu = ['1', '2', '3', '4', '5'].every((p) => payloads.has(p));
+
+    let nextPlaceholder = (placeholder || '').trim();
+    let nextHint = (hint || '').trim();
+
+    if (!nextPlaceholder) {
+        if (hasCart) {
+            nextPlaceholder = 'Change qty below, or type item name to add…';
+        } else if (hasItems) {
+            nextPlaceholder = 'Tap an item, or type a new brand/name…';
+        } else if (payloads.has('KEEP') || payloads.has('UPDATE')) {
+            nextPlaceholder = 'Tap Keep / Update / Skip, or type address…';
+        } else if (looksLikeMainMenu) {
+            nextPlaceholder = 'Tap a menu option, or type 1–6…';
+        } else if (rows.some((r) => /^Qty\s/i.test(r.title || ''))) {
+            nextPlaceholder = 'Type quantity e.g. 1 or 2…';
+        } else {
+            nextPlaceholder = 'Type brand/item e.g. Dalda…';
+        }
+    }
+    if (!nextHint) {
+        if (hasCart) nextHint = 'Your cart — confirm qty, then Confirm order';
+        else if (hasItems) nextHint = 'Select a product below or search again';
+        else if (looksLikeMainMenu) nextHint = 'Main menu — Delivery · Price · Order · My order';
+        else nextHint = 'Type your reply, or tap a button';
+    }
+
+    if (input) input.placeholder = nextPlaceholder;
+    if (subtitle) subtitle.textContent = nextHint;
+    // Don't overwrite live mic / GPS status lines.
+    if (status) {
+        const current = status.textContent || '';
+        if (!/^(Listening|Hearing|Starting|Opening|Collecting|Mobile selected|Location)/i.test(current)) {
+            status.textContent = nextHint;
+        }
+    }
 }
 
 function renderQuickReplies(items) {
@@ -1130,6 +1234,7 @@ function renderQuickReplies(items) {
         MAIN_MENU.forEach((item) => chipRow.appendChild(buildChip(item)));
     }
     if (chipRow.childNodes.length) box.appendChild(chipRow);
+    applyInputPrompt('', '', rows);
 }
 
 function clearInlineSelection() {

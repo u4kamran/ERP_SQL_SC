@@ -11,6 +11,7 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
+    Form,
     Header,
     HTTPException,
     Query,
@@ -42,11 +43,21 @@ from app.schemas.whatsapp_bot import (
 )
 from app.services.speech_to_text_service import SpeechToTextError, SpeechToTextService
 from app.schemas.whatsapp_order import ChatOrder, ChatOrderStatusUpdate, ChatOrderSummary
+from app.services import voice_search_control_store as voice_control
 from app.services.mobile_otp_service import MobileOtpService
 from app.services.whatsapp_bot_service import WhatsAppBotService
 from app.services.whatsapp_order_service import WhatsAppOrderService
 
 logger = logging.getLogger("ahsteellab")
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if forwarded:
+        return forwarded[:64]
+    if request.client and request.client.host:
+        return str(request.client.host)[:64]
+    return ""
 
 router = APIRouter()
 public_router = APIRouter()
@@ -151,7 +162,14 @@ async def whatsapp_webhook_receive(
 
 @public_router.post("/voice-transcribe", response_model=VoiceTranscribeResponse)
 async def public_voice_transcribe(
+    request: Request,
     file: UploadFile = File(...),
+    mobile: str = Form(""),
+    language_hint: str = Query(
+        "Urdu or English (Pakistan)",
+        max_length=80,
+        description="Spoken language hint for Gemini STT",
+    ),
 ) -> VoiceTranscribeResponse:
     """Transcribe guest-chat voice notes (mobile-friendly MediaRecorder upload)."""
     if not settings.whatsapp_bot_enabled:
@@ -159,11 +177,39 @@ async def public_voice_transcribe(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
+    ip = _client_ip(request)
+    ua = (request.headers.get("user-agent") or "")[:180]
+    mobile_key = voice_control.normalize_mobile(mobile)
+    allowed, reason = voice_control.check_allowed(
+        channel="guest",
+        mobile=mobile_key,
+        ip=ip,
+    )
+    if not allowed:
+        voice_control.record_event(
+            channel="guest",
+            mobile=mobile_key,
+            ip=ip,
+            status="blocked",
+            block_reason=reason,
+            user_agent=ua,
+            detail="guest voice-transcribe blocked",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=reason,
+        )
+
     raw = await file.read()
     if not raw:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Empty audio file.",
+        )
+    if len(raw) < 800:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Voice note too short. Hold mic 1–2 seconds and speak.",
         )
     if len(raw) > 4_000_000:
         raise HTTPException(
@@ -178,12 +224,35 @@ async def public_voice_transcribe(
             detail="Voice STT not configured. Set GEMINI_API_KEY in .env.",
         )
     try:
-        text = stt.transcribe_audio(raw, mime_type=mime)
+        text, model, body = stt.transcribe_audio_with_meta(
+            raw,
+            mime_type=mime,
+            language_hint=(language_hint or "").strip() or "Urdu or English (Pakistan)",
+        )
     except SpeechToTextError as exc:
+        voice_control.record_event(
+            channel="guest",
+            mobile=mobile_key,
+            ip=ip,
+            status="failed",
+            detail=str(exc)[:240],
+            user_agent=ua,
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
         ) from exc
+    voice_control.record_event(
+        channel="guest",
+        mobile=mobile_key,
+        ip=ip,
+        search_text=text,
+        status="ok",
+        model=model,
+        body=body,
+        user_agent=ua,
+        detail="guest voice-transcribe",
+    )
     return VoiceTranscribeResponse(
         text=text,
         message=f"Voice transcribed ({stt.provider_label()}).",

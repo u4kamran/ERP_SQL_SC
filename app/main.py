@@ -5,8 +5,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -29,6 +30,15 @@ templates.env.globals["internal_link_groups"] = get_internal_link_groups()
 templates.env.globals["external_links"] = get_external_links(settings.base_url)
 templates.env.globals["smtp_configured"] = lambda: EmailService().is_configured()
 templates.env.globals["smtp_hint"] = lambda: EmailService().configuration_hint()
+templates.env.globals["company_name"] = settings.company_display_name
+templates.env.globals["company_address"] = settings.company_address
+templates.env.globals["brand_short"] = settings.brand_short_label
+templates.env.globals["brand_tagline"] = settings.brand_tagline_label
+templates.env.globals["brand_slogan"] = settings.brand_slogan
+templates.env.globals["brand_logo_url"] = settings.brand_logo_url
+templates.env.globals["brand_icon_url"] = settings.brand_icon_url
+templates.env.globals["site_code"] = (settings.site_code or "erp").lower()
+templates.env.globals["company_phone"] = settings.company_phone
 
 
 @asynccontextmanager
@@ -181,6 +191,15 @@ async def admin_sessions_page(request: Request):
 @app.get("/admin/audit", response_class=HTMLResponse)
 async def admin_audit_page(request: Request):
     return templates.TemplateResponse(request, "admin/audit.html", {"app_name": settings.app_name})
+
+
+@app.get("/admin/login-alerts", response_class=HTMLResponse)
+async def admin_login_alerts_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/login_notify.html",
+        {"app_name": settings.app_name},
+    )
 
 
 @app.get("/admin/profile", response_class=HTMLResponse)
@@ -368,6 +387,24 @@ async def admin_whatsapp_bot_page(request: Request):
     )
 
 
+@app.get("/admin/gemini-usage", response_class=HTMLResponse)
+async def admin_gemini_usage_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/gemini_usage.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/voice-control", response_class=HTMLResponse)
+async def admin_voice_control_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/voice_search_control.html",
+        {"app_name": settings.app_name},
+    )
+
+
 @app.get("/admin/phone-osint", response_class=HTMLResponse)
 async def admin_phone_osint_redirect(request: Request):
     return RedirectResponse(url="/admin/customer-contacts", status_code=302)
@@ -376,3 +413,29 @@ async def admin_phone_osint_redirect(request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "app": settings.app_name, "env": settings.app_env}
+
+
+def _wants_html(request: Request) -> bool:
+    accept = (request.headers.get("accept") or "").lower()
+    return "text/html" in accept and request.url.path.startswith(("/admin", "/login", "/dashboard", "/guest"))
+
+
+@app.exception_handler(StarletteHTTPException)
+async def html_http_error(request: Request, exc: StarletteHTTPException):
+    if not _wants_html(request) or exc.status_code not in {403, 404, 500}:
+        return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    messages = {
+        403: "You do not have access to this page.",
+        404: "This page could not be found.",
+        500: "The service is temporarily unavailable.",
+    }
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        {
+            "app_name": settings.app_name,
+            "code": exc.status_code,
+            "message": messages.get(exc.status_code, str(exc.detail)),
+        },
+        status_code=exc.status_code,
+    )

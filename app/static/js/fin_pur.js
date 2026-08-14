@@ -132,6 +132,16 @@ function bindEvents() {
     document.getElementById('d_CmdItem').addEventListener('click', () => openSearch('item'));
     document.getElementById('d_btn_item_search').addEventListener('click', () => openSearch('item'));
     document.getElementById('d_CmdBalance').addEventListener('click', () => showAlert(`Stock: ${document.getElementById('d_lblStock').textContent}`, 'info'));
+    document.getElementById('d_cmdImportExcel')?.addEventListener('click', () => {
+        showAlert('Import From Excel runs in VB6 Fin_PurD against the Purchase Format folder. Use Paste JSON here, or Clear Qty to zero Sheet 1 Col C in an uploaded .xlsx.', 'info');
+    });
+    document.getElementById('d_cmdEditInExcel')?.addEventListener('click', () => {
+        showAlert('Edit in Excel is available in VB6 Fin_PurD (updates Sheet 1 Qty/Rate for the current Manual ID).', 'info');
+    });
+    document.getElementById('d_cmdClearQty')?.addEventListener('click', () => {
+        document.getElementById('d_excelFile')?.click();
+    });
+    document.getElementById('d_excelFile')?.addEventListener('change', onClearExcelQtyFile);
 
     document.getElementById('d_TxtID').addEventListener('change', () => loadItemBy('id'));
     document.getElementById('d_Text1').addEventListener('change', () => loadItemBy('manual'));
@@ -146,27 +156,66 @@ function bindEvents() {
 
     document.getElementById('search-query').addEventListener('input', debounce(runSearch, 250));
 
-    // Enter key → next field (EnterKeyEnable)
-    document.getElementById('pur-app').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.matches('input, select') && e.target.id !== 'TxtDocID') {
-            e.preventDefault();
-            focusNext(e.target);
-        }
+    // Enter key → next field (VB6 EnterKeyEnable / MoveFocusTabNext)
+    // Use keyup like Fin_PurM Form_KeyUp for reliable focus change
+    document.getElementById('pur-app').addEventListener('keyup', (e) => {
+        if (e.key !== 'Enter') return;
+        if (!e.target.matches('input:not([type=hidden]), select, textarea')) return;
+        if (e.target.id === 'TxtDocID' || e.target.id === 'TxtID') return; // own Enter handlers
+        if (e.target.closest('.modal')) return; // handled per-modal
+        e.preventDefault();
+        enterKeyEnable(e.target, document.getElementById('pur-app'));
     });
-    document.getElementById('detailModal').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.matches('input, select')) {
-            e.preventDefault();
-            focusNext(e.target, document.getElementById('detailModal'));
-        }
+    document.getElementById('detailModal').addEventListener('keyup', (e) => {
+        if (e.key !== 'Enter') return;
+        if (!e.target.matches('input:not([type=hidden]), select, textarea')) return;
+        e.preventDefault();
+        enterKeyEnable(e.target, document.getElementById('detailModal'));
     });
+    document.getElementById('dedModal')?.addEventListener('keyup', (e) => {
+        if (e.key !== 'Enter') return;
+        if (!e.target.matches('input:not([type=hidden]), select')) return;
+        e.preventDefault();
+        enterKeyEnable(e.target, document.getElementById('dedModal'));
+    });
+    // Suppress Enter ding / accidental submit on keydown
+    [document.getElementById('pur-app'), document.getElementById('detailModal'), document.getElementById('dedModal')]
+        .filter(Boolean)
+        .forEach((root) => {
+            root.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.matches('input, select') && e.target.id !== 'TxtDocID' && e.target.id !== 'TxtID') {
+                    e.preventDefault();
+                }
+            });
+        });
+}
+
+/** VB6 EnterKeyEnable + MoveFocusTabNext — move to next visible/enabled TabIndex. */
+function enterKeyEnable(fromEl, root = document) {
+    focusNext(fromEl, root);
 }
 
 function focusNext(el, root = document) {
-    const focusable = [...root.querySelectorAll('input:not([disabled]):not([type=hidden]), select:not([disabled]), button:not([disabled])')];
+    const candidates = [...root.querySelectorAll('input, select, textarea, button')];
+    const focusable = candidates.filter((n) => {
+        if (n.disabled || n.readOnly) return false;
+        if (n.type === 'hidden') return false;
+        if (n.tabIndex < 0) return false;
+        // visible (VB6 CanTabTo Visible check)
+        const style = window.getComputedStyle(n);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
+        if (n.getClientRects().length === 0) return false;
+        return true;
+    });
     const idx = focusable.indexOf(el);
-    if (idx >= 0 && idx < focusable.length - 1) focusable[idx + 1].focus();
+    if (idx < 0) return;
+    const next = focusable[idx + 1] || focusable[0];
+    if (!next || next === el) return;
+    next.focus();
+    if (typeof next.select === 'function' && next.matches('input:not([type=checkbox]):not([type=radio]), textarea')) {
+        try { next.select(); } catch { /* ignore */ }
+    }
 }
-
 function debounce(fn, ms) {
     let t;
     return (...args) => {
@@ -473,6 +522,46 @@ function clearDetail() {
     document.getElementById('d_LblIncludedAmount').textContent = '0.00';
     document.getElementById('d_lblSale').textContent = '0.00';
     document.getElementById('d_lblStock').textContent = '0';
+}
+
+/** VB6 cmdClearQty — zero Sheet 1 Column C (Qty) for rows with Manual ID in Column A. */
+async function onClearExcelQtyFile(e) {
+    const input = e.target;
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    if (!confirm(`Clear Qty on Sheet 1 Column C to 0 in:\n${file.name}?`)) return;
+    try {
+        const token = Auth.getToken();
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch(`${API}/excel/clear-qty`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: form,
+        });
+        if (!res.ok) {
+            let msg = `Clear Qty failed (${res.status})`;
+            try {
+                const j = await res.json();
+                msg = j.detail || j.message || msg;
+            } catch { /* ignore */ }
+            throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+        }
+        const cleared = res.headers.get('X-Rows-Cleared') || '?';
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name.replace(/(\.xlsx)?$/i, '_qty_cleared.xlsx');
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showAlert(`Excel Qty cleared on ${cleared} row(s). Download saved — replace the original file if needed.`, 'success');
+    } catch (err) {
+        showAlert(err.message || String(err));
+    }
 }
 
 async function loadItemBy(mode) {

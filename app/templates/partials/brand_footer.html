@@ -1,0 +1,14 @@
+{% if site_code == 'arp' %}
+<footer class="ahs-site-footer d-flex flex-wrap align-items-center gap-3">
+    <img src="{{ brand_logo_url }}" alt="{{ company_name }}">
+    <div class="me-auto">
+        <div class="fw-semibold text-dark">{{ brand_short }}</div>
+        <div>{{ brand_slogan }}</div>
+        <div>&copy; {{ 2026 }} {{ company_name }}. All rights reserved.</div>
+    </div>
+    <div class="small">
+        {% if company_address %}{{ company_address }}<br>{% endif %}
+        {% if company_phone is defined and company_phone %}{{ company_phone }}{% endif %}
+    </div>
+</footer>
+{% endif %}

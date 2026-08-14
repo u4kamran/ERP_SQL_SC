@@ -142,6 +142,17 @@ class CustomerImportVisionService:
 
         try:
             body = response.json()
+            try:
+                from app.services import gemini_usage_store as usage_store
+
+                usage_store.record_usage(
+                    feature="vision",
+                    model=model,
+                    body=body,
+                    ok=True,
+                )
+            except Exception:
+                pass
             text = body["candidates"][0]["content"]["parts"][0]["text"]
             parsed = json.loads(text)
             records = [

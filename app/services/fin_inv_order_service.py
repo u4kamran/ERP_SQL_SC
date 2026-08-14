@@ -327,11 +327,11 @@ class FinInvOrderService:
             cust_order=str(_vget(first, "cust_order", "CUST_ORDER", default="") or "").strip(),
             full_name=str(_vget(first, "full_name", "FULL_NAME", default="") or "").strip(),
             total_qty=round(total_qty, 2),
-            company_name=(settings.company_name or "Shafique Departmental Store.").rstrip(".") + ".",
-            company_address=PO_PRINT_COMPANY_ADDRESS,
-            company_phone=PO_PRINT_COMPANY_PHONE,
-            company_ntn=PO_PRINT_COMPANY_NTN,
-            company_strn=PO_PRINT_COMPANY_STRN,
+            company_name=(settings.company_name or settings.app_name or "Store").rstrip(".") + ".",
+            company_address=settings.company_address or "",
+            company_phone=settings.company_phone or "",
+            company_ntn=settings.company_ntn or "",
+            company_strn=settings.company_strn or "",
             print_note=PO_PRINT_NOTE,
         )
         return FinInvOrderPrintOut(header=header, lines=lines)

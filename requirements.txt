@@ -19,6 +19,7 @@ httpx>=0.28.0
 itsdangerous>=2.2.0
 user-agents>=2.2.0
 reportlab>=5.0.0
+openpyxl>=3.1.0
 
 # Purchase Automation OCR (invoice reading)
 pillow>=10.0.0

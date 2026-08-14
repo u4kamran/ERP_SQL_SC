@@ -204,9 +204,6 @@ class WhatsAppOrderService:
                 lines.append(f"   {qty} × Rs {unit}")
                 lines.append(f"                 Rs {line_total}")
         lines.append("──────────────────────────")
-        lines.append(f"Subtotal (ex-GST)  Rs {self._money(float(totals['subtotal_wo_gst']))}")
-        lines.append(f"GST                Rs {self._money(float(totals['gst_total']))}")
-        lines.append("──────────────────────────")
         lines.append(f"ORDER TOTAL        Rs {self._money(float(totals['order_total']))}")
         lines.append("══════════════════════════")
         lines.append(
@@ -271,11 +268,6 @@ class WhatsAppOrderService:
             )
             lines.append(f"                 Rs {self._money(item.line_total)}")
         totals = self.totals(norm_cart)
-        lines.append("──────────────────────────")
-        lines.append(
-            f"Subtotal (ex-GST)  Rs {self._money(float(totals['subtotal_wo_gst']))}"
-        )
-        lines.append(f"GST                Rs {self._money(float(totals['gst_total']))}")
         lines.append("──────────────────────────")
         lines.append(
             f"ORDER TOTAL        Rs {self._money(float(totals['order_total']))}"

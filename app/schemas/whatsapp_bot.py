@@ -36,7 +36,7 @@ class WhatsAppBotConfig(BaseModel):
         "6 My order status"
     )
     store_phone: str = ""
-    store_address: str = "Shafique Departmental Store"
+    store_address: str = ""
     store_hours: str = "Daily 8:00 AM – 10:00 PM"
     human_handoff_message: str = (
         "A staff member will contact you shortly. "
@@ -113,6 +113,8 @@ class OfflineChatResponse(BaseModel):
     reply: str
     quick_replies: list[ChatQuickReply] = Field(default_factory=list)
     phone_verified: bool = False
+    input_placeholder: str = ""
+    input_hint: str = ""
 
 
 class MobileOtpSendRequest(BaseModel):

@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -218,3 +218,68 @@ def detail_item_update(
 ):
     _service(current_user, business_db, auth_db).update_item_from_detail(**payload.model_dump())
     return {"message": "ok"}
+
+
+@router.post("/excel/clear-qty")
+async def excel_clear_qty(
+    file: UploadFile = File(...),
+    current_user: CurrentUser = Depends(require_permission("inventory.fin_pur.create")),
+):
+    """Clear Qty column on Sheet 1 Column C for rows with Manual ID in Column A — VB6 cmdClearQty."""
+    from io import BytesIO
+
+    from fastapi import HTTPException, status
+    from fastapi.responses import StreamingResponse
+
+    name = (file.filename or "purchase.xlsx").strip()
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file.")
+    if not name.lower().endswith((".xlsx", ".xlsm")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only .xlsx files are supported for Clear Qty (save .xls as .xlsx first).",
+        )
+    try:
+        from openpyxl import load_workbook
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="openpyxl is not installed on the server.",
+        ) from exc
+
+    try:
+        wb = load_workbook(BytesIO(raw))
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid Excel file: {exc}") from exc
+
+    if len(wb.worksheets) < 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Excel file has no worksheets.")
+    ws = wb.worksheets[0]  # Sheet 1
+    cleared = 0
+    for row in range(1, ws.max_row + 1):
+        manual = ws.cell(row=row, column=1).value
+        if manual is None or str(manual).strip() == "":
+            continue
+        # Skip header-ish first row
+        if row == 1:
+            m = str(manual).strip().lower()
+            if not m.replace(".", "", 1).isdigit() and any(k in m for k in ("manual", "item", "id")):
+                continue
+        # Sheet 1 Column C = Qty
+        ws.cell(row=row, column=3).value = 0
+        cleared += 1
+
+    out = BytesIO()
+    wb.save(out)
+    out.seek(0)
+    out_name = name.rsplit(".", 1)[0] + "_qty_cleared.xlsx"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{out_name}"',
+        "X-Rows-Cleared": str(cleared),
+    }
+    return StreamingResponse(
+        out,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )

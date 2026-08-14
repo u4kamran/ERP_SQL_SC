@@ -30,9 +30,19 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Application
+    # Application — ERP defaults (Shafique). ARP overrides these in its own .env.
     app_name: str = "Shafique Departmental Store"
     company_name: str = "Shafique Departmental Store."
+    site_code: str = "erp"
+    brand_short: str = "Shafique"
+    brand_tagline: str = "Departmental Store"
+    brand_slogan: str = "Your daily needs, our priority"
+    brand_logo_url: str = "/static/img/sds-logo.png?v=20260812b"
+    brand_icon_url: str = "/static/img/favicon.png?v=20260812b"
+    company_address: str = "193-A, QAMAR PARK SHAD BAGH LAHORE."
+    company_phone: str = "Ph No.+92-42-37603151-2"
+    company_ntn: str = "3973706-3"
+    company_strn: str = "0300397370614"
     app_env: str = "development"
     debug: bool = False
     secret_key: str = Field(..., min_length=32)
@@ -110,6 +120,10 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_email: str = "noreply@ahsteellab.com"
     smtp_from_name: str = "Shafique Departmental Store"
+
+    # Email alert on every successful staff login
+    login_notify_enabled: bool = True
+    login_notify_email: str = ""
 
     # WhatsApp Business Cloud API (automated PDF send + chatbot)
     whatsapp_enabled: bool = False
@@ -203,6 +217,26 @@ class Settings(BaseSettings):
     @property
     def cookie_secure(self) -> bool:
         return self.secure_cookies or self.is_production
+
+    @property
+    def brand_short_label(self) -> str:
+        value = (self.brand_short or "").strip()
+        if value:
+            return value
+        name = (self.app_name or "").strip()
+        return name.split()[0] if name else "Store"
+
+    @property
+    def brand_tagline_label(self) -> str:
+        value = (self.brand_tagline or "").strip()
+        if value:
+            return value
+        parts = (self.app_name or "").split()
+        return " ".join(parts[1:]) if len(parts) > 1 else ""
+
+    @property
+    def company_display_name(self) -> str:
+        return (self.company_name or self.app_name or "").strip() or "Store"
 
 
 @lru_cache

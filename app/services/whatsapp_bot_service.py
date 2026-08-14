@@ -26,6 +26,7 @@ from app.services import whatsapp_chat_store as store
 from app.services.item_price_search_service import ItemPriceSearchService
 from app.services.mobile_otp_service import MobileOtpService
 from app.services.speech_to_text_service import SpeechToTextError, SpeechToTextService
+from app.services import voice_search_control_store as voice_control
 from app.services.whatsapp_order_service import WhatsAppOrderService
 from app.services.whatsapp_service import (
     WhatsAppDeliveryError,
@@ -176,11 +177,14 @@ class WhatsAppBotService:
         phone_verified = False
         if phone:
             phone_verified = MobileOtpService().is_verified(phone)
+        placeholder, hint = self._input_prompt_for(conversation)
         return OfflineChatResponse(
             conversation=self._to_conversation(conversation),
             reply="" if skip_bubble else reply_text,
             quick_replies=quick_replies,
             phone_verified=phone_verified,
+            input_placeholder=placeholder,
+            input_hint=hint,
         )
 
     def staff_reply(
@@ -212,8 +216,9 @@ class WhatsAppBotService:
                 )
             if not config.online_mode:
                 raise RuntimeError(
-                    "Online mode is OFF. Open Bot Settings, turn Online mode ON, "
-                    "save, then send the reply again."
+                    "WhatsApp phone delivery is OFF. "
+                    "In Bot Settings turn on “Deliver replies to WhatsApp phones”, "
+                    "save, then send again. (This is not the guest web chat.)"
                 )
             try:
                 self.whatsapp.send_text(phone, body.message)
@@ -312,13 +317,66 @@ class WhatsAppBotService:
             display_name=profile_name or phone,
             channel="whatsapp",
         )
+        mobile_key = normalize_pk_phone(phone) or phone
+        allowed, reason = voice_control.check_allowed(
+            channel="whatsapp",
+            mobile=mobile_key,
+            ip="",
+        )
+        if not allowed:
+            voice_control.record_event(
+                channel="whatsapp",
+                mobile=mobile_key,
+                status="blocked",
+                block_reason=reason,
+                detail="whatsapp voice blocked",
+            )
+            text = f"{reason}\nPlease type the item name, or reply 3 for price search help."
+            store.append_message(
+                conversation["conversation_id"],
+                direction="in",
+                text="[voice note]",
+                channel="whatsapp",
+                sender=profile_name or phone,
+                increase_unread=True,
+            )
+            if conversation.get("status") == "human" or not config.auto_reply:
+                return None
+            store.append_message(
+                conversation["conversation_id"],
+                direction="out",
+                text=text,
+                channel="whatsapp",
+                sender="bot",
+            )
+            if config.online_mode and self.whatsapp.is_configured():
+                try:
+                    self.whatsapp.send_text(conversation["phone"] or phone, text)
+                except (WhatsAppNotConfiguredError, WhatsAppDeliveryError):
+                    pass
+            return text
         try:
             audio_bytes, detected_mime = self.whatsapp.download_media(media_id)
-            transcript = SpeechToTextService().transcribe_audio(
+            transcript, model, body = SpeechToTextService().transcribe_audio_with_meta(
                 audio_bytes,
                 mime_type=detected_mime or mime_type,
             )
+            voice_control.record_event(
+                channel="whatsapp",
+                mobile=mobile_key,
+                search_text=transcript,
+                status="ok",
+                model=model,
+                body=body,
+                detail="whatsapp voice",
+            )
         except (WhatsAppNotConfiguredError, WhatsAppDeliveryError, SpeechToTextError) as exc:
+            voice_control.record_event(
+                channel="whatsapp",
+                mobile=mobile_key,
+                status="failed",
+                detail=str(exc)[:240],
+            )
             text = (
                 f"Voice note received, but I could not understand it yet.\n{exc}\n"
                 "Please type the item name, or reply 3 for price search help."
@@ -2212,6 +2270,94 @@ class WhatsAppBotService:
         buttons.extend(actions)
         return buttons
 
+    @classmethod
+    def _input_prompt_for(cls, conversation: dict[str, Any]) -> tuple[str, str]:
+        """Placeholder + short hint for the guest chat input, based on current options."""
+        context = conversation.get("context") or {}
+        mode = context.get("mode")
+        step = context.get("step") or ""
+        options = list(
+            context.get("all_options") or context.get("pending_options") or []
+        )
+
+        if not mode:
+            return (
+                "Tap a menu option, or type 1–6…",
+                "Main menu — choose Delivery, Price, Order, My order…",
+            )
+
+        if mode == "order_status":
+            return (
+                "Order no. WO-… or mobile 03XXXXXXXXX",
+                "My order status — send order number or mobile",
+            )
+
+        if mode == "price":
+            if options:
+                return (
+                    "Tap an item, or type a new brand/name…",
+                    "Price list — select a match or search again",
+                )
+            return (
+                "Type brand/item e.g. Dalda…",
+                "Price list — search by name, brand, or barcode",
+            )
+
+        if mode == "order":
+            if step == "await_name":
+                return ("Type your full name…", "Place order — enter your name")
+            if step == "await_mobile":
+                return ("Type mobile 03XXXXXXXXX…", "Place order — enter mobile")
+            if step == "confirm_address":
+                return (
+                    "Tap Keep / Update / Skip, or type a new address…",
+                    "Confirm delivery address",
+                )
+            if step == "await_address":
+                return (
+                    "Type delivery address…",
+                    "Place order — enter delivery address",
+                )
+            if step == "await_location":
+                return (
+                    "Share location or type SKIP…",
+                    "Optional Google Maps pin",
+                )
+            if step == "await_notes":
+                return (
+                    "Optional note, or type SKIP…",
+                    "Any delivery note before confirm",
+                )
+            if step == "await_qty" and context.get("pending_item"):
+                return (
+                    "Type quantity e.g. 1 or 2…",
+                    "How many units do you want?",
+                )
+            if options:
+                return (
+                    "Tap an item to add, or type a new name…",
+                    "Order — select product or search again",
+                )
+            if step == "cart_view" and context.get("cart"):
+                return (
+                    "Change qty below, or type item name to add…",
+                    "Your cart — confirm qty, then Confirm order",
+                )
+            if context.get("cart"):
+                return (
+                    "Type item name to add more, or CONFIRM…",
+                    "Order in progress — add items or confirm",
+                )
+            return (
+                "Type brand/item to order e.g. Dalda…",
+                "Place order — search products to add",
+            )
+
+        return (
+            "Type your message…",
+            "Chat",
+        )
+
     def _quick_replies_for(self, conversation: dict[str, Any]) -> list[ChatQuickReply]:
         """Tap controls for guest web chat — context decides meaning of numbers."""
         context = conversation.get("context") or {}
@@ -2460,8 +2606,9 @@ class WhatsAppBotService:
             )
         if not config.online_mode:
             return (
-                "WhatsApp API credentials are ready, but Online mode is OFF. "
-                "Turn Online mode ON in Bot Settings so replies are delivered to customers."
+                "WhatsApp API credentials are ready, but “Deliver to WhatsApp phones” is OFF. "
+                "Turn that switch ON in Bot Settings so replies reach the customer’s WhatsApp. "
+                "This is separate from the guest web chat page."
             )
         if not settings.whatsapp_verify_token.strip():
             return "Set WHATSAPP_VERIFY_TOKEN in .env for Meta webhook verification."

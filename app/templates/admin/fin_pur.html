@@ -268,7 +268,11 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer flex-wrap gap-1">
+                <button type="button" class="btn btn-outline-primary" id="d_cmdImportExcel" title="Import purchase detail rows from Excel Sheet 2">Import From Excel</button>
+                <button type="button" class="btn btn-outline-primary" id="d_cmdEditInExcel" title="Update Qty/Rate in Excel Sheet 1 for current Manual ID">Edit in Excel</button>
+                <button type="button" class="btn btn-outline-warning" id="d_cmdClearQty" title="Clear Qty column (Sheet 1, Col C) in selected Excel file">Clear Qty</button>
+                <input type="file" id="d_excelFile" accept=".xlsx,.xls" class="d-none">
                 <button type="button" class="btn btn-success" id="d_CmdSave">Save</button>
                 <button type="button" class="btn btn-secondary" id="d_CmdClear">Clear</button>
                 <button type="button" class="btn btn-outline-dark" id="d_CmdItem">Item</button>
@@ -329,5 +333,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/fin_pur.js?v=20260808b"></script>
+<script src="/static/js/fin_pur.js?v=20260813enter"></script>
 {% endblock %}

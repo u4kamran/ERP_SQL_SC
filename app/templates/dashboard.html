@@ -30,12 +30,12 @@
             <div class="card-body">
                 <div class="d-flex align-items-center gap-3">
                     <div class="dashboard-brand-badge">
-                        <img src="/static/img/favicon.png?v=20260812b" alt="SDS" width="52" height="52">
+                        <img src="{{ brand_icon_url }}" alt="{{ brand_short }}" width="52" height="52">
                     </div>
                     <div>
                         <p class="text-muted mb-1">System</p>
-                        <h6 class="mb-0" style="color:#003b95">Shafique Departmental Store</h6>
-                        <small class="text-muted">Your daily needs, our priority</small>
+                        <h6 class="mb-0" style="color:var(--primary-color)">{{ brand_short }}</h6>
+                        <small class="text-muted">{{ brand_slogan }}</small>
                     </div>
                 </div>
             </div>

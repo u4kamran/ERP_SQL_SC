@@ -11,6 +11,29 @@ from typing import Iterable
 from app.config.settings import settings
 
 
+def _branded_html(body_html: str) -> str:
+    if "ahs-mail-header" in (body_html or ""):
+        return body_html
+    logo = f"{settings.base_url.rstrip('/')}{settings.brand_logo_url}"
+    name = settings.app_name
+    slogan = settings.brand_slogan or ""
+    header = (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        'style="font-family:Arial,Helvetica,sans-serif">'
+        '<tr><td class="ahs-mail-header" style="padding:16px 0 18px;border-bottom:1px solid #e6ebf1">'
+        f'<img src="{logo}" alt="{name}" width="160" style="display:block;border:0;max-width:160px;height:auto">'
+        f'<div style="color:#5b6775;font-size:12px;margin-top:8px">{slogan}</div>'
+        "</td></tr><tr><td style=\"padding-top:16px\">"
+    )
+    footer = (
+        '</td></tr><tr><td style="padding-top:20px;border-top:1px solid #e6ebf1;'
+        'color:#5b6775;font-size:11px">'
+        f"{name} · {slogan}"
+        "</td></tr></table>"
+    )
+    return header + body_html + footer
+
+
 class EmailNotConfiguredError(Exception):
     pass
 
@@ -61,14 +84,15 @@ class EmailService:
         msg["To"] = ", ".join(recipients)
         msg["Subject"] = subject
 
-        if attachment and body_html:
+        html = _branded_html(body_html) if body_html else None
+        if attachment and html:
             alt = MIMEMultipart("alternative")
             alt.attach(MIMEText(body_text, "plain", "utf-8"))
-            alt.attach(MIMEText(body_html, "html", "utf-8"))
+            alt.attach(MIMEText(html, "html", "utf-8"))
             msg.attach(alt)
-        elif body_html:
+        elif html:
             msg.attach(MIMEText(body_text, "plain", "utf-8"))
-            msg.attach(MIMEText(body_html, "html", "utf-8"))
+            msg.attach(MIMEText(html, "html", "utf-8"))
         else:
             msg.attach(MIMEText(body_text, "plain", "utf-8"))
 

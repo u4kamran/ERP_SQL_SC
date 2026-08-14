@@ -1,0 +1,22 @@
+{% if site_code == 'arp' %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" type="image/png" sizes="16x16" href="/static/img/brand/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/img/brand/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/img/brand/ahs-icon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/img/brand/apple-touch-icon.png">
+<link rel="manifest" href="/static/brand/ahs/manifest.webmanifest">
+<meta name="theme-color" content="#072c5c">
+<meta name="application-name" content="{{ brand_short }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ app_name }}">
+<meta property="og:description" content="{{ brand_slogan }}">
+<meta property="og:image" content="{{ base_url }}{{ brand_logo_url }}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ app_name }}">
+<meta name="twitter:image" content="{{ base_url }}{{ brand_logo_url }}">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"{{ brand_short }}","legalName":"{{ company_name }}","url":"{{ base_url }}","logo":"{{ base_url }}{{ brand_logo_url }}","slogan":"{{ brand_slogan }}"}
+</script>
+<link href="/static/css/brand-ahs.css?v=20260813ahs4" rel="stylesheet">
+{% endif %}

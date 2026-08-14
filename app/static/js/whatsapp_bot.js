@@ -46,7 +46,9 @@ async function refreshAll() {
 async function loadStatus() {
     try {
         const status = await Api.get(`${WA_BOT_API}/status`);
-        document.getElementById('st-mode').textContent = status.online_mode ? 'Online' : 'Offline';
+        document.getElementById('st-mode').textContent = status.online_mode
+            ? 'WA delivery ON'
+            : 'WA delivery OFF';
         document.getElementById('st-wa').textContent = status.whatsapp_configured ? 'Ready' : 'Not set';
         document.getElementById('st-chats').textContent = status.conversation_count;
         document.getElementById('st-unread').textContent = status.unread_total;

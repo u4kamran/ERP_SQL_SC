@@ -4,8 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Purchase Order Print</title>
-    <link href="/static/css/fin_inv_order_print.css?v=20260812printfix" rel="stylesheet">
-</head>
+    <script>
+    window.COMPANY_NAME = {{ company_name|tojson }};
+    window.BRAND_LOGO_URL = {{ brand_logo_url|tojson }};
+    window.BRAND_ICON_URL = {{ brand_icon_url|tojson }};
+    window.COMPANY_ADDRESS = {{ (company_address if company_address is defined else '')|tojson }};
+    </script>
 <body class="po-sheet">
     <div class="po-toolbar" id="po-toolbar">
         <strong>Purchase Order Preview</strong>
@@ -55,8 +59,8 @@
                 cust_order: '',
                 full_name: '',
                 total_qty: total,
-                company_name: 'Shafique Departmental Store.',
-                company_address: '193-A, QAMAR PARK SHAD BAGH LAHORE.',
+                company_name: (window.COMPANY_NAME || '').replace(/\.?$/, '.') || 'Company.',
+                company_address: window.COMPANY_ADDRESS || '',
                 company_phone: 'Ph No.+92-42-37603151-2',
                 company_ntn: '3973706-3',
                 company_strn: '0300397370614',
@@ -81,7 +85,7 @@
 
         document.getElementById('po-sheet-root').innerHTML = `
             <div class="po-letterhead">
-                <img class="po-company-logo" src="/static/img/sds-logo.png?v=20260812b" alt="Shafique Departmental Store">
+                <img class="po-company-logo" src="${esc(window.BRAND_LOGO_URL || '')}" alt="${esc(window.COMPANY_NAME || '')}">
             </div>
             <div class="po-address">${esc(h.company_address)}</div>
             <div class="po-phone">${esc(h.company_phone)}</div>

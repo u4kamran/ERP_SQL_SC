@@ -57,4 +57,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('show');
     });
+
+    const compactKey = 'sidebar-compact';
+    const compactBtn = document.getElementById('sidebar-compact');
+    if (localStorage.getItem(compactKey) === '1') {
+        document.body.classList.add('sidebar-compact');
+    }
+    document.querySelectorAll('#sidebar-nav .nav-link').forEach((link) => {
+        if (!link.getAttribute('title')) {
+            const label = link.querySelector('.nav-label');
+            link.setAttribute('title', (label ? label.textContent : link.textContent).replace(/\s+/g, ' ').trim());
+        }
+    });
+    compactBtn?.addEventListener('click', () => {
+        const on = document.body.classList.toggle('sidebar-compact');
+        localStorage.setItem(compactKey, on ? '1' : '0');
+        compactBtn.setAttribute('title', on ? 'Expand menu' : 'Collapse menu');
+        compactBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (compactBtn) {
+        const on = document.body.classList.contains('sidebar-compact');
+        compactBtn.setAttribute('title', on ? 'Expand menu' : 'Collapse menu');
+        compactBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
 });

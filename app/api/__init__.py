@@ -2,11 +2,16 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, voucher_entry, customer_contacts, customer_import, promotion_hub, cust_sms, delivery, whatsapp_bot, fin_pur, fin_inv_order, purchase_automation, user_menu_rights
+from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, voucher_entry, customer_contacts, customer_import, promotion_hub, cust_sms, delivery, whatsapp_bot, fin_pur, fin_inv_order, purchase_automation, user_menu_rights, gemini_usage, voice_search_control, login_notify
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(
+    login_notify.router,
+    prefix="/auth/login-notify",
+    tags=["Login Alerts"],
+)
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(roles.router, prefix="/roles", tags=["Roles"])
 api_router.include_router(
@@ -44,6 +49,16 @@ api_router.include_router(
     whatsapp_bot.router,
     prefix="/marketing/whatsapp-bot",
     tags=["WhatsApp Chatbot"],
+)
+api_router.include_router(
+    gemini_usage.router,
+    prefix="/marketing/gemini-usage",
+    tags=["Gemini Usage"],
+)
+api_router.include_router(
+    voice_search_control.router,
+    prefix="/marketing/voice-control",
+    tags=["Voice Search Control"],
 )
 api_router.include_router(
     whatsapp_bot.public_router,
