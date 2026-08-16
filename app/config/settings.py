@@ -138,9 +138,28 @@ class Settings(BaseSettings):
     guest_mobile_otp_required: bool = True
     guest_mobile_otp_dev_echo: bool = False
 
+    # Customer mobile app OTP via existing SMS_DB_ queue (one-time mobile proof)
+    customer_app_otp_required: bool = True
+    # sms_db = queue real SMS; test = no SMS_DB_ insert (dev/local only)
+    customer_app_otp_provider: str = "sms_db"
+    customer_app_otp_ttl_seconds: int = 300
+    customer_app_otp_verified_days: int = 30
+    customer_app_otp_max_attempts: int = 5
+    customer_app_otp_resend_cooldown_seconds: int = 45
+    customer_app_otp_max_requests_per_window: int = 3
+    customer_app_otp_request_window_minutes: int = 15
+    # Modem/SIM number used as SENDER in SMS_DB_ (existing convention)
+    customer_app_otp_sms_sender: str = "923004017067"
+    # Dev-only: echo OTP in API when provider=test and app_env is development
+    customer_app_otp_dev_echo: bool = False
+
     # Gemini Vision + voice STT (guest chat / WhatsApp voice notes)
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.1-flash-lite"
+
+    # Heavy invoice import must not run inside the public web process.
+    # In-process sync freezes /health and the phone (SQL pool + GIL).
+    delivery_sync_in_web_process: bool = False
 
     # Database sync (local SQL Server -> online SQL Server)
     sync_enabled: bool = False
@@ -207,6 +226,8 @@ class Settings(BaseSettings):
             f"PWD={self.db_password};"
             f"TrustServerCertificate={self.db_trust_server_certificate};"
             f"Encrypt={self.db_encrypt};"
+            "Connection Timeout=8;"
+            "Login Timeout=8;"
         )
         return f"mssql+pyodbc:///?odbc_connect={quote_plus(odbc_connect)}"
 

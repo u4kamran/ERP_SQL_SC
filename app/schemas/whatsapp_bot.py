@@ -129,6 +129,7 @@ class MobileOtpSendRequest(BaseModel):
 class MobileOtpVerifyRequest(BaseModel):
     phone: str = Field(..., min_length=7, max_length=30)
     code: str = Field(..., min_length=4, max_length=10)
+    request_id: str | None = Field(None, max_length=64)
 
     @field_validator("phone", "code", mode="before")
     @classmethod
@@ -143,6 +144,7 @@ class MobileOtpResponse(BaseModel):
     expires_in: int | None = None
     sent_via: str | None = None
     verified: bool = False
+    request_id: str | None = None
     dev_code: str | None = None
 
 

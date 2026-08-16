@@ -6,6 +6,18 @@ echo  Stopping Shafique Center ERP (erp.ahsteellab.com)
 echo  ARP site is NOT stopped.
 echo.
 
+schtasks /Query /TN "AHSteelLab-ERP-App" >nul 2>&1
+if %errorlevel%==0 (
+    echo  Always-on tasks found. Stopping those first...
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0deploy\erp-always-on.ps1" -Action stop
+    echo.
+    echo  Shafique Center (ERP) stopped.
+    echo  Al Haram (ARP) still runs from: D:\CursorProject\ahsteellab-arp
+    echo.
+    pause
+    exit /b 0
+)
+
 echo [1] Stopping app on port 8000...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":8000" ^| findstr LISTENING') do (
     taskkill /PID %%a /F >nul 2>&1

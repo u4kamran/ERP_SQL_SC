@@ -17,9 +17,6 @@ from app.config.site_links import get_external_links, get_internal_link_groups
 from app.logging.logger import logger
 from app.middleware.security import csrf_middleware, security_headers_middleware
 from app.middleware.menu_guard import menu_access_guard_middleware
-from app.scheduler.delivery_invoice_scheduler import get_delivery_invoice_scheduler
-from app.scheduler.sms_email_scheduler import get_scheduler_runner
-from app.scheduler.sales_dashboard_email_scheduler import get_sales_dashboard_email_runner
 
 from app.services.email_service import EmailService
 
@@ -44,16 +41,8 @@ templates.env.globals["company_phone"] = settings.company_phone
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s [%s]", settings.app_name, settings.app_env)
-    runner = get_scheduler_runner()
-    sales_email_runner = get_sales_dashboard_email_runner()
-    delivery_invoice_runner = get_delivery_invoice_scheduler()
-    await runner.start()
-    await sales_email_runner.start()
-    await delivery_invoice_runner.start()
+    logger.info("In-process jobs (delivery sync / SMS email / dashboard email) are off in the web process.")
     yield
-    await delivery_invoice_runner.stop()
-    await sales_email_runner.stop()
-    await runner.stop()
     logger.info("Shutting down %s", settings.app_name)
 
 
@@ -374,6 +363,15 @@ async def admin_customer_import_page(request: Request):
     return templates.TemplateResponse(
         request,
         "admin/customer_import.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/customer-app-carts", response_class=HTMLResponse)
+async def admin_customer_app_carts_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/customer_app_carts.html",
         {"app_name": settings.app_name},
     )
 

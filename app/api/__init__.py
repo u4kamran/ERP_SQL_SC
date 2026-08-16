@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, voucher_entry, customer_contacts, customer_import, promotion_hub, cust_sms, delivery, whatsapp_bot, fin_pur, fin_inv_order, purchase_automation, user_menu_rights, gemini_usage, voice_search_control, login_notify
+from app.api.v1 import auth, users, roles, permissions, sessions, audit, profile, fin_item, fin_item_classic, gl_ledger_report, gl_ledger_credit_summary, trial_balance_d2d, sms_email_scheduler, sales_dashboard, sales_dashboard_email, guest_price_lookup, public_catalog, customer_app_cart, voucher_entry, customer_contacts, customer_import, promotion_hub, cust_sms, delivery, whatsapp_bot, fin_pur, fin_inv_order, purchase_automation, user_menu_rights, gemini_usage, voice_search_control, login_notify
 
 api_router = APIRouter()
 
@@ -32,6 +32,17 @@ api_router.include_router(sms_email_scheduler.router, prefix="/reports/sms-email
 api_router.include_router(sales_dashboard.router, prefix="/reports/sales-dashboard", tags=["Sales Dashboard"])
 api_router.include_router(sales_dashboard_email.router, prefix="/reports/sales-dashboard/email", tags=["Sales Dashboard Email"])
 api_router.include_router(guest_price_lookup.router, prefix="/public/price-lookup", tags=["Guest Price Lookup"])
+api_router.include_router(public_catalog.router, prefix="/public/catalog", tags=["Public Catalog"])
+api_router.include_router(
+    customer_app_cart.public_router,
+    prefix="/public/customer-app",
+    tags=["Customer App Cart Public"],
+)
+api_router.include_router(
+    customer_app_cart.router,
+    prefix="/marketing/customer-app-carts",
+    tags=["Customer App Carts"],
+)
 api_router.include_router(voucher_entry.router, prefix="/vouchers", tags=["Voucher Entry"])
 api_router.include_router(fin_pur.router, prefix="/fin-pur", tags=["Purchase Receipt"])
 api_router.include_router(fin_inv_order.router, prefix="/fin-inv-order", tags=["Purchase Order"])

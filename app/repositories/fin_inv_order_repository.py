@@ -24,6 +24,25 @@ def _row_to_dict(row) -> Dict[str, Any]:
     return data
 
 
+def _parse_optional_date(value: Any) -> Optional[date]:
+    """Parse UI date text; empty/" " → None (NULL) for datetime columns."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text_val = str(value).strip()
+    if not text_val or text_val in {".", "-", "/"}:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(text_val[:10], fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def _vget(data: Optional[dict], *keys, default=None):
     if not data:
         return default
@@ -386,15 +405,16 @@ class FinInvOrderRepository:
         carriage_amt: float,
         other_charges_amt: float,
     ) -> None:
-        doc_date_str = doc_date.strftime("%d/%m/%Y")
-        doc_date_t = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        # Bind native date/datetime — DD/MM/YYYY strings fail under US/ODBC locale
+        # (e.g. '15/08/2026' → month 15 → error 242).
+        doc_date_t = datetime.now().replace(microsecond=0)
         params = {
             "serial_no": serial_no,
             "inv_id": inv_id,
             "gl_voucher_id": gl_voucher_id,
             "fiscal": fiscal,
             "doc_type_id": doc_type_id,
-            "doc_date": doc_date_str,
+            "doc_date": doc_date,
             "doc_date_t": doc_date_t,
             "cust_id": supplier_id,
             "payment_type": payment_type,
@@ -402,7 +422,7 @@ class FinInvOrderRepository:
             "gp_id": gp_id or " ",
             "gp_time": gp_time or " ",
             "cust_order": cust_order or " ",
-            "cust_order_date": cust_order_date or " ",
+            "cust_order_date": _parse_optional_date(cust_order_date),
             "sale_amt": sale_amt,
             "amount_rec": amount_rec,
             "bal_amt": bal_amt,

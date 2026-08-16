@@ -194,6 +194,13 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "permission": "marketing.promotion.view",
             },
             {
+                "label": "Customer App Carts",
+                "path": "/admin/customer-app-carts",
+                "icon": "bi-cart-check",
+                "description": "Saved carts from the Shafique customer mobile app (not WhatsApp WO)",
+                "permission": "marketing.customer_app_carts.view",
+            },
+            {
                 "label": "WhatsApp Chatbot",
                 "path": "/admin/whatsapp-bot",
                 "icon": "bi-whatsapp",
