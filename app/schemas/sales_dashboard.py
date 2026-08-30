@@ -73,3 +73,25 @@ class DayWiseSalesRow(BaseModel):
 class DayWiseSalesResponse(BaseModel):
     items: list[DayWiseSalesRow] = []
     business_hours_note: str = "Business day: 08:00 → next day 05:00"
+
+
+class CumulativeSalesRow(BaseModel):
+    row_num: int
+    period_type: str = "current"  # current | last_month
+    start_date: datetime
+    end_date: datetime
+    period_label: str
+    total_sale: float = 0
+    total_cost: float = 0
+    profit: float = 0
+    profit_percent: float | None = None
+    invoice_count: int = 0
+    total_days: int = 1
+    avg_sale_per_day: float = 0
+
+
+class CumulativeSalesResponse(BaseModel):
+    start_date: datetime
+    end_date: datetime
+    items: list[CumulativeSalesRow] = []
+    business_hours_note: str = "Business day: 08:00 → next day 05:00"

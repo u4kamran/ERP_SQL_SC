@@ -1,0 +1,49 @@
+.iimg-wrap .iimg-stat {
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+.iimg-wrap .iimg-stat .lbl {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.iimg-wrap .iimg-stat .val {
+  font-size: 1.35rem;
+  font-weight: 650;
+  color: #111827;
+}
+.iimg-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+.iimg-thumb-lg {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+.iimg-cand {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+.iimg-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+}
+.iimg-badge.NO_IMAGE { background: #f3f4f6; color: #374151; }
+.iimg-badge.SEARCHING { background: #dbeafe; color: #1d4ed8; }
+.iimg-badge.IMAGE_FOUND { background: #e0e7ff; color: #3730a3; }
+.iimg-badge.NEEDS_REVIEW { background: #fef3c7; color: #92400e; }
+.iimg-badge.APPROVED { background: #d1fae5; color: #065f46; }
+.iimg-badge.FAILED { background: #fee2e2; color: #991b1b; }

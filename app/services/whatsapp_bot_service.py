@@ -23,11 +23,22 @@ from app.schemas.whatsapp_bot import (
     WhatsAppBotStatus,
 )
 from app.services import whatsapp_chat_store as store
+from app.services.guest_price_lookup_service import is_hidden_shop_title
 from app.services.item_price_search_service import ItemPriceSearchService
 from app.services.mobile_otp_service import MobileOtpService
 from app.services.speech_to_text_service import SpeechToTextError, SpeechToTextService
 from app.services import voice_search_control_store as voice_control
 from app.services.whatsapp_order_service import WhatsAppOrderService
+from app.services.whatsapp_shop_service import (
+    WhatsAppShopService,
+    is_shop_nav_message,
+    parse_area_line,
+    parse_fulfill,
+    parse_hub_action,
+    parse_open_category,
+    parse_sub_index,
+    shop_cart_hint,
+)
 from app.services.whatsapp_service import (
     WhatsAppDeliveryError,
     WhatsAppNotConfiguredError,
@@ -146,22 +157,40 @@ class WhatsAppBotService:
         )
         quick_replies = self._quick_replies_for(conversation)
         reply_text = reply["text"]
-        # Web chat uses tap rows for products — skip duplicate numbered text list.
-        if any(item.style == "item" for item in quick_replies):
-            reply_text = (
-                "Select an item below — tap your product.\n"
-                "Use More items if you need the next page."
-            )
-        # Cart UI is button-based — keep only a short summary, not full receipt text.
-        if any(item.style == "cart" for item in quick_replies):
-            reply_text = reply.get("short_text") or self._cart_short_text(
-                (conversation.get("context") or {}).get("cart") or [],
-                note=reply.get("note") or "",
-            )
-        # Silent cart sync (qty confirm / delete): update buttons only, no chat spam.
-        skip_bubble = bool(reply.get("silent_ui")) and any(
-            item.style == "cart" for item in quick_replies
+        ctx = conversation.get("context") or {}
+        shop_view = str(ctx.get("shop_view") or "")
+        item_replies = [q for q in quick_replies if q.style == "item"]
+        # After add-to-cart while browsing: short confirmation + stay on shelf.
+        if not reply.get("stay_in_shop"):
+            # Web chat uses tap rows — keep a short hint, not a duplicate numbered list.
+            if item_replies:
+                all_categories = all(
+                    str(q.payload or "").upper().startswith("CAT ") for q in item_replies
+                )
+                if shop_view == "categories" or all_categories:
+                    reply_text = (
+                        "Shop by category — tap a department below.\n"
+                        "Tap *Categories* anytime to return to this list."
+                    )
+                else:
+                    reply_text = (
+                        "Products below — use − / + and tap *ADD*.\n"
+                        "You stay on this list to buy more. "
+                        "Use *Categories* or *Back* to move around."
+                    )
+            # Cart UI is button-based — keep only a short summary, not full receipt text.
+            if any(item.style == "cart" for item in quick_replies):
+                reply_text = reply.get("short_text") or self._cart_short_text(
+                    (conversation.get("context") or {}).get("cart") or [],
+                    note=reply.get("note") or "",
+                )
+        # Silent shelf add — refresh product list only, no chat bubble.
+        skip_bubble = bool(reply.get("stay_in_shop")) or (
+            bool(reply.get("silent_ui"))
+            and any(item.style == "cart" for item in quick_replies)
         )
+        if reply.get("stay_in_shop"):
+            reply_text = ""
         if not skip_bubble:
             conversation = store.append_message(
                 conversation["conversation_id"],
@@ -178,6 +207,10 @@ class WhatsAppBotService:
         if phone:
             phone_verified = MobileOtpService().is_verified(phone)
         placeholder, hint = self._input_prompt_for(conversation)
+        ctx = conversation.get("context") or {}
+        cart = list(ctx.get("cart") or [])
+        orders = WhatsAppOrderService()
+        totals = orders.totals(cart) if cart else {"item_count": 0, "order_total": 0.0}
         return OfflineChatResponse(
             conversation=self._to_conversation(conversation),
             reply="" if skip_bubble else reply_text,
@@ -185,6 +218,13 @@ class WhatsAppBotService:
             phone_verified=phone_verified,
             input_placeholder=placeholder,
             input_hint=hint,
+            shop_category_id=ctx.get("shop_category_id"),
+            shop_category_title=ctx.get("shop_category_title") or "",
+            shop_view=ctx.get("shop_view") or "",
+            cart_count=int(totals.get("item_count") or 0),
+            cart_total=float(totals.get("order_total") or 0),
+            stay_in_shop=bool(reply.get("stay_in_shop")),
+            added_manual_id=reply.get("added_manual_id"),
         )
 
     def staff_reply(
@@ -493,6 +533,11 @@ class WhatsAppBotService:
                 "handoff": False,
             }
 
+        # Direct add from live search suggestions (web WhatsApp autocomplete).
+        additem = re.fullmatch(r"additem\s+(\d+)(?:\s+(\d+(?:\.\d+)?))?", lower)
+        if additem:
+            return self._order_reply(text, conversation=conversation, phone=phone)
+
         # Active order/price list picks (1,2,3…) must win over main-menu digits.
         if context.get("mode") == "order":
             return self._order_reply(text, conversation=conversation, phone=phone)
@@ -587,6 +632,61 @@ class WhatsAppBotService:
         text = (message or "").strip()
         lower = text.lower().strip()
 
+        additem = re.fullmatch(r"additem\s+(\d+)(?:\s+(\d+(?:\.\d+)?))?", lower)
+        if additem and context.get("step") not in {
+            "await_name",
+            "await_mobile",
+            "await_address",
+            "await_location",
+            "await_notes",
+            "confirm_address",
+        }:
+            manual_id = int(additem.group(1))
+            qty = float(additem.group(2) or 1)
+            try:
+                item = searcher.guest.lookup_manual_id(manual_id)
+            except Exception:
+                return {
+                    "text": "That product is not available. Try another search.",
+                    "handoff": False,
+                }
+            line = orders.item_from_lookup(item, qty)
+            context["cart"] = orders.merge_into_cart(context.get("cart") or [], line)
+            context["pending_item"] = None
+            context["pending_options"] = []
+            context["all_options"] = []
+            context["page"] = 0
+            context["step"] = "browse"
+            try:
+                searcher.support.log_search(
+                    query_text=f"ADDITEM {manual_id}",
+                    cleaned_query=str(manual_id),
+                    result_count=1,
+                    selected_manual_id=manual_id,
+                    channel="web",
+                )
+            except Exception:
+                pass
+            self._save_shop_return(context)
+            return self._after_add_to_cart(
+                conversation_id,
+                context,
+                line_title=line.item_title,
+                line_qty=line.qty,
+                line_manual_id=manual_id,
+            )
+        if already_ordering and is_shop_nav_message(
+            text, shop_view=str(context.get("shop_view") or "")
+        ):
+            shop_out = self._shop_reply(
+                text,
+                conversation=conversation,
+                context=context,
+                searcher=searcher,
+            )
+            if shop_out:
+                return shop_out
+
         # Re-entering order menu while already ordering → show guidance, keep cart.
         # Never treat bare numbers (1-99) as menu here — they mean list pick / qty.
         if (
@@ -645,25 +745,19 @@ class WhatsAppBotService:
             mobile_show = self._display_mobile(mobile)
             if profile:
                 context["cust_sms_id"] = profile.get("cust_id")
-                context["step"] = "browse"
                 self._hydrate_saved_location(context)
-                store.update_context(conversation_id, context)
-                addr_line = ""
+                prefix = (
+                    f"Welcome back, *{name}*!\n"
+                    f"Mobile: *{mobile_show}*\n"
+                    f"We found your profile at "
+                    f"{settings.company_name or settings.app_name}.\n"
+                )
                 if address:
-                    addr_line = f"Address on file: {address}\n"
+                    prefix += f"Address on file: {address}\n"
                 elif context.get("maps_url"):
-                    addr_line = f"Saved Maps pin: {context['maps_url']}\n"
-                return {
-                    "text": (
-                        f"Welcome back, *{name}*!\n"
-                        f"Mobile: *{mobile_show}*\n"
-                        f"We found your profile at "
-                        f"{settings.company_name or settings.app_name}.\n"
-                        f"{addr_line}\n"
-                        f"{self._order_browse_prompt(context)}"
-                    ),
-                    "handoff": False,
-                }
+                    prefix += f"Saved Maps pin: {context['maps_url']}\n"
+                return self._shopping_ready_reply(conversation, context, prefix)
+
             if not context["customer_name"] or context["customer_name"].lower() in {
                 "guest",
                 (phone or "").lower(),
@@ -709,8 +803,6 @@ class WhatsAppBotService:
                 context["cust_sms_id"] = ensure.get("cust_id")
                 if ensure.get("name"):
                     context["customer_name"] = ensure["name"]
-            context["step"] = "browse"
-            store.update_context(conversation_id, context)
             intro = (
                 f"Welcome, *{context['customer_name']}*!\n"
                 f"Mobile: *{self._display_mobile(context['customer_mobile'])}*\n"
@@ -721,10 +813,7 @@ class WhatsAppBotService:
                     f"Mobile: *{self._display_mobile(context['customer_mobile'])}*\n\n"
                 )
             )
-            return {
-                "text": f"{intro}{self._order_browse_prompt(context)}",
-                "handoff": False,
-            }
+            return self._shopping_ready_reply(conversation, context, intro)
 
         # Collect customer details
         if context.get("step") == "await_name":
@@ -762,18 +851,16 @@ class WhatsAppBotService:
             )
             if ensure:
                 context["cust_sms_id"] = ensure.get("cust_id")
-            context["step"] = "browse"
-            store.update_context(conversation_id, context)
             created = "created" if ensure and ensure.get("is_new") else "updated"
-            return {
-                "text": (
+            return self._shopping_ready_reply(
+                conversation,
+                context,
+                (
                     f"Thank you, *{name}*.\n"
                     f"Mobile: *{self._display_mobile(mobile)}*\n"
                     f"Your customer profile has been {created} successfully.\n\n"
-                    f"{self._order_browse_prompt(context)}"
                 ),
-                "handoff": False,
-            }
+            )
 
         if context.get("step") == "await_mobile":
             # If mobile arrived from WhatsApp / form meanwhile, skip typing.
@@ -795,22 +882,20 @@ class WhatsAppBotService:
                     "customer_address"
                 ) or ""
                 context["cust_sms_id"] = profile.get("cust_id")
-                context["step"] = "browse"
                 store.upsert_conversation(
                     conversation_id=conversation_id,
                     display_name=profile["name"],
                     phone=mobile,
                     channel=conversation.get("channel") or "offline",
                 )
-                store.update_context(conversation_id, context)
-                return {
-                    "text": (
+                return self._shopping_ready_reply(
+                    conversation,
+                    context,
+                    (
                         f"Assalam-o-Alaikum, *{profile['name']}*!\n"
                         "Welcome back — we recognized your number.\n\n"
-                        f"{self._order_browse_prompt(context)}"
                     ),
-                    "handoff": False,
-                }
+                )
             context["customer_mobile"] = mobile
             store.upsert_conversation(
                 conversation_id=conversation_id,
@@ -840,16 +925,20 @@ class WhatsAppBotService:
             )
             if ensure:
                 context["cust_sms_id"] = ensure.get("cust_id")
-            context["step"] = "browse"
-            store.update_context(conversation_id, context)
-            return {
-                "text": (
+            return self._shopping_ready_reply(
+                conversation,
+                context,
+                (
                     f"Welcome, *{context['customer_name']}*!\n"
                     "Your customer profile has been created successfully.\n\n"
-                    f"{self._order_browse_prompt(context)}"
                 ),
-                "handoff": False,
-            }
+            )
+
+        if context.get("step") == "await_fulfill":
+            return self._fulfill_reply(text, conversation=conversation, context=context)
+
+        if context.get("step") == "await_area":
+            return self._area_reply(text, conversation=conversation, context=context)
 
         if context.get("step") == "confirm_address":
             if lower in {"keep", "yes", "ok", "same"}:
@@ -901,8 +990,21 @@ class WhatsAppBotService:
             if lower in {"skip", "no", "none", "-"}:
                 notes = ""
             context["notes"] = notes
+            if (context.get("order_type") or "") == "pickup":
+                context["customer_address"] = (
+                    (context.get("customer_address") or "").strip()
+                    or settings.company_address
+                    or "Pickup from store"
+                )
+                store.update_context(conversation_id, context)
+                return self._finalize_order(conversation, context)
             self._hydrate_profile_address(context)
             self._hydrate_saved_location(context)
+            area_seed = ", ".join(
+                part for part in [context.get("area") or "", context.get("city") or ""] if part
+            )
+            if area_seed and not (context.get("customer_address") or "").strip():
+                context["customer_address"] = area_seed
             saved_addr = (context.get("customer_address") or "").strip()
             if saved_addr:
                 context["step"] = "confirm_address"
@@ -939,9 +1041,11 @@ class WhatsAppBotService:
             context["pending_options"] = []
             context["all_options"] = []
             context["step"] = "browse"
+            context["shop_view"] = "hub"
+            context["shop_list"] = []
             store.update_context(conversation_id, context)
             return {
-                "text": "Cart cleared.\nSend an item name to start again, or MENU to exit.",
+                "text": "Cart cleared.\n" + self._order_browse_prompt(context),
                 "handoff": False,
             }
 
@@ -1063,14 +1167,42 @@ class WhatsAppBotService:
                 }
             context = fresh_ctx
             context["cart"] = cart
+            shop = WhatsAppShopService(self.db)
+            priced, notices, ready = shop.validate_cart_lines(cart, orders)
+            context["cart"] = priced
+            if not ready:
+                store.update_context(conversation_id, context)
+                extra = "\n".join(notices) if notices else "Please review your cart."
+                if priced:
+                    return self._cart_view_reply(
+                        conversation_id,
+                        context,
+                        title="CART UPDATED",
+                        note=(
+                            extra
+                            + "\nPrices and stock are from the store system. "
+                            "Fix the cart, then CONFIRM again."
+                        ),
+                    )
+                context["step"] = "browse"
+                context["shop_view"] = "hub"
+                store.update_context(conversation_id, context)
+                return {
+                    "text": extra + "\n" + self._order_browse_prompt(context),
+                    "handoff": False,
+                }
             context["step"] = "await_notes"
             store.update_context(conversation_id, context)
-            totals = orders.totals(cart)
+            totals = orders.totals(priced)
+            notice = ("\n".join(notices) + "\n\n") if notices else ""
+            fulfill = (context.get("order_type") or "delivery").title()
             return {
                 "text": (
-                    "Ready to place your order.\n"
+                    f"{notice}"
+                    f"Ready to place your *{fulfill}* order.\n"
                     f"*{int(totals['item_count'])} item(s)* · "
-                    f"Total *Rs {orders._money(float(totals['order_total']))}*\n\n"
+                    f"Store total *Rs {orders._money(float(totals['order_total']))}*\n"
+                    "Tax/delivery if any are confirmed by the store.\n\n"
                     "Optional note for shop (or reply SKIP):\n"
                     "Example: Call before delivery"
                 ),
@@ -1090,15 +1222,23 @@ class WhatsAppBotService:
             context["pending_item"] = None
             context["pending_options"] = []
             context["all_options"] = []
-            return self._cart_view_reply(
+            return self._after_add_to_cart(
                 conversation_id,
                 context,
-                title="ADDED TO CART",
-                note=(
-                    f"Added: {line.item_title} × {orders._qty(line.qty)}\n"
-                    "Adjust qty with − / +, delete a line, add more items, or CONFIRM."
-                ),
+                line_title=line.item_title,
+                line_qty=line.qty,
+                line_manual_id=int(line.manual_id or 0) or None,
             )
+
+        # Category shop (browse / search-in-category) — before global item search.
+        shop_out = self._shop_reply(
+            text,
+            conversation=conversation,
+            context=context,
+            searcher=searcher,
+        )
+        if shop_out:
+            return shop_out
 
         # Option pick from search results
         options = list(context.get("all_options") or context.get("pending_options") or [])
@@ -1108,9 +1248,12 @@ class WhatsAppBotService:
             context["all_options"] = []
             context["page"] = 0
             context["step"] = "browse"
+            context["shop_view"] = "hub"
+            context["shop_list"] = []
+            context["all_options"] = []
             store.update_context(conversation_id, context)
             return {
-                "text": "OK. Type a new item name or brand (example: Dalda).",
+                "text": "OK. " + self._order_browse_prompt(context),
                 "handoff": False,
             }
 
@@ -1137,6 +1280,7 @@ class WhatsAppBotService:
             choice = int(lower)
             if 1 <= choice <= len(options):
                 selected = options[choice - 1]
+                self._save_shop_return(context)
                 context["pending_item"] = selected
                 context["pending_options"] = []
                 context["all_options"] = []
@@ -1175,6 +1319,7 @@ class WhatsAppBotService:
         # Barcode / item code: jump straight to quantity.
         if is_code_query and result.match_type == "exact" and result.items:
             selected = result.items[0].model_dump(mode="json")
+            self._save_shop_return(context)
             context["pending_item"] = selected
             context["pending_options"] = []
             context["all_options"] = []
@@ -1190,7 +1335,21 @@ class WhatsAppBotService:
                 "handoff": False,
             }
 
-        option_dicts = [item.model_dump(mode="json") for item in result.items]
+        option_dicts = [
+            item.model_dump(mode="json")
+            for item in result.items
+            if not is_hidden_shop_title(item.item_title)
+        ]
+        if not option_dicts:
+            store.update_context(conversation_id, context)
+            return {
+                "text": (
+                    f"{result.message or 'No matching products found.'}\n\n"
+                    "Try brand + size, barcode, or item code.\n"
+                    "CART to review · CONFIRM to place · MENU to exit"
+                ),
+                "handoff": False,
+            }
         context["pending_options"] = option_dicts
         context["all_options"] = option_dicts
         context["page"] = 0
@@ -1260,6 +1419,8 @@ class WhatsAppBotService:
     ) -> dict[str, Any]:
         conversation_id = conversation["conversation_id"]
         self._persist_customer_address(context)
+        if (context.get("order_type") or "") == "pickup":
+            return self._finalize_order(conversation, context)
         if context.get("latitude") is not None and context.get("longitude") is not None:
             self._persist_customer_location(context)
             return self._finalize_order(conversation, context)
@@ -1448,6 +1609,87 @@ class WhatsAppBotService:
         )
         return re.sub(r"\s+", " ", cleaned).strip()
 
+    _SHOP_RETURN_KEYS = (
+        "shop_view",
+        "shop_category_id",
+        "shop_category_title",
+        "shop_parent_id",
+        "shop_parent_title",
+        "shop_list",
+        "shop_subs",
+        "shop_q",
+        "shop_page",
+        "shop_has_more",
+        "shop_promo",
+    )
+
+    def _save_shop_return(self, context: dict[str, Any]) -> None:
+        view = str(context.get("shop_view") or "")
+        if view not in {"products", "offers", "categories"}:
+            return
+        snap: dict[str, Any] = {}
+        for key in self._SHOP_RETURN_KEYS:
+            val = context.get(key)
+            if key in {"shop_list", "shop_subs"}:
+                snap[key] = list(val or [])
+            else:
+                snap[key] = val
+        context["shop_return"] = snap
+
+    def _restore_shop_return(self, context: dict[str, Any]) -> None:
+        snap = context.pop("shop_return", None)
+        if not snap:
+            return
+        for key, val in snap.items():
+            context[key] = val
+
+    def _view_cart_label(self, context: dict[str, Any]) -> str:
+        cart = list(context.get("cart") or [])
+        if not cart:
+            return "View cart"
+        orders = WhatsAppOrderService()
+        totals = orders.totals(cart)
+        total_s = orders._money(float(totals.get("order_total") or 0))
+        return f"View cart · Rs {total_s}"
+
+    def _after_add_to_cart(
+        self,
+        conversation_id: str,
+        context: dict[str, Any],
+        *,
+        line_title: str,
+        line_qty: float,
+        line_manual_id: int | None = None,
+    ) -> dict[str, Any]:
+        """Add line then stay on the current shop shelf — full cart only on CART tap."""
+        orders = WhatsAppOrderService()
+        self._restore_shop_return(context)
+        context["step"] = "browse"
+        context["pending_item"] = None
+        context["pending_options"] = []
+        context["all_options"] = []
+        store.update_context(conversation_id, context)
+
+        cart = list(context.get("cart") or [])
+        totals = orders.totals(cart)
+        qty_s = orders._qty(line_qty)
+        view = str(context.get("shop_view") or "")
+        cat_title = str(context.get("shop_category_title") or "").strip()
+        where = f" in *{cat_title}*" if view == "products" and cat_title else ""
+
+        note = (
+            f"Added *{line_title}* × {qty_s}\n"
+            f"*{int(totals['item_count'])} item(s)* · "
+            f"Total *Rs {orders._money(float(totals['order_total']))}*"
+        )
+        added_id = int(line_manual_id or 0) or None
+        return {
+            "text": f"{note}\nKeep shopping{where}, or tap *View cart*.",
+            "handoff": False,
+            "stay_in_shop": True,
+            "added_manual_id": added_id,
+        }
+
     def _cart_short_text(
         self,
         cart: list[dict[str, Any]],
@@ -1477,16 +1719,20 @@ class WhatsAppBotService:
         silent_ui: bool = False,
     ) -> dict[str, Any]:
         del title  # kept for call-site compatibility; UI is button-based now
-        cart = list(context.get("cart") or [])
+        orders = WhatsAppOrderService()
+        cart = orders.purge_hidden_titles(context.get("cart") or [])
+        context["cart"] = cart
         if not cart:
             context["step"] = "browse"
+            context["shop_view"] = context.get("shop_view") or "hub"
             context["pending_options"] = []
             context["all_options"] = []
+            context["shop_list"] = []
             store.update_context(conversation_id, context)
             return {
                 "text": (
                     "Your cart is empty.\n"
-                    "Send an item name to add products, or MENU to exit."
+                    + self._order_browse_prompt(context)
                 ),
                 "handoff": False,
                 "silent_ui": False,
@@ -1495,6 +1741,7 @@ class WhatsAppBotService:
         context["pending_item"] = None
         context["pending_options"] = []
         context["all_options"] = []
+        context["shop_list"] = []
         store.update_context(conversation_id, context)
         short = self._cart_short_text(cart, note=note)
         # Compact body only — full receipt is shown after final order place.
@@ -1512,6 +1759,8 @@ class WhatsAppBotService:
         buttons: list[ChatQuickReply] = []
         for idx, raw in enumerate(cart or [], start=1):
             title = str(raw.get("item_title") or f"Item {idx}").strip()
+            if title.lower().startswith("empty"):
+                continue
             if len(title) > 80:
                 title = title[:77] + "…"
             unit_price = float(raw.get("unit_price") or 0)
@@ -1545,29 +1794,570 @@ class WhatsAppBotService:
     def _order_browse_prompt(self, context: dict[str, Any]) -> str:
         name = context.get("customer_name") or "Customer"
         mobile = self._display_mobile(context.get("customer_mobile") or "")
+        fulfill = context.get("order_type") or ""
         lines = [
-            f"*Order for {name}*",
+            f"*Shop for {name}*",
             "──────────────────",
         ]
         if mobile:
             lines.append(f"Mobile: {mobile}")
+        if fulfill:
+            loc = ", ".join(
+                p for p in [context.get("area") or "", context.get("city") or ""] if p
+            )
+            label = "Pick-up" if fulfill == "pickup" else "Delivery"
+            lines.append(f"{label}" + (f" · {loc}" if loc else ""))
+        hint = shop_cart_hint(context)
+        if hint:
+            lines.append(hint)
         lines.extend(
             [
-                "Send *item name*, brand, barcode, or code.",
-                "You may also send a *voice note*.",
                 "",
-                "Commands:",
-                "- CART — review bill with qty buttons",
-                "- INC 1 / DEC 1 — change quantity",
-                "- REMOVE 1 — delete a line",
-                "- CONFIRM — place order",
-                "- CLEAR — empty cart",
-                "- MENU — exit ordering",
+                "1 Categories",
+                "2 Search products",
+                "3 Offers",
+                "4 View cart",
                 "",
-                "Sales prices only. No cost shown.",
+                "Type a name to search all products.",
+                "In a category, type to search *only that category*.",
+                "Tap *Categories* anytime · *Back* for previous level.",
+                "CART · CONFIRM · MENU",
+                "",
+                "Sales prices from the store. No invented fees.",
             ]
         )
         return "\n".join(lines)
+
+    def _fulfill_prompt(self) -> str:
+        return (
+            "*Delivery or Pick-up?*\n"
+            "──────────────────\n"
+            "1 Delivery\n"
+            "2 Pick-up (store collection)\n\n"
+            "Delivery charges, if any, are confirmed by the store.\n"
+            "This chat does not invent fees."
+        )
+
+    def _shopping_ready_reply(
+        self,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+        prefix: str = "",
+    ) -> dict[str, Any]:
+        conversation_id = conversation["conversation_id"]
+        context["mode"] = "order"
+        if not (context.get("order_type") or "").strip():
+            context["step"] = "await_fulfill"
+            context["shop_view"] = "hub"
+            store.update_context(conversation_id, context)
+            return {
+                "text": f"{prefix}{self._fulfill_prompt()}".strip(),
+                "handoff": False,
+            }
+        context["step"] = "browse"
+        context["shop_view"] = "hub"
+        context["shop_list"] = []
+        store.update_context(conversation_id, context)
+        return {
+            "text": f"{prefix}{self._order_browse_prompt(context)}".strip(),
+            "handoff": False,
+        }
+
+    def _open_shop_hub(self, conversation: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+        context["step"] = "browse"
+        context["shop_view"] = "hub"
+        context["shop_list"] = []
+        context["all_options"] = []
+        context["pending_options"] = []
+        context["shop_q"] = ""
+        store.update_context(conversation["conversation_id"], context)
+        return {"text": self._order_browse_prompt(context), "handoff": False}
+
+    def _fulfill_reply(
+        self,
+        text: str,
+        *,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        choice = parse_fulfill(text.lower().strip())
+        if not choice:
+            return {"text": self._fulfill_prompt(), "handoff": False}
+        context["order_type"] = choice
+        if choice == "pickup":
+            context["city"] = "Lahore"
+            context["area"] = "Shad Bagh"
+            if not (context.get("customer_address") or "").strip():
+                context["customer_address"] = settings.company_address or ""
+            return self._shopping_ready_reply(
+                conversation,
+                context,
+                "Pick-up at our Shad Bagh store.\nShare your area only if asked later.\n\n",
+            )
+        context["step"] = "await_area"
+        store.update_context(conversation["conversation_id"], context)
+        return {
+            "text": (
+                "*Delivery area*\n"
+                "Send city and area, e.g. *Lahore, Shad Bagh*\n"
+                "GPS is not required.\n"
+                "Or reply *Shad Bagh* to use the store area."
+            ),
+            "handoff": False,
+        }
+
+    def _area_reply(
+        self,
+        text: str,
+        *,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        lower = text.lower().strip()
+        if lower in {"shad bagh", "store", "store area", "use store area"}:
+            context["city"] = "Lahore"
+            context["area"] = "Shad Bagh"
+        else:
+            parsed = parse_area_line(text)
+            if not parsed:
+                return {
+                    "text": (
+                        "Please send city and area, e.g. *Lahore, Shad Bagh*."
+                    ),
+                    "handoff": False,
+                }
+            context["city"], context["area"] = parsed
+        if not (context.get("customer_address") or "").strip():
+            context["customer_address"] = f"{context['area']}, {context['city']}"
+        return self._shopping_ready_reply(
+            conversation,
+            context,
+            f"Delivering to *{context['area']}, {context['city']}*.\n"
+            "The store confirms any delivery charge.\n\n",
+        )
+
+    def _format_shop_list(
+        self,
+        *,
+        heading: str,
+        rows: list[dict[str, Any]],
+        context: dict[str, Any],
+        empty_query: str = "",
+        subs: list[dict[str, Any]] | None = None,
+        categories_only: bool = False,
+    ) -> str:
+        lines = [heading, "──────────────────"]
+        hint = shop_cart_hint(context)
+        if hint:
+            lines.append(hint)
+            lines.append("")
+        sub_rows = list(subs or [])
+        if sub_rows:
+            lines.append("Shop by subcategory")
+            for idx, row in enumerate(sub_rows, start=1):
+                title = str(row.get("item_title") or "")
+                lines.append(f"S{idx} {title}")
+            lines.append("Tap a subcategory for more categories / products.")
+            lines.append("")
+        if not rows:
+            if empty_query:
+                title = context.get("shop_category_title") or "this category"
+                lines.extend(
+                    [
+                        "No products found",
+                        f'We couldn\'t find anything matching "{empty_query}" in {title}.',
+                        "CLEAR SEARCH · BACK · MENU",
+                    ]
+                )
+            elif categories_only:
+                lines.append("No more categories.")
+                lines.append("BACK · MENU")
+            else:
+                lines.append("No products in this category right now.")
+                lines.append("BACK · MENU")
+            return "\n".join(lines)
+        if categories_only:
+            lines.append("Tap a category to open it.")
+        else:
+            lines.append("Products")
+        for idx, row in enumerate(rows, start=1):
+            title = str(row.get("item_title") or "")
+            if categories_only or row.get("kind") == "category":
+                lines.append(f"{idx} {title}")
+                continue
+            price = row.get("sales_rate")
+            try:
+                price_s = f"Rs {int(float(price)):,}" if price else ""
+            except (TypeError, ValueError):
+                price_s = ""
+            stock = "" if row.get("in_stock", True) else " (out of stock)"
+            extra = f" — {price_s}" if price_s else ""
+            lines.append(f"{idx} {title}{extra}{stock}")
+        if context.get("shop_has_more"):
+            lines.append("MORE for next page")
+        lines.append("CART · BACK · MENU")
+        return "\n".join(lines)
+
+    def _show_categories(
+        self,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+        *,
+        parent_id: int | None = None,
+        page: int = 1,
+    ) -> dict[str, Any]:
+        shop = WhatsAppShopService(self.db)
+        data = shop.list_categories(parent_id, page)
+        if page > 1 and not data["items"]:
+            return {"text": "No more categories. Reply BACK or MENU.", "handoff": False}
+        context["step"] = "browse"
+        context["shop_view"] = "categories"
+        context["shop_parent_id"] = parent_id
+        context["shop_page"] = data["page"]
+        context["shop_has_more"] = data["has_more"]
+        context["shop_list"] = data["items"]
+        context["shop_category_id"] = parent_id
+        context["shop_q"] = ""
+        context["shop_subs"] = []
+        context["all_options"] = []
+        context["pending_options"] = []
+        store.update_context(conversation["conversation_id"], context)
+        heading = (
+            "*Categories*\nTap a category to shop — like the store app."
+            if not parent_id
+            else "*More categories*\nTap a subcategory to open it."
+        )
+        return {
+            "text": self._format_shop_list(
+                heading=heading,
+                rows=data["items"],
+                context=context,
+                categories_only=True,
+            ),
+            "handoff": False,
+        }
+
+    def _show_products(
+        self,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+        *,
+        category_id: int | None,
+        title: str,
+        q: str = "",
+        page: int = 1,
+        promo_only: bool = False,
+        parent_id: int | None = None,
+    ) -> dict[str, Any]:
+        shop = WhatsAppShopService(self.db)
+        q_clean = (q or "").strip()
+        data = shop.list_products(
+            category_id=None if promo_only else category_id,
+            q=q_clean or None,
+            page=page,
+            promo_only=promo_only,
+        )
+        if page > 1 and not data["items"] and not q_clean:
+            return {"text": "No more products. Reply BACK or MENU.", "handoff": False}
+        rows = [
+            row
+            for row in list(data["items"])
+            if not is_hidden_shop_title(str(row.get("item_title") or ""))
+        ]
+        heading_title = title or ("Offers" if promo_only else "Products")
+        prev_title = str(context.get("shop_category_title") or "")
+        subs: list[dict[str, Any]] = []
+        if page > 1 and not q_clean:
+            subs = list(context.get("shop_subs") or [])
+        elif (
+            not q_clean
+            and not promo_only
+            and page <= 1
+            and category_id
+        ):
+            sub_data = shop.list_categories(category_id, 1)
+            subs = list(sub_data.get("items") or [])
+        if q_clean:
+            heading = f"*Search results in {heading_title}*"
+        elif promo_only:
+            heading = "*Offers*"
+        elif subs:
+            heading = (
+                f"*{heading_title}*\n"
+                f"Search in {heading_title} — type a name.\n"
+                "Shop by subcategory below, then products."
+            )
+        else:
+            heading = f"*{heading_title}*\nSearch in {heading_title} — type a name."
+        context["step"] = "browse"
+        context["shop_view"] = "offers" if promo_only else "products"
+        context["shop_category_id"] = category_id
+        context["shop_category_title"] = heading_title
+        context["shop_parent_id"] = parent_id
+        context["shop_parent_title"] = prev_title if parent_id else ""
+        context["shop_q"] = q_clean
+        context["shop_page"] = data["page"]
+        context["shop_has_more"] = data["has_more"]
+        context["shop_promo"] = promo_only
+        context["shop_subs"] = [] if q_clean else subs
+        context["shop_list"] = rows
+        context["all_options"] = []
+        context["pending_options"] = []
+        store.update_context(conversation["conversation_id"], context)
+        return {
+            "text": self._format_shop_list(
+                heading=heading,
+                rows=rows,
+                context=context,
+                empty_query=q_clean,
+                subs=context.get("shop_subs") or [],
+            ),
+            "handoff": False,
+        }
+
+    def _pick_shop_row(
+        self,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+        searcher: ItemPriceSearchService,
+        index: int,
+    ) -> dict[str, Any] | None:
+        rows = list(context.get("shop_list") or [])
+        if not (1 <= index <= len(rows)):
+            return None
+        row = rows[index - 1]
+        if row.get("kind") == "category" or context.get("shop_view") == "categories":
+            cid = int(row.get("category_id") or 0)
+            parent = (
+                context.get("shop_category_id")
+                if context.get("shop_view") == "products"
+                else context.get("shop_parent_id")
+            )
+            return self._show_products(
+                conversation,
+                context,
+                category_id=cid,
+                title=str(row.get("item_title") or ""),
+                parent_id=int(parent) if parent else None,
+            )
+        shop = WhatsAppShopService(self.db)
+        product = shop.lookup_product(int(row.get("manual_id") or 0))
+        if product is None:
+            return {
+                "text": "That product is not available. Try another number.",
+                "handoff": False,
+            }
+        pending = product.model_dump()
+        self._save_shop_return(context)
+        context["pending_item"] = pending
+        context["pending_options"] = []
+        context["all_options"] = []
+        context["step"] = "await_qty"
+        store.update_context(conversation["conversation_id"], context)
+        rate = product.sales_rate
+        try:
+            price_s = f"Rs {int(float(rate)):,}" if rate else ""
+        except (TypeError, ValueError):
+            price_s = ""
+        stock = "In stock" if product.in_stock else "Out of stock"
+        card = (
+            f"*{product.item_title}*\n"
+            f"{price_s}\n"
+            f"{stock}\n"
+            "Prices from the store system."
+        )
+        return {
+            "text": (
+                f"{card}\n\n"
+                "How many units do you want?\n"
+                "Reply with quantity, e.g. *1* or *2*"
+            ),
+            "handoff": False,
+        }
+
+    def _shop_nav_extras(self, context: dict[str, Any]) -> list[ChatQuickReply]:
+        """Categories + Back always visible while shopping — same idea as the mobile app."""
+        extras: list[ChatQuickReply] = [
+            ChatQuickReply(title="Categories", payload="CATEGORIES", style="action"),
+        ]
+        shop_view = context.get("shop_view") or ""
+        if shop_view in {"products", "offers", "categories"}:
+            extras.append(ChatQuickReply(title="Back", payload="BACK", style="action"))
+        if context.get("shop_has_more"):
+            extras.append(ChatQuickReply(title="More", payload="MORE", style="action"))
+        if context.get("shop_q"):
+            extras.append(
+                ChatQuickReply(
+                    title="Clear search", payload="CLEAR SEARCH", style="action"
+                )
+            )
+        if context.get("cart"):
+            extras.append(
+                ChatQuickReply(
+                    title=self._view_cart_label(context),
+                    payload="CART",
+                    style="action",
+                )
+            )
+        return extras
+
+    def _shop_reply(
+        self,
+        text: str,
+        *,
+        conversation: dict[str, Any],
+        context: dict[str, Any],
+        searcher: ItemPriceSearchService,
+    ) -> dict[str, Any] | None:
+        step = context.get("step") or ""
+        lower = text.lower().strip()
+        shop_view = context.get("shop_view") or "hub"
+        is_nav = is_shop_nav_message(text, shop_view=shop_view)
+        if not is_nav and step not in {"browse", "cart_view"}:
+            return None
+        opened = parse_open_category(text)
+        if opened:
+            cid, title = opened
+            parent = (
+                context.get("shop_category_id")
+                if shop_view == "products"
+                else context.get("shop_parent_id")
+            )
+            return self._show_products(
+                conversation,
+                context,
+                category_id=cid,
+                title=title or str(context.get("shop_category_title") or "Category"),
+                parent_id=int(parent) if parent else None,
+            )
+        sub_idx = parse_sub_index(text)
+        if sub_idx:
+            subs = list(context.get("shop_subs") or [])
+            if 1 <= sub_idx <= len(subs):
+                row = subs[sub_idx - 1]
+                return self._show_products(
+                    conversation,
+                    context,
+                    category_id=int(row.get("category_id") or 0),
+                    title=str(row.get("item_title") or ""),
+                    parent_id=context.get("shop_category_id"),
+                )
+        action = parse_hub_action(lower, shop_view=shop_view)
+
+        if action == "cart":
+            return self._cart_view_reply(
+                conversation["conversation_id"],
+                context,
+                title="YOUR CART",
+                note="Use − / + on each item, then CONFIRM.",
+            )
+        if action == "hub":
+            return self._open_shop_hub(conversation, context)
+        if action == "categories":
+            context["step"] = "browse"
+            context["shop_q"] = ""
+            context["shop_subs"] = []
+            context["pending_item"] = None
+            context["pending_options"] = []
+            context["all_options"] = []
+            return self._show_categories(conversation, context, page=1, parent_id=None)
+        if action == "offers":
+            return self._show_products(
+                conversation,
+                context,
+                category_id=None,
+                title="Offers",
+                promo_only=True,
+            )
+        if action == "search":
+            context["shop_view"] = "hub"
+            context["shop_category_id"] = None
+            context["shop_category_title"] = ""
+            context["shop_q"] = ""
+            context["shop_list"] = []
+            context["all_options"] = []
+            context["step"] = "browse"
+            store.update_context(conversation["conversation_id"], context)
+            return {
+                "text": (
+                    "Search all products.\n"
+                    "Send item name, brand, barcode, or code."
+                ),
+                "handoff": False,
+            }
+        if action == "clear_search" and shop_view in {"products", "offers"}:
+            return self._show_products(
+                conversation,
+                context,
+                category_id=context.get("shop_category_id"),
+                title=str(context.get("shop_category_title") or "Category"),
+                q="",
+                page=1,
+                promo_only=bool(context.get("shop_promo")),
+                parent_id=context.get("shop_parent_id"),
+            )
+        if action == "back":
+            if shop_view in {"products", "offers"}:
+                parent = context.get("shop_parent_id")
+                if parent:
+                    return self._show_products(
+                        conversation,
+                        context,
+                        category_id=int(parent),
+                        title=str(context.get("shop_parent_title") or "Category"),
+                        page=1,
+                    )
+                return self._show_categories(conversation, context, page=1)
+            if shop_view == "categories":
+                return self._open_shop_hub(conversation, context)
+            return self._open_shop_hub(conversation, context)
+
+        if lower in {"more", "next"} and shop_view in {"categories", "products", "offers"}:
+            page = int(context.get("shop_page") or 1) + 1
+            if shop_view == "categories":
+                return self._show_categories(
+                    conversation,
+                    context,
+                    parent_id=context.get("shop_parent_id"),
+                    page=page,
+                )
+            return self._show_products(
+                conversation,
+                context,
+                category_id=context.get("shop_category_id"),
+                title=str(context.get("shop_category_title") or "Category"),
+                q=str(context.get("shop_q") or ""),
+                page=page,
+                promo_only=bool(context.get("shop_promo")),
+                parent_id=context.get("shop_parent_id"),
+            )
+
+        if re.fullmatch(r"\d{1,2}", lower) and context.get("shop_list"):
+            picked = self._pick_shop_row(
+                conversation, context, searcher, int(lower)
+            )
+            if picked:
+                return picked
+
+        if shop_view in {"products", "offers"} and len(lower) >= 1:
+            if lower in {"more", "next", "back", "menu", "cart", "confirm"}:
+                return None
+            if re.fullmatch(r"\d{1,2}", lower):
+                return {
+                    "text": f"Please reply with a number from 1 to {len(context.get('shop_list') or [])}.",
+                    "handoff": False,
+                }
+            return self._show_products(
+                conversation,
+                context,
+                category_id=context.get("shop_category_id"),
+                title=str(context.get("shop_category_title") or "Category"),
+                q=text.strip(),
+                page=1,
+                promo_only=bool(context.get("shop_promo")),
+                parent_id=context.get("shop_parent_id"),
+            )
+        return None
 
     @staticmethod
     def _parse_qty(text: str) -> float | None:
@@ -2240,6 +3030,11 @@ class WhatsAppBotService:
         page_size: int = 8,
         extra_actions: list[ChatQuickReply] | None = None,
     ) -> list[ChatQuickReply]:
+        options = [
+            raw
+            for raw in (options or [])
+            if not is_hidden_shop_title(str(raw.get("item_title") or ""))
+        ]
         start = page * page_size
         chunk = options[start : start + page_size]
         buttons: list[ChatQuickReply] = []
@@ -2261,6 +3056,7 @@ class WhatsAppBotService:
                     style="item",
                     subtitle=" | ".join(subtitle_parts),
                     meta=self._money_label(raw.get("sales_rate")),
+                    manual_id=int(code) if code else None,
                 )
             )
         actions: list[ChatQuickReply] = list(extra_actions or [])
@@ -2308,6 +3104,10 @@ class WhatsAppBotService:
                 return ("Type your full name…", "Place order — enter your name")
             if step == "await_mobile":
                 return ("Type mobile 03XXXXXXXXX…", "Place order — enter mobile")
+            if step == "await_fulfill":
+                return ("Tap Delivery or Pick-up…", "How should we fulfil this order?")
+            if step == "await_area":
+                return ("City and area, e.g. Lahore, Shad Bagh…", "Delivery area — GPS not required")
             if step == "confirm_address":
                 return (
                     "Tap Keep / Update / Skip, or type a new address…",
@@ -2332,6 +3132,18 @@ class WhatsAppBotService:
                 return (
                     "Type quantity e.g. 1 or 2…",
                     "How many units do you want?",
+                )
+            cat_title = str(context.get("shop_category_title") or "").strip()
+            shop_view = context.get("shop_view") or ""
+            if shop_view in {"products", "offers"} and cat_title:
+                return (
+                    f"Search in {cat_title}…",
+                    f"Search results stay in {cat_title}",
+                )
+            if shop_view == "categories":
+                return (
+                    "Tap a category, or MORE…",
+                    "Shop by category",
                 )
             if options:
                 return (
@@ -2370,6 +3182,17 @@ class WhatsAppBotService:
             step = context.get("step") or "browse"
             if step in {"await_name", "await_mobile"}:
                 return [menu_btn]
+            if step == "await_fulfill":
+                return [
+                    ChatQuickReply(title="Delivery", payload="DELIVERY", style="action"),
+                    ChatQuickReply(title="Pick-up", payload="PICKUP", style="action"),
+                    menu_btn,
+                ]
+            if step == "await_area":
+                return [
+                    ChatQuickReply(title="Use store area", payload="Shad Bagh", style="action"),
+                    menu_btn,
+                ]
             if step == "confirm_address":
                 return [
                     ChatQuickReply(title="Keep address", payload="KEEP", style="action"),
@@ -2390,9 +3213,67 @@ class WhatsAppBotService:
                     ChatQuickReply(title="Qty 5", payload="5", style="action"),
                     menu_btn,
                 ]
-            options = list(
-                context.get("all_options") or context.get("pending_options") or []
-            )
+            shop_list = [
+                row
+                for row in list(context.get("shop_list") or [])
+                if str(row.get("kind") or "") == "category"
+                or not is_hidden_shop_title(str(row.get("item_title") or ""))
+            ]
+            if shop_list != list(context.get("shop_list") or []):
+                context["shop_list"] = shop_list
+                store.update_context(conversation["conversation_id"], context)
+            shop_subs = [
+                row
+                for row in list(context.get("shop_subs") or [])
+                if not is_hidden_shop_title(str(row.get("item_title") or ""))
+            ]
+            shop_view = context.get("shop_view") or ""
+            if (shop_list or shop_subs) and step == "browse":
+                extra = self._shop_nav_extras(context)
+                if shop_view == "categories":
+                    cat_items: list[ChatQuickReply] = []
+                    for idx, row in enumerate(shop_list, start=1):
+                        cid = int(row.get("category_id") or 0)
+                        title = str(row.get("item_title") or f"Category {idx}")
+                        if is_hidden_shop_title(title):
+                            continue
+                        cat_items.append(
+                            ChatQuickReply(
+                                title=title,
+                                payload=f"CAT {cid} {title}"[:200],
+                                style="item",
+                                subtitle="Open category",
+                            )
+                        )
+                    cat_items.extend(extra)
+                    cat_items.append(menu_btn)
+                    return cat_items
+                for row in shop_subs:
+                    cid = int(row.get("category_id") or 0)
+                    title = str(row.get("item_title") or "Category")
+                    if is_hidden_shop_title(title):
+                        continue
+                    extra.insert(
+                        1,
+                        ChatQuickReply(
+                            title=title,
+                            payload=f"CAT {cid} {title}"[:200],
+                            style="chip",
+                        ),
+                    )
+                return self._item_choice_replies(
+                    shop_list,
+                    page=0,
+                    page_size=max(len(shop_list), 1),
+                    extra_actions=extra,
+                )
+            options = [
+                row
+                for row in list(
+                    context.get("all_options") or context.get("pending_options") or []
+                )
+                if not is_hidden_shop_title(str(row.get("item_title") or ""))
+            ]
             if options:
                 return self._item_choice_replies(
                     options,
@@ -2406,11 +3287,19 @@ class WhatsAppBotService:
                 )
             if step == "cart_view" and context.get("cart"):
                 return self._cart_line_replies(context.get("cart") or [])
-            buttons: list[ChatQuickReply] = []
+            buttons: list[ChatQuickReply] = [
+                ChatQuickReply(title="Categories", payload="CATEGORIES", style="action"),
+                ChatQuickReply(title="Search", payload="SEARCH", style="action"),
+                ChatQuickReply(title="Offers", payload="OFFERS", style="action"),
+            ]
             if context.get("cart"):
                 buttons.extend(
                     [
-                        ChatQuickReply(title="View cart", payload="CART", style="action"),
+                        ChatQuickReply(
+                            title=self._view_cart_label(context),
+                            payload="CART",
+                            style="action",
+                        ),
                         ChatQuickReply(
                             title="Confirm", payload="CONFIRM", style="action"
                         ),
@@ -2468,6 +3357,8 @@ class WhatsAppBotService:
             "place order",
             "new order",
             "shopping",
+            "shop",
+            "categories",
         } or any(
             word in lower
             for word in ("place order", "i want to order", "order please", "buy now")

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}OTP / SMS Control - {{ app_name }}{% endblock %}
+{% block page_title %}OTP / SMS Control{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>OTP / SMS Master Control</h5>
+        <p class="text-muted small mb-0">
+            Enable or disable OTP SMS for the web application and the customer mobile app.
+            Master OFF overrides both channels.
+        </p>
+    </div>
+    <button class="btn btn-primary btn-sm" type="button" id="btn-refresh">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+</div>
+
+<div id="otp-control-alert"></div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Master OTP SMS</div>
+                <div class="fs-5 fw-semibold" id="kpi-master">—</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Web OTP (effective)</div>
+                <div class="fs-5 fw-semibold" id="kpi-web">—</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Mobile OTP (effective)</div>
+                <div class="fs-5 fw-semibold" id="kpi-mobile">—</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">OTP / SMS CONTROL PANEL</div>
+            <div class="card-body">
+                <form id="otp-settings-form" class="vstack gap-3">
+                    <input type="hidden" id="row_version" value="1">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="master_enabled" role="switch">
+                        <label class="form-check-label fw-semibold" for="master_enabled">OTP SMS Master Status</label>
+                        <div class="form-text">OFF disables OTP for both Web and Mobile, even if those switches are ON.</div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="web_enabled" role="switch">
+                        <label class="form-check-label" for="web_enabled">Web Application OTP</label>
+                        <div class="form-text" id="web-override-hint"></div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="mobile_enabled" role="switch">
+                        <label class="form-check-label" for="mobile_enabled">Mobile Application OTP</label>
+                        <div class="form-text" id="mobile-override-hint"></div>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="comment">Reason / comment (optional)</label>
+                        <input type="text" class="form-control form-control-sm" id="comment" maxlength="300" placeholder="Why this change is being made">
+                    </div>
+                    <button class="btn btn-success btn-sm" type="submit" id="btn-save">
+                        <i class="bi bi-check2 me-1"></i>Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Current Status</div>
+            <div class="card-body">
+                <table class="table table-sm mb-3">
+                    <tbody>
+                        <tr>
+                            <td>Web OTP</td>
+                            <td class="text-end fw-semibold" id="status-web">—</td>
+                        </tr>
+                        <tr>
+                            <td>Mobile OTP</td>
+                            <td class="text-end fw-semibold" id="status-mobile">—</td>
+                        </tr>
+                        <tr>
+                            <td>SMS Service (OTP)</td>
+                            <td class="text-end fw-semibold" id="status-sms">—</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="small text-muted">
+                    <div>Last modified by: <span id="meta-user">—</span></div>
+                    <div>Last modified: <span id="meta-when">—</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="otp-confirm-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="otp-confirm-title">WARNING</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="otp-confirm-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="otp-confirm-yes">Disable</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/otp_sms_control.js?v=1"></script>
+{% endblock %}

@@ -81,12 +81,17 @@ def shift_date_months(d: date, months: int) -> date:
     return date(year, month, day)
 
 
-def _shift_datetime_months(value: datetime, months: int) -> datetime:
+def shift_datetime_months(value: datetime, months: int) -> datetime:
+    """Shift a datetime by calendar months (clamps day to month length)."""
     month_index = value.month - 1 + months
     year = value.year + month_index // 12
     month = month_index % 12 + 1
     day = min(value.day, calendar.monthrange(year, month)[1])
     return value.replace(year=year, month=month, day=day)
+
+
+def _shift_datetime_months(value: datetime, months: int) -> datetime:
+    return shift_datetime_months(value, months)
 
 
 def is_business_day_close(end: datetime) -> bool:
@@ -209,3 +214,38 @@ def date_range_for_preset(preset: str, now: datetime | None = None) -> Tuple[dat
 def default_report_range(now: datetime | None = None) -> Tuple[datetime, datetime]:
     """Default range for API when no dates passed: this month, business hours."""
     return date_range_for_preset("this-month", now)
+
+
+def cumulative_period_label(start: datetime, end: datetime) -> str:
+    """Label for cumulative sales row: fixed start -> varying end (matches SSMS report)."""
+    start_h = business_day_start_hour()
+    end_h = business_day_end_hour()
+    return (
+        f"{start.strftime('%d %b %Y')} {start_h:02d}:00"
+        f" -> {end.strftime('%d %b %Y')} {end_h:02d}:00"
+    )
+
+
+def cumulative_period_ends(
+    start_date: datetime, end_date: datetime
+) -> Tuple[datetime, list[datetime]]:
+    """
+    Build cumulative period end timestamps.
+
+    Fixed start = business_day_start(business_date_for(start_date)).
+    Each row ends at business_day_end(bd) for bd from start_bd through end_bd inclusive.
+    Returns (fixed_start, [end1, end2, ...]) or (fixed_start, []) when invalid/empty.
+    """
+    if end_date < start_date:
+        return business_day_start(business_date_for(start_date)), []
+
+    start_bd = business_date_for(start_date)
+    end_bd = business_date_for(end_date)
+    fixed_start = business_day_start(start_bd)
+
+    ends: list[datetime] = []
+    bd = start_bd
+    while bd <= end_bd:
+        ends.append(business_day_end(bd))
+        bd += timedelta(days=1)
+    return fixed_start, ends

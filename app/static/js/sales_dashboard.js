@@ -1,6 +1,12 @@
 /** Sales Dashboard — full page with KPIs, chart, comparison. */
 const SALES_API = '/api/v1/reports/sales-dashboard';
 let trendChart = null;
+let cumulativeSalesData = null;
+let dayWiseData = null;
+let dashboardSummary = null;
+let dashboardTopInvoices = null;
+let cumulativeLoaded = false;
+let dashboardLoaded = false;
 
 function initSalesDashboard() {
     setDefaultDates();
@@ -13,6 +19,13 @@ function initSalesDashboard() {
     document.querySelectorAll('.preset-btn').forEach((btn) => {
         btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
     });
+    document.getElementById('btn-load-cumulative')?.addEventListener('click', loadCumulativeSales);
+    document.getElementById('btn-download-cumulative')?.addEventListener('click', downloadCumulativeSalesCsv);
+    document.getElementById('btn-download-cumulative-pdf')?.addEventListener('click', downloadCumulativeSalesPdf);
+    document.getElementById('btn-download-dashboard-csv')?.addEventListener('click', downloadDashboardCsv);
+    document.getElementById('btn-download-dashboard-pdf')?.addEventListener('click', downloadDashboardPdf);
+    document.getElementById('btn-download-daywise')?.addEventListener('click', downloadDayWiseCsv);
+    document.getElementById('btn-download-daywise-pdf')?.addEventListener('click', downloadDayWisePdf);
     loadAll();
 }
 
@@ -71,6 +84,9 @@ async function loadAll() {
     const errEl = document.getElementById('sales-dashboard-error');
     errEl.classList.add('d-none');
     btn.disabled = true;
+    dashboardLoaded = false;
+    setDashboardExportEnabled(false);
+    resetCumulativePanel();
 
     try {
         const params = buildParams();
@@ -81,6 +97,10 @@ async function loadAll() {
             Api.get(`${SALES_API}/top-invoices?${params}&limit=10`),
             Api.get(`${SALES_API}/day-wise?${params}`),
         ]);
+        dashboardSummary = summary;
+        dashboardTopInvoices = topInvoices;
+        dashboardLoaded = true;
+        setDashboardExportEnabled(true);
         renderSummary(summary);
         renderTrendChart(trend);
         renderTopInvoices(topInvoices);
@@ -90,6 +110,55 @@ async function loadAll() {
         errEl.classList.remove('d-none');
     } finally {
         btn.disabled = false;
+    }
+}
+
+function setDashboardExportEnabled(enabled) {
+    const csvBtn = document.getElementById('btn-download-dashboard-csv');
+    const pdfBtn = document.getElementById('btn-download-dashboard-pdf');
+    if (csvBtn) csvBtn.disabled = !enabled;
+    if (pdfBtn) pdfBtn.disabled = !enabled;
+}
+
+function resetCumulativePanel() {
+    cumulativeSalesData = null;
+    cumulativeLoaded = false;
+    const tbody = document.getElementById('cumulative-body');
+    const csvBtn = document.getElementById('btn-download-cumulative');
+    const pdfBtn = document.getElementById('btn-download-cumulative-pdf');
+    const loadBtn = document.getElementById('btn-load-cumulative');
+    if (tbody) {
+        tbody.innerHTML =
+            '<tr><td colspan="9" class="text-muted">Click <strong>Load Cumulative Sales</strong> to view this report.</td></tr>';
+    }
+    if (csvBtn) csvBtn.disabled = true;
+    if (pdfBtn) pdfBtn.disabled = true;
+    if (loadBtn) loadBtn.disabled = false;
+}
+
+async function loadCumulativeSales() {
+    const loadBtn = document.getElementById('btn-load-cumulative');
+    const errEl = document.getElementById('sales-dashboard-error');
+    const tbody = document.getElementById('cumulative-body');
+    if (loadBtn) loadBtn.disabled = true;
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Loading cumulative sales…</td></tr>';
+    }
+    try {
+        const params = buildParams();
+        params.set('_', String(Date.now()));
+        const cumulative = await Api.get(`${SALES_API}/cumulative?${params}`, { timeoutMs: 120000 });
+        cumulativeLoaded = true;
+        renderCumulativeSales(cumulative);
+    } catch (e) {
+        cumulativeLoaded = false;
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-danger">${e.message || 'Could not load cumulative sales.'}</td></tr>`;
+        }
+        errEl.textContent = e.message || 'Could not load cumulative sales.';
+        errEl.classList.remove('d-none');
+    } finally {
+        if (loadBtn) loadBtn.disabled = false;
     }
 }
 
@@ -326,24 +395,328 @@ function renderTopInvoices(data) {
 }
 
 function renderDayWise(data) {
+    dayWiseData = data;
     const tbody = document.getElementById('day-wise-body');
     const noteEl = document.getElementById('day-wise-note');
+    const csvBtn = document.getElementById('btn-download-daywise');
+    const pdfBtn = document.getElementById('btn-download-daywise-pdf');
     if (noteEl && data.business_hours_note) {
         noteEl.textContent = data.business_hours_note;
     }
-    if (!data.items?.length) {
+    const hasRows = !!data.items?.length;
+    if (csvBtn) csvBtn.disabled = !hasRows;
+    if (pdfBtn) pdfBtn.disabled = !hasRows;
+    if (!hasRows) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No sales in range.</td></tr>';
         return;
     }
     tbody.innerHTML = data.items.map((row) => `
         <tr>
             <td><span class="small">${row.day_label || formatBusinessDayLabel(row.business_date)}</span></td>
-            <td class="num">${formatAmount(row.total_sale)}</td>
-            <td class="num">${formatAmount(row.total_cost)}</td>
-            <td class="num">${formatAmount(row.profit)}</td>
-            <td class="num">${row.invoice_count}</td>
+            <td class="num">${formatAmount(row.total_sale, 2)}</td>
+            <td class="num">${formatAmount(row.total_cost, 2)}</td>
+            <td class="num">${formatAmount(row.profit, 2)}</td>
+            <td class="num">${formatAmount(row.invoice_count, 0)}</td>
         </tr>
     `).join('');
+}
+
+function renderCumulativeSales(data) {
+    cumulativeSalesData = data;
+    const tbody = document.getElementById('cumulative-body');
+    const noteEl = document.getElementById('cumulative-note');
+    const csvBtn = document.getElementById('btn-download-cumulative');
+    const pdfBtn = document.getElementById('btn-download-cumulative-pdf');
+    const loadBtn = document.getElementById('btn-load-cumulative');
+    if (noteEl && data.business_hours_note) {
+        noteEl.textContent =
+            `${data.business_hours_note} — each row # shows Current then Last Month (same dates)`;
+    }
+    const hasRows = !!data.items?.length;
+    if (csvBtn) csvBtn.disabled = !hasRows;
+    if (pdfBtn) pdfBtn.disabled = !hasRows;
+    if (loadBtn) loadBtn.disabled = false;
+    if (!hasRows) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-muted">No periods in range.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.items.map((row) => {
+        const periodType = String(row.period_type || '').trim().toLowerCase();
+        const isCurrent = periodType === 'current';
+        const periodTag = isCurrent ? 'Current' : 'Last Month';
+        const rowClass = isCurrent ? '' : 'row-previous';
+        const avgSale = row.avg_sale_per_day != null
+            ? row.avg_sale_per_day
+            : (row.total_sale / Math.max(row.row_num || 1, 1));
+        return `
+        <tr class="${rowClass}">
+            <td class="num text-muted">${isCurrent ? row.row_num : ''}</td>
+            <td><span class="small ${isCurrent ? 'fw-semibold text-primary' : 'text-secondary'}">${periodTag}</span></td>
+            <td><span class="small">${row.period_label || ''}</span></td>
+            <td class="num">${formatAmount(row.total_sale, 2)}</td>
+            <td class="num">${formatAmount(row.total_cost, 2)}</td>
+            <td class="num">${formatAmount(row.profit, 2)}</td>
+            <td class="num">${row.profit_percent != null ? `${formatAmount(row.profit_percent, 2)}%` : '—'}</td>
+            <td class="num">${formatAmount(avgSale, 2)}</td>
+            <td class="num">${formatAmount(row.invoice_count, 0)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function csvEscape(value) {
+    const text = value == null ? '' : String(value);
+    if (/[",\n\r]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+    }
+    return text;
+}
+
+function downloadCumulativeSalesCsv() {
+    if (!cumulativeSalesData?.items?.length) {
+        alert('No cumulative sales data to download. Load the report first.');
+        return;
+    }
+    const headers = [
+        '#', 'Period', 'Cumulative Business Period',
+        'Sale', 'Cost', 'Profit', 'Profit %', 'Avg Sale / Day', 'Invoices',
+    ];
+    const lines = [headers.join(',')];
+    cumulativeSalesData.items.forEach((row) => {
+        const periodType = String(row.period_type || '').toLowerCase();
+        const isCurrent = periodType === 'current';
+        const avgSale = row.avg_sale_per_day != null
+            ? row.avg_sale_per_day
+            : (row.total_sale / Math.max(row.row_num || 1, 1));
+        lines.push([
+            csvEscape(isCurrent ? row.row_num : ''),
+            csvEscape(isCurrent ? 'Current' : 'Last Month'),
+            csvEscape(row.period_label || ''),
+            csvEscape(formatAmount(row.total_sale, 2)),
+            csvEscape(formatAmount(row.total_cost, 2)),
+            csvEscape(formatAmount(row.profit, 2)),
+            csvEscape(row.profit_percent != null ? `${formatAmount(row.profit_percent, 2)}%` : ''),
+            csvEscape(formatAmount(avgSale, 2)),
+            csvEscape(formatAmount(row.invoice_count, 0)),
+        ].join(','));
+    });
+    downloadCsvBlob(lines, 'cumulative-sales');
+}
+
+async function downloadCumulativeSalesPdf() {
+    const pdfBtn = document.getElementById('btn-download-cumulative-pdf');
+    try {
+        if (pdfBtn) pdfBtn.disabled = true;
+        await downloadPdfFromApi(`${SALES_API}/cumulative/pdf`, 'cumulative-sales', null, 600000);
+    } catch (err) {
+        alert(err.message || 'Could not download PDF.');
+    } finally {
+        if (pdfBtn) pdfBtn.disabled = !cumulativeSalesData?.items?.length;
+    }
+}
+
+async function downloadDashboardPdf() {
+    const pdfBtn = document.getElementById('btn-download-dashboard-pdf');
+    const originalHtml = pdfBtn?.innerHTML;
+    try {
+        if (pdfBtn) {
+            pdfBtn.disabled = true;
+            pdfBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating…';
+        }
+        const params = buildParams();
+        params.set('include_cumulative', cumulativeLoaded ? 'true' : 'false');
+        await downloadPdfFromApi(`${SALES_API}/pdf`, 'sales-dashboard', params, 120000);
+    } catch (err) {
+        alert(err.message || 'Could not download dashboard PDF.');
+    } finally {
+        if (pdfBtn) {
+            setDashboardExportEnabled(dashboardLoaded);
+            if (originalHtml) pdfBtn.innerHTML = originalHtml;
+        }
+    }
+}
+
+function downloadDashboardCsv() {
+    if (!dashboardLoaded || !dashboardSummary) {
+        alert('Load the dashboard first.');
+        return;
+    }
+    const lines = [];
+    const s = dashboardSummary;
+    const cur = s.current;
+    lines.push('Sales Dashboard Export');
+    lines.push('');
+    lines.push('Summary (Current Period)');
+    lines.push(['Metric', 'Value'].join(','));
+    lines.push(['Total Sale', csvEscape(formatAmount(cur.total_sale, 2))].join(','));
+    lines.push(['Total Cost', csvEscape(formatAmount(cur.total_cost, 2))].join(','));
+    lines.push(['Profit', csvEscape(formatAmount(cur.profit, 2))].join(','));
+    lines.push(['Profit %', csvEscape(cur.profit_percent != null ? `${formatAmount(cur.profit_percent, 2)}%` : '')].join(','));
+    lines.push(['Avg Sale / Day', csvEscape(formatAmount(cur.avg_sale_per_day, 2))].join(','));
+    lines.push('');
+    lines.push('Month-over-Month Comparison');
+    lines.push(['Metric', 'Current', 'Last Month', 'Change', 'Change %'].join(','));
+    [
+        ['Total Sale', s.total_sale],
+        ['Total Cost', s.total_cost],
+        ['Profit', s.profit],
+        ['Avg Sale / Day', s.avg_sale_per_day],
+    ].forEach(([label, m]) => {
+        lines.push([
+            csvEscape(label),
+            csvEscape(formatAmount(m.current, 2)),
+            csvEscape(formatAmount(m.previous, 2)),
+            csvEscape(formatAmount(m.change, 2)),
+            csvEscape(m.change_percent != null ? `${formatAmount(m.change_percent, 2)}%` : ''),
+        ].join(','));
+    });
+    lines.push('');
+    lines.push('Top Invoices');
+    lines.push(['Inv #', 'Sale', 'Qty'].join(','));
+    (dashboardTopInvoices?.items || []).forEach((row) => {
+        lines.push([
+            csvEscape(row.inv_id),
+            csvEscape(formatAmount(row.total_sale, 2)),
+            csvEscape(formatAmount(row.total_qty, 0)),
+        ].join(','));
+    });
+    lines.push('');
+    lines.push('Day-wise Sales');
+    lines.push(['Business Day', 'Sale', 'Cost', 'Profit', 'Invoices'].join(','));
+    (dayWiseData?.items || []).forEach((row) => {
+        lines.push([
+            csvEscape(row.day_label || row.business_date),
+            csvEscape(formatAmount(row.total_sale, 2)),
+            csvEscape(formatAmount(row.total_cost, 2)),
+            csvEscape(formatAmount(row.profit, 2)),
+            csvEscape(formatAmount(row.invoice_count, 0)),
+        ].join(','));
+    });
+    if (cumulativeSalesData?.items?.length) {
+        lines.push('');
+        lines.push('Cumulative Sales');
+        lines.push(['#', 'Period', 'Cumulative Business Period', 'Sale', 'Cost', 'Profit', 'Profit %', 'Avg Sale / Day', 'Invoices'].join(','));
+        cumulativeSalesData.items.forEach((row) => {
+            const periodType = String(row.period_type || '').toLowerCase();
+            const isCurrent = periodType === 'current';
+            const avgSale = row.avg_sale_per_day != null
+                ? row.avg_sale_per_day
+                : (row.total_sale / Math.max(row.row_num || 1, 1));
+            lines.push([
+                csvEscape(isCurrent ? row.row_num : ''),
+                csvEscape(isCurrent ? 'Current' : 'Last Month'),
+                csvEscape(row.period_label || ''),
+                csvEscape(formatAmount(row.total_sale, 2)),
+                csvEscape(formatAmount(row.total_cost, 2)),
+                csvEscape(formatAmount(row.profit, 2)),
+                csvEscape(row.profit_percent != null ? `${formatAmount(row.profit_percent, 2)}%` : ''),
+                csvEscape(formatAmount(avgSale, 2)),
+                csvEscape(formatAmount(row.invoice_count, 0)),
+            ].join(','));
+        });
+    }
+    downloadCsvBlob(lines, 'sales-dashboard');
+}
+
+async function downloadPdfFromApi(urlBase, filenamePrefix, params = null, timeoutMs = 120000) {
+    const query = params instanceof URLSearchParams ? params : buildParams();
+    if (!(params instanceof URLSearchParams)) {
+        query.set('_', String(Date.now()));
+    }
+    const headers = {};
+    const token = Api.getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let response;
+    try {
+        response = await fetch(`${urlBase}?${query}`, {
+            method: 'GET',
+            headers,
+            credentials: 'include',
+            signal: controller.signal,
+        });
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            throw new Error('PDF download timed out. Try a shorter date range.');
+        }
+        throw err;
+    } finally {
+        clearTimeout(timer);
+    }
+    if (!response.ok) {
+        const text = await response.text();
+        let message = 'PDF download failed.';
+        try {
+            const data = JSON.parse(text);
+            message = data.detail || message;
+        } catch {
+            if (text) message = text.slice(0, 200);
+        }
+        if (response.status === 404) {
+            message = 'PDF download is not available on the server yet. Restart the ERP app (RESTART-APP.bat) and hard refresh the page.';
+        }
+        throw new Error(message);
+    }
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('pdf')) {
+        throw new Error('Server did not return a PDF file.');
+    }
+    const blob = await response.blob();
+    const fromVal = document.getElementById('sales-date-from')?.value?.slice(0, 10) || 'from';
+    const toVal = document.getElementById('sales-date-to')?.value?.slice(0, 10) || 'to';
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenamePrefix}-${fromVal}-to-${toVal}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function downloadDayWiseCsv() {
+    if (!dayWiseData?.items?.length) {
+        alert('No day-wise data to download.');
+        return;
+    }
+    const headers = ['Business Day', 'Sale', 'Cost', 'Profit', 'Invoices'];
+    const lines = [headers.join(',')];
+    dayWiseData.items.forEach((row) => {
+        lines.push([
+            csvEscape(row.day_label || row.business_date),
+            csvEscape(formatAmount(row.total_sale, 2)),
+            csvEscape(formatAmount(row.total_cost, 2)),
+            csvEscape(formatAmount(row.profit, 2)),
+            csvEscape(formatAmount(row.invoice_count, 0)),
+        ].join(','));
+    });
+    downloadCsvBlob(lines, 'day-wise-sales');
+}
+
+async function downloadDayWisePdf() {
+    const pdfBtn = document.getElementById('btn-download-daywise-pdf');
+    try {
+        if (pdfBtn) pdfBtn.disabled = true;
+        await downloadPdfFromApi(`${SALES_API}/day-wise/pdf`, 'day-wise-sales');
+    } catch (err) {
+        alert(err.message || 'Could not download day-wise PDF.');
+    } finally {
+        if (pdfBtn) pdfBtn.disabled = !dayWiseData?.items?.length;
+    }
+}
+
+function downloadCsvBlob(lines, filenamePrefix) {
+    const fromVal = document.getElementById('sales-date-from')?.value?.slice(0, 10) || 'from';
+    const toVal = document.getElementById('sales-date-to')?.value?.slice(0, 10) || 'to';
+    const blob = new Blob(['\ufeff', lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenamePrefix}-${fromVal}-to-${toVal}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
 }
 
 function formatDisplayDate(value) {

@@ -20,6 +20,7 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
         "/admin/delivery-register"
     )
     is_customer_import = request.url.path.startswith("/admin/customer-import")
+    is_item_images = request.url.path.startswith("/admin/item-images")
     is_ocr_asset = request.url.path.startswith("/static/vendor/tesseract/")
     camera_policy = (
         "camera=(self)" if is_guest_scan or is_delivery_registration else "camera=()"
@@ -62,12 +63,17 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
         if is_customer_import or is_ocr_asset
         else ""
     )
+    img_src = (
+        "img-src 'self' data: blob: https:; "
+        if is_item_images
+        else "img-src 'self' data: blob:; "
+    )
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         f"script-src 'self' 'unsafe-inline'{ocr_runtime_policy} https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "font-src 'self' https://cdn.jsdelivr.net; "
-        "img-src 'self' data: blob:; "
+        f"{img_src}"
         f"{connect_src}"
         "frame-src 'self' blob:; "
         "object-src 'self' blob:; "

@@ -23,6 +23,17 @@ class PublicProduct(BaseModel):
     image_url: Optional[str] = None
 
 
+class PublicCategory(BaseModel):
+    category_id: int
+    title: str
+    level: int
+    product_count: int = 0
+
+
+class PublicCategoryPage(BaseModel):
+    items: list[PublicCategory] = Field(default_factory=list)
+
+
 class PublicCatalogPage(BaseModel):
     items: list[PublicProduct] = Field(default_factory=list)
     page: int = 1

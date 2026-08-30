@@ -106,6 +106,7 @@ class ChatQuickReply(BaseModel):
     qty: float | None = None
     line_index: int | None = None
     unit_price: float | None = None
+    manual_id: int | None = None
 
 
 class OfflineChatResponse(BaseModel):
@@ -115,6 +116,13 @@ class OfflineChatResponse(BaseModel):
     phone_verified: bool = False
     input_placeholder: str = ""
     input_hint: str = ""
+    shop_category_id: int | None = None
+    shop_category_title: str = ""
+    shop_view: str = ""
+    cart_count: int = 0
+    cart_total: float = 0.0
+    stay_in_shop: bool = False
+    added_manual_id: int | None = None
 
 
 class MobileOtpSendRequest(BaseModel):
@@ -138,6 +146,7 @@ class MobileOtpVerifyRequest(BaseModel):
 
 
 class MobileOtpResponse(BaseModel):
+    otp_required: bool = True
     ok: bool = True
     phone: str = ""
     message: str = ""

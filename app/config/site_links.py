@@ -99,6 +99,13 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "description": "Modern item list and API view",
                 "permission": "inventory.fin_item.view",
             },
+            {
+                "label": "Item Image Manager",
+                "path": "/admin/item-images",
+                "icon": "bi-images",
+                "description": "Search, review, and link product images (separate tables)",
+                "permission": "inventory.item_images.view",
+            },
         ],
     },
     {
@@ -221,6 +228,13 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "description": "Voice limits, budget, and misuse audit by mobile and search text",
                 "permission": "marketing.voice_control.view",
             },
+            {
+                "label": "Item Search",
+                "path": "/admin/item-search",
+                "icon": "bi-search",
+                "description": "Product autocomplete settings, aliases, and empty-search report",
+                "permission": "marketing.item_search.view",
+            },
         ],
     },
     {
@@ -274,6 +288,13 @@ INTERNAL_LINK_GROUPS: list[LinkGroup] = [
                 "icon": "bi-envelope-exclamation",
                 "description": "Email a default address whenever any user signs in",
                 "permission": "auth.login_notify.view",
+            },
+            {
+                "label": "OTP / SMS Control",
+                "path": "/admin/otp-sms-control",
+                "icon": "bi-shield-lock",
+                "description": "Master enable / disable OTP SMS for web and mobile",
+                "permission": "auth.otp_sms_control.view",
             },
         ],
     },

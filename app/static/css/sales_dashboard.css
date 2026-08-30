@@ -126,6 +126,14 @@
     font-variant-numeric: tabular-nums;
 }
 
+.sales-dashboard .compare-table tr.row-previous {
+    background: #f8f9fa;
+}
+
+.sales-dashboard .compare-table tr.row-previous td {
+    color: #495057;
+}
+
 .sales-dashboard .chart-panel {
     background: #fff;
     border-radius: 12px;

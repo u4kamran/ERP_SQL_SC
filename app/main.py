@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 from pathlib import Path
+import mimetypes
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,10 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+# Windows often lacks .webp → browsers refuse to render with nosniff + octet-stream.
+mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("image/webp", ".WEBP")
 
 from app.api import api_router
 from app.config.settings import settings
@@ -85,6 +90,15 @@ class NoCacheStaticFiles(StaticFiles):
 
 app.mount("/static", NoCacheStaticFiles(directory=str(static_dir)), name="static")
 
+# Cached product images (never written into FIN_ITEM)
+_product_images_dir = BASE_DIR / "data" / "ProductImages"
+_product_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/media/ProductImages",
+    NoCacheStaticFiles(directory=str(_product_images_dir)),
+    name="product-images",
+)
+
 app.include_router(api_router, prefix=settings.api_v1_prefix)
 
 
@@ -104,15 +118,20 @@ async def guest_price_scan_page(request: Request):
 
 @app.get("/guest/chat", response_class=HTMLResponse)
 async def guest_chat_page(request: Request):
+    from app.services.otp_sms_control_service import CHANNEL_WEB, is_channel_otp_required
     from app.services.speech_to_text_service import SpeechToTextService
 
     stt = SpeechToTextService()
+    try:
+        web_otp_required = is_channel_otp_required(CHANNEL_WEB)
+    except Exception:
+        web_otp_required = True
     return templates.TemplateResponse(
         request,
         "guest/chat.html",
         {
             "app_name": settings.app_name,
-            "guest_mobile_otp_required": bool(settings.guest_mobile_otp_required),
+            "guest_mobile_otp_required": bool(web_otp_required),
             "guest_voice_cloud_enabled": stt.is_configured(),
             "guest_voice_provider": stt.provider_label(),
         },
@@ -187,6 +206,15 @@ async def admin_login_alerts_page(request: Request):
     return templates.TemplateResponse(
         request,
         "admin/login_notify.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/otp-sms-control", response_class=HTMLResponse)
+async def admin_otp_sms_control_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/otp_sms_control.html",
         {"app_name": settings.app_name},
     )
 
@@ -399,6 +427,24 @@ async def admin_voice_control_page(request: Request):
     return templates.TemplateResponse(
         request,
         "admin/voice_search_control.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/item-search", response_class=HTMLResponse)
+async def admin_item_search_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/item_search.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/item-images", response_class=HTMLResponse)
+async def admin_item_images_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/item_images.html",
         {"app_name": settings.app_name},
     )
 

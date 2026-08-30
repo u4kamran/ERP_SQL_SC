@@ -11,7 +11,7 @@ from app.config.settings import settings
 from app.schemas.guest_price_lookup import GuestPriceLookupResponse, GuestPriceSearchMatch
 from app.schemas.whatsapp_order import ChatOrder, ChatOrderSummary, OrderCartItem
 from app.services import whatsapp_order_store as order_store
-from app.services.guest_price_lookup_service import to_proper_case
+from app.services.guest_price_lookup_service import is_hidden_shop_title, to_proper_case
 
 _PK_TZ = ZoneInfo("Asia/Karachi")
 
@@ -37,6 +37,18 @@ class WhatsAppOrderService:
             "customer_mobile": customer_mobile or "",
             "customer_address": customer_address or "",
             "notes": "",
+            "order_type": "",
+            "city": "",
+            "area": "",
+            "shop_view": "hub",
+            "shop_category_id": None,
+            "shop_category_title": "",
+            "shop_parent_id": None,
+            "shop_q": "",
+            "shop_page": 1,
+            "shop_has_more": False,
+            "shop_list": [],
+            "shop_promo": False,
         }
 
     def item_from_lookup(
@@ -80,6 +92,8 @@ class WhatsAppOrderService:
         cart: list[dict[str, Any]],
         item: OrderCartItem,
     ) -> list[dict[str, Any]]:
+        if is_hidden_shop_title(item.item_title):
+            return self.purge_hidden_titles(cart)
         rows = list(cart or [])
         for row in rows:
             if int(row.get("manual_id") or 0) == item.manual_id:
@@ -99,9 +113,18 @@ class WhatsAppOrderService:
                 )
                 row.clear()
                 row.update(updated.model_dump())
-                return rows
+                return self.purge_hidden_titles(rows)
         rows.append(item.model_dump())
-        return rows
+        return self.purge_hidden_titles(rows)
+
+    @staticmethod
+    def purge_hidden_titles(cart: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+        """Drop ERP placeholder lines (title starts with Empty) from cart."""
+        return [
+            row
+            for row in (cart or [])
+            if not is_hidden_shop_title(str(row.get("item_title") or ""))
+        ]
 
     def remove_from_cart(
         self,

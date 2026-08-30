@@ -134,7 +134,11 @@ class Settings(BaseSettings):
     whatsapp_app_secret: str = ""
     whatsapp_bot_enabled: bool = True
 
-    # Guest web chat: require OTP proof of mobile ownership (WhatsApp delivery)
+    # Guest web chat OTP: always writes SMS_DB_. Optional extra WhatsApp send.
+    # sms_db = SMS_DB_ only (required for SendSMSActive)
+    # auto / whatsapp = SMS_DB_ first, then try WhatsApp Cloud API
+    guest_mobile_otp_provider: str = "sms_db"
+    # Guest web chat: require OTP proof of mobile ownership
     guest_mobile_otp_required: bool = True
     guest_mobile_otp_dev_echo: bool = False
 
@@ -150,8 +154,13 @@ class Settings(BaseSettings):
     customer_app_otp_request_window_minutes: int = 15
     # Modem/SIM number used as SENDER in SMS_DB_ (existing convention)
     customer_app_otp_sms_sender: str = "923004017067"
+    # After queuing SMS_DB_, launch this Windows sender to process the queue
+    customer_app_otp_sms_sender_exe: str = r"\\shaheenhp\Backup\localfiles\SendSMSActive\consoleapp2_lock.exe"
     # Dev-only: echo OTP in API when provider=test and app_env is development
     customer_app_otp_dev_echo: bool = False
+
+    # Optional barcode image lookup (never exposed to browser)
+    upcitemdb_api_key: SecretStr | None = None
 
     # Gemini Vision + voice STT (guest chat / WhatsApp voice notes)
     gemini_api_key: SecretStr | None = None

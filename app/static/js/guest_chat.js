@@ -1,6 +1,7 @@
 const GUEST_CHAT_API = '/api/v1/public/whatsapp/offline-chat';
 const OTP_SEND_API = '/api/v1/public/whatsapp/mobile-otp/send';
 const OTP_VERIFY_API = '/api/v1/public/whatsapp/mobile-otp/verify';
+const OTP_STATUS_API = '/api/v1/public/whatsapp/mobile-otp/status';
 const VOICE_TRANSCRIBE_API = '/api/v1/public/whatsapp/voice-transcribe';
 const STORAGE_KEY = 'guest-chat-conversation-id';
 const PROFILE_KEY = 'guest-chat-profile';
@@ -23,12 +24,16 @@ let mediaStream = null;
 let mediaChunks = [];
 let recording = false;
 let voiceBusy = false;
-const OTP_REQUIRED = window.GUEST_MOBILE_OTP_REQUIRED === true;
+let otpRequired = window.GUEST_MOBILE_OTP_REQUIRED !== false;
 const VOICE_CLOUD_ENABLED = window.GUEST_VOICE_CLOUD_ENABLED === true;
 const VOICE_PROVIDER = String(window.GUEST_VOICE_PROVIDER || '');
 const VOICE_CLOUD_BLOCK_KEY = 'guest-voice-cloud-blocked';
-let phoneVerified = !OTP_REQUIRED;
+let phoneVerified = !otpRequired;
 let pendingMessageAfterVerify = '';
+let otpSendInFlight = false;
+const shelfQty = {};
+const shelfAddedManualIds = new Set();
+let lastShelfAddedManualId = '';
 
 function isVoiceCloudBlocked() {
     try { return sessionStorage.getItem(VOICE_CLOUD_BLOCK_KEY) === '1'; }
@@ -54,7 +59,7 @@ const MAIN_MENU = [
     { title: '6 My order', payload: '6', style: 'chip' },
 ];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('guest-chat-form').addEventListener('submit', sendMessage);
     document.getElementById('btn-mic').addEventListener('click', toggleVoice);
     document.getElementById('btn-location').addEventListener('click', shareLocation);
@@ -69,8 +74,36 @@ document.addEventListener('DOMContentLoaded', () => {
             verifyMobileOtp();
         }
     });
+    const phoneField = document.getElementById('guest-phone');
+    phoneField.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            requestOtpIfPhoneReady();
+        }
+    });
+    phoneField.addEventListener('blur', requestOtpIfPhoneReady);
+    phoneField.addEventListener('input', () => {
+        const phone = formatLocalMobile(phoneField.value);
+        if (isCompleteLocalMobile(phone)) requestOtpIfPhoneReady();
+    });
     document.getElementById('guest-quick-replies').addEventListener('click', onQuickReplyClick);
     document.getElementById('guest-messages').addEventListener('click', onQuickReplyClick);
+    const cartSticky = document.getElementById('guest-cart-sticky');
+    if (cartSticky) {
+        const openCart = () => {
+            if (sending) return;
+            const input = document.getElementById('guest-message');
+            input.value = 'CART';
+            sendMessage(new Event('submit'));
+        };
+        cartSticky.addEventListener('click', openCart);
+        cartSticky.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openCart();
+            }
+        });
+    }
     document.getElementById('btn-voice-send').addEventListener('click', sendConfirmedVoice);
     document.getElementById('btn-voice-retry').addEventListener('click', () => {
         hideVoiceConfirm();
@@ -88,9 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     applyPhoneFromUrl();
     restoreProfileFields();
+    await loadOtpPolicy();
+    // Never trust browser "verified" — server OTP status is required.
+    phoneVerified = !otpRequired;
+    if (otpRequired) {
+        await refreshServerOtpStatus();
+    }
     updateIdentityBar();
+    updateChatMessageRequired();
     setupSpeech();
-    if (!OTP_REQUIRED) {
+    if (!otpRequired) {
         showOtpPanel(false);
         const otpPanel = document.getElementById('guest-otp-panel');
         if (otpPanel) otpPanel.classList.add('d-none');
@@ -110,30 +150,43 @@ document.addEventListener('DOMContentLoaded', () => {
             input.value = 'MENU';
             sendMessage(new Event('submit'));
         }
-    } else if (document.getElementById('guest-phone').value.trim()) {
-        if (phoneVerified) {
-            const input = document.getElementById('guest-message');
-            input.value = 'MENU';
-            sendMessage(new Event('submit'));
-        } else {
-            appendBubble(
-                'out',
-                'Assalam-o-Alaikum!\nPlease verify your mobile with the OTP code to continue web chat.',
-                'bot',
-            );
-            sendMobileOtp(false);
-        }
+    } else if (phoneVerified) {
+        appendBubble(
+            'out',
+            'Assalam-o-Alaikum! Mobile already verified.\nTap a menu button to begin.',
+            'bot',
+        );
+        renderQuickReplies(MAIN_MENU);
+        applyInputPrompt(
+            'Tap a menu option, or type 1–6…',
+            'Main menu — Delivery · Price · Order · My order',
+            MAIN_MENU,
+        );
     } else {
         appendBubble(
             'out',
-            'Assalam-o-Alaikum!\nWeb chat requires mobile authentication.\n1) Choose your number\n2) Enter the OTP sent on WhatsApp\n\n(On WhatsApp Business chat, Meta already authenticates you.)',
+            'Assalam-o-Alaikum!\nWeb chat requires mobile registration and OTP.\n1) Choose or type your number\n2) Enter the OTP sent to your mobile',
             'bot',
         );
         renderQuickReplies([
             { title: 'Choose & verify phone', payload: '__PHONE_HINT__', style: 'action' },
-            ...MAIN_MENU,
         ]);
-        maybeAutoOfferPhoneHint();
+        applyInputPrompt(
+            'Enter mobile, then verify OTP…',
+            'OTP is required before menu / order / price.',
+            [],
+        );
+        showManualPhoneInput();
+        const savedPhone = formatLocalMobile(document.getElementById('guest-phone').value);
+        if (savedPhone) {
+            document.getElementById('mic-status').textContent =
+                `Confirm ${savedPhone} with OTP to continue.`;
+            sendMobileOtp(false);
+        } else {
+            document.getElementById('mic-status').textContent =
+                'Register your mobile number, then enter the OTP.';
+            maybeAutoOfferPhoneHint();
+        }
     }
 });
 
@@ -152,6 +205,24 @@ function formatLocalMobile(value) {
     return digits;
 }
 
+function isCompleteLocalMobile(value) {
+    const phone = formatLocalMobile(value);
+    return phone.length === 11 && phone.startsWith('03');
+}
+
+function updateChatMessageRequired() {
+    const input = document.getElementById('guest-message');
+    if (!input) return;
+    if (otpRequired && !phoneVerified) input.removeAttribute('required');
+    else input.setAttribute('required', 'required');
+}
+
+function requestOtpIfPhoneReady() {
+    if (!otpRequired || phoneVerified || otpSendInFlight) return;
+    if (!isCompleteLocalMobile(document.getElementById('guest-phone').value)) return;
+    sendMobileOtp(false);
+}
+
 function restoreProfileFields() {
     try {
         const raw = localStorage.getItem(PROFILE_KEY);
@@ -163,11 +234,50 @@ function restoreProfileFields() {
         if (profile.phone && !document.getElementById('guest-phone').value) {
             document.getElementById('guest-phone').value = formatLocalMobile(profile.phone);
         }
-        // Client hint only — server is source of truth for OTP verification.
-        phoneVerified = OTP_REQUIRED ? !!profile.verified : true;
+        // Do not restore verified from localStorage — that skipped OTP on reload.
     } catch (error) {
         /* ignore */
     }
+}
+
+async function loadOtpPolicy() {
+    try {
+        const { response, data } = await fetchJson(
+            OTP_STATUS_API,
+            { method: 'GET' },
+            10000,
+        );
+        if (!response.ok) {
+            otpRequired = true;
+            return;
+        }
+        if (typeof data.otp_required === 'boolean') otpRequired = data.otp_required;
+        else if (typeof data.required === 'boolean') otpRequired = data.required;
+        else otpRequired = true;
+    } catch (error) {
+        otpRequired = true;
+    }
+}
+
+async function refreshServerOtpStatus() {
+    if (!otpRequired) {
+        phoneVerified = true;
+        return;
+    }
+    phoneVerified = false;
+    const phone = formatLocalMobile(document.getElementById('guest-phone').value);
+    if (!phone) return;
+    try {
+        const { response, data } = await fetchJson(
+            `${OTP_STATUS_API}?mobile=${encodeURIComponent(phone)}`,
+            { method: 'GET' },
+            10000,
+        );
+        if (response.ok) phoneVerified = !!data.verified;
+    } catch (error) {
+        phoneVerified = false;
+    }
+    saveProfileFields();
 }
 
 function saveProfileFields() {
@@ -189,7 +299,7 @@ function setPhoneNumber(raw, { welcome = true } = {}) {
     if (previous !== phone) phoneVerified = false;
     saveProfileFields();
     document.getElementById('mic-status').textContent = `Mobile selected: ${phone}`;
-    if (OTP_REQUIRED && welcome && !phoneVerified) {
+    if (otpRequired && welcome && !phoneVerified) {
         sendMobileOtp(false);
     } else if (welcome && phoneVerified && !sending) {
         const input = document.getElementById('guest-message');
@@ -243,6 +353,28 @@ function changeMobileNumber() {
     document.getElementById('mic-status').textContent = 'Enter a new mobile number to verify.';
 }
 
+async function fetchJson(url, options = {}, timeoutMs = 20000) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (error) {
+            data = {};
+        }
+        return { response, data };
+    } catch (error) {
+        if (error && error.name === 'AbortError') {
+            throw new Error('Request timed out. Please try again.');
+        }
+        throw error;
+    } finally {
+        window.clearTimeout(timer);
+    }
+}
+
 async function sendMobileOtp(isResend) {
     const phone = formatLocalMobile(document.getElementById('guest-phone').value);
     const status = document.getElementById('mic-status');
@@ -250,17 +382,23 @@ async function sendMobileOtp(isResend) {
         status.textContent = 'Choose or type a mobile number first.';
         return;
     }
-    status.textContent = isResend ? 'Resending OTP…' : 'Sending OTP to your WhatsApp…';
+    if (!isCompleteLocalMobile(phone)) {
+        status.textContent = 'Enter a full mobile 03XXXXXXXXX, then OTP will send.';
+        showManualPhoneInput();
+        return;
+    }
+    if (otpSendInFlight) return;
+    otpSendInFlight = true;
+    status.textContent = isResend ? 'Resending OTP…' : 'Sending OTP…';
     showOtpPanel(true);
     document.getElementById('otp-panel-help').textContent =
-        `Sending a 6-digit code to ${phone} on WhatsApp…`;
+        `Sending a 6-digit code to ${phone}…`;
     try {
-        const response = await fetch(OTP_SEND_API, {
+        const { response, data } = await fetchJson(OTP_SEND_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone }),
-        });
-        const data = await response.json();
+        }, 15000);
         if (!response.ok) {
             const detail = data.detail;
             throw new Error(
@@ -269,15 +407,25 @@ async function sendMobileOtp(isResend) {
                     : (detail && detail.message) || 'Could not send OTP.',
             );
         }
+        if (data.otp_required === false) {
+            otpRequired = false;
+            showOtpPanel(false);
+            status.textContent = 'OTP is not required.';
+            document.getElementById('otp-panel-help').textContent = '';
+            updateChatMessageRequired();
+            return;
+        }
         let help = data.message || `Code sent to ${phone}.`;
         if (data.dev_code) help += ` Dev code: ${data.dev_code}`;
         document.getElementById('otp-panel-help').textContent = help;
-        status.textContent = 'Enter the OTP to authenticate your mobile.';
+        status.textContent = 'Enter the OTP from your mobile.';
         appendBubble('out', help, 'bot');
     } catch (error) {
         status.textContent = error.message || 'OTP send failed.';
         document.getElementById('otp-panel-help').textContent = status.textContent;
         appendBubble('out', status.textContent, 'system');
+    } finally {
+        otpSendInFlight = false;
     }
 }
 
@@ -286,22 +434,22 @@ async function verifyMobileOtp() {
     const code = document.getElementById('guest-otp-code').value.trim();
     const status = document.getElementById('mic-status');
     if (!phone || code.length < 4) {
-        status.textContent = 'Enter the 6-digit code from WhatsApp.';
+        status.textContent = 'Enter the 6-digit code from your mobile.';
         return;
     }
     status.textContent = 'Verifying OTP…';
     try {
-        const response = await fetch(OTP_VERIFY_API, {
+        const { response, data } = await fetchJson(OTP_VERIFY_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone, code }),
-        });
-        const data = await response.json();
+        }, 15000);
         if (!response.ok) {
             throw new Error(typeof data.detail === 'string' ? data.detail : 'Invalid code.');
         }
         phoneVerified = true;
         saveProfileFields();
+        updateChatMessageRequired();
         showOtpPanel(false);
         document.getElementById('guest-otp-code').value = '';
         status.textContent = data.message || 'Mobile verified.';
@@ -320,7 +468,8 @@ function showManualPhoneInput() {
     const input = document.getElementById('guest-phone');
     input.classList.remove('d-none');
     input.focus();
-    document.getElementById('mic-status').textContent = 'Type your mobile, then tap a menu button.';
+    document.getElementById('mic-status').textContent =
+        'Type your mobile 03XXXXXXXXX, then verify OTP.';
 }
 
 function maybeAutoOfferPhoneHint() {
@@ -784,11 +933,10 @@ async function uploadRecordedVoice(blob) {
         if (mobile) form.append('mobile', mobile);
         const lang = currentVoiceLang();
         const hint = encodeURIComponent(lang.hint || 'Urdu or English (Pakistan)');
-        const response = await fetch(`${VOICE_TRANSCRIBE_API}?language_hint=${hint}`, {
+        const { response, data } = await fetchJson(`${VOICE_TRANSCRIBE_API}?language_hint=${hint}`, {
             method: 'POST',
             body: form,
-        });
-        const data = await response.json().catch(() => ({}));
+        }, 25000);
         if (!response.ok) {
             const detail = data.detail;
             const msg = typeof detail === 'string'
@@ -899,6 +1047,9 @@ function toggleVoice(event) {
 }
 
 function onQuickReplyClick(event) {
+    if (event.target.closest('[data-shelf-add], [data-shelf-qty-minus], [data-shelf-qty-plus]')) {
+        return;
+    }
     const btn = event.target.closest('[data-payload]');
     if (!btn || sending) return;
     const payload = btn.getAttribute('data-payload') || '';
@@ -1004,10 +1155,30 @@ async function sendMessage(event, geo = null) {
     const nameInput = document.getElementById('guest-name');
     const phoneInput = document.getElementById('guest-phone');
     const message = input.value.trim();
+
+    // OTP first: typing a mobile and tapping Send must request OTP even with no chat text.
+    if (otpRequired && !phoneVerified) {
+        if (!isCompleteLocalMobile(phoneInput.value)) {
+            showManualPhoneInput();
+            document.getElementById('mic-status').textContent =
+                'Type your mobile 03XXXXXXXXX, then tap Send for OTP.';
+            appendBubble(
+                'out',
+                'Please type your mobile number, then we will send the OTP.',
+                'bot',
+            );
+            return;
+        }
+        pendingMessageAfterVerify = message;
+        input.value = '';
+        await sendMobileOtp(false);
+        return;
+    }
+
     if (!message) return;
 
     // Collect mobile first if missing.
-    if (!formatLocalMobile(phoneInput.value) && !geo) {
+    if (!formatLocalMobile(phoneInput.value)) {
         const status = document.getElementById('mic-status');
         status.textContent = 'Collecting your mobile number…';
         try {
@@ -1031,13 +1202,13 @@ async function sendMessage(event, geo = null) {
         }
     }
 
-    // Web chat OTP authentication (skipped when GUEST_MOBILE_OTP_REQUIRED=false).
-    if (OTP_REQUIRED && !phoneVerified && !geo) {
+    // Web chat OTP authentication (skipped when backend OTP is disabled).
+    if (otpRequired && !phoneVerified) {
         pendingMessageAfterVerify = message;
         input.value = '';
         appendBubble(
             'out',
-            'Authenticate your mobile with the OTP code before chatting on web.',
+            'Authenticate your mobile with OTP before chatting on web.',
             'bot',
         );
         await sendMobileOtp(false);
@@ -1046,15 +1217,20 @@ async function sendMessage(event, geo = null) {
 
     sending = true;
     saveProfileFields();
-    clearInlineSelection();
-    const hideEcho = message.toUpperCase() === 'MENU' && !conversationId;
+    const isShelfAdd = /^ADDITEM\s/i.test(message);
+    if (!isShelfAdd) {
+        clearInlineSelection();
+    }
+    const hideEcho = (/^MENU$/i.test(message) && !conversationId) || isShelfAdd;
     if (!hideEcho) {
         const label = geo ? `[location] ${geo.latitude.toFixed(5)}, ${geo.longitude.toFixed(5)}` : message;
         appendBubble('in', label, nameInput.value.trim() || 'You');
     }
     input.value = '';
     input.disabled = true;
-    setQuickRepliesEnabled(false);
+    if (!isShelfAdd) {
+        setQuickRepliesEnabled(false);
+    }
     try {
         const payload = {
             conversation_id: conversationId || null,
@@ -1067,12 +1243,11 @@ async function sendMessage(event, geo = null) {
             payload.longitude = geo.longitude;
             payload.accuracy = geo.accuracy;
         }
-        const response = await fetch(GUEST_CHAT_API, {
+        const { response, data } = await fetchJson(GUEST_CHAT_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
-        });
-        const data = await response.json();
+        }, 25000);
         if (!response.ok) {
             const detail = data.detail;
             if (
@@ -1109,13 +1284,35 @@ async function sendMessage(event, geo = null) {
         }
         if (data.phone_verified) phoneVerified = true;
         saveProfileFields();
+        window.GUEST_SHOP_CATEGORY_ID = data.shop_category_id || null;
+        window.GUEST_SHOP_CATEGORY_TITLE = data.shop_category_title || '';
+        window.GUEST_SHOP_VIEW = data.shop_view || '';
+        updateCartSticky(data.cart_count || 0, data.cart_total || 0);
+        if ((data.cart_count || 0) <= 0) {
+            shelfAddedManualIds.clear();
+            lastShelfAddedManualId = '';
+        }
         const replies = Array.isArray(data.quick_replies) && data.quick_replies.length
             ? ensureMainMenuChips(data.quick_replies)
             : MAIN_MENU;
-        const isCartUi = replies.some((item) => (item.style || '') === 'cart');
+        const isStayInShop = !!data.stay_in_shop;
+        const isCartUi = !isStayInShop
+            && replies.some((item) => (item.style || '') === 'cart');
         const replyText = (data.reply || '').trim();
-        // Silent cart sync (qty confirm/delete): refresh buttons only, no new chat lines.
-        if (isCartUi && !replyText) {
+        if (isStayInShop) {
+            if (data.added_manual_id) {
+                const id = String(data.added_manual_id);
+                shelfAddedManualIds.add(id);
+                lastShelfAddedManualId = id;
+            }
+            renderQuickReplies(replies);
+            applyInputPrompt(
+                data.input_placeholder,
+                data.input_hint || 'Use − / + and ADD — added items stay highlighted.',
+                replies,
+            );
+            highlightShelfAddedRow();
+        } else if (isCartUi && !replyText) {
             renderQuickReplies(replies);
             applyInputPrompt(
                 data.input_placeholder,
@@ -1141,6 +1338,55 @@ async function sendMessage(event, geo = null) {
         input.disabled = false;
         input.focus();
         setQuickRepliesEnabled(true);
+    }
+}
+
+function highlightShelfAddedRow() {
+    if (!lastShelfAddedManualId) return;
+    const row = document.querySelector(
+        `.guest-shelf-product[data-manual-id="${lastShelfAddedManualId}"]`,
+    );
+    if (row) {
+        row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        row.classList.add('guest-shelf-product-just-added');
+    }
+    const pulseId = lastShelfAddedManualId;
+    window.setTimeout(() => {
+        document.querySelectorAll('.guest-shelf-product-just-added').forEach((el) => {
+            el.classList.remove('guest-shelf-product-just-added');
+        });
+        if (lastShelfAddedManualId === pulseId) {
+            lastShelfAddedManualId = '';
+        }
+    }, 1400);
+}
+
+function isHiddenShopTitle(title) {
+    const text = String(title || '').trim().toLowerCase();
+    return text === 'empty' || text.startsWith('empty');
+}
+
+function formatCartMoney(amount) {
+    const n = Number(amount) || 0;
+    return `Rs ${Math.round(n).toLocaleString('en-PK')}`;
+}
+
+function updateCartSticky(count, total) {
+    const bar = document.getElementById('guest-cart-sticky');
+    if (!bar) return;
+    const n = Number(count) || 0;
+    if (n <= 0) {
+        bar.classList.add('d-none');
+        return;
+    }
+    bar.classList.remove('d-none');
+    const countEl = bar.querySelector('.guest-cart-sticky-count');
+    const totalEl = bar.querySelector('.guest-cart-sticky-total');
+    if (countEl) {
+        countEl.textContent = `${n} item${n === 1 ? '' : 's'}`;
+    }
+    if (totalEl) {
+        totalEl.textContent = formatCartMoney(total);
     }
 }
 
@@ -1178,7 +1424,7 @@ function applyInputPrompt(placeholder, hint, replies) {
         if (hasCart) {
             nextPlaceholder = 'Change qty below, or type item name to add…';
         } else if (hasItems) {
-            nextPlaceholder = 'Tap an item, or type a new brand/name…';
+            nextPlaceholder = 'Set qty and tap ADD on a product, or search…';
         } else if (payloads.has('KEEP') || payloads.has('UPDATE')) {
             nextPlaceholder = 'Tap Keep / Update / Skip, or type address…';
         } else if (looksLikeMainMenu) {
@@ -1191,7 +1437,7 @@ function applyInputPrompt(placeholder, hint, replies) {
     }
     if (!nextHint) {
         if (hasCart) nextHint = 'Your cart — confirm qty, then Confirm order';
-        else if (hasItems) nextHint = 'Select a product below or search again';
+        else if (hasItems) nextHint = 'Use − / + and ADD — you stay on this list';
         else if (looksLikeMainMenu) nextHint = 'Main menu — Delivery · Price · Order · My order';
         else nextHint = 'Type your reply, or tap a button';
     }
@@ -1217,20 +1463,40 @@ function renderQuickReplies(items) {
     const actionRows = rows.filter(
         (item) => !['item', 'cart'].includes(item.style || 'chip'),
     );
+    const subChips = actionRows.filter((item) => /^CAT\s/i.test(String(item.payload || '')));
+    const otherActions = actionRows.filter((item) => !/^CAT\s/i.test(String(item.payload || '')));
+    const shopNavChips = otherActions.filter((item) =>
+        /^(CATEGORIES|BACK|CART|MORE|CLEAR SEARCH)$/i.test(String(item.payload || '')),
+    );
+    const otherActionsRest = otherActions.filter((item) =>
+        !/^(CATEGORIES|BACK|CART|MORE|CLEAR SEARCH)$/i.test(String(item.payload || '')),
+    );
+    const categoryList = itemRows.length > 0
+        && itemRows.every((item) => /^CAT\s/i.test(String(item.payload || '')));
+    const visibleItemRows = categoryList
+        ? itemRows.filter((item) => !isHiddenShopTitle(item.title))
+        : itemRows.filter((item) => !isHiddenShopTitle(item.title));
 
     if (cartRows.length) {
-        appendInlineCart(cartRows);
-    } else if (itemRows.length) {
-        appendInlineSelection(itemRows);
+        appendInlineCart(cartRows.filter((item) => !isHiddenShopTitle(item.title)));
+    } else if (visibleItemRows.length || subChips.length) {
+        appendShopShelf(visibleItemRows, subChips, categoryList);
     }
 
     const chipRow = document.createElement('div');
     chipRow.className = 'guest-chip-row';
-    (actionRows.length ? actionRows : rows).forEach((item) => {
+    if (shopNavChips.length) {
+        const navRow = document.createElement('div');
+        navRow.className = 'guest-chip-row guest-shop-nav-row';
+        shopNavChips.forEach((item) => navRow.appendChild(buildChip(item)));
+        box.appendChild(navRow);
+    }
+    (otherActionsRest.length ? otherActionsRest : (!itemRows.length && !cartRows.length && !subChips.length ? rows : [])).forEach((item) => {
         if (['item', 'cart'].includes(item.style || 'chip')) return;
+        if (/^CAT\s/i.test(String(item.payload || ''))) return;
         chipRow.appendChild(buildChip(item));
     });
-    if (!actionRows.length && !itemRows.length && !cartRows.length) {
+    if (!otherActionsRest.length && !itemRows.length && !cartRows.length && !subChips.length && !shopNavChips.length) {
         MAIN_MENU.forEach((item) => chipRow.appendChild(buildChip(item)));
     }
     if (chipRow.childNodes.length) box.appendChild(chipRow);
@@ -1243,21 +1509,43 @@ function clearInlineSelection() {
     });
 }
 
-function appendInlineSelection(itemRows) {
+function appendShopShelf(itemRows, subChips, categoryList) {
     clearInlineSelection();
     const box = document.getElementById('guest-messages');
     const panel = document.createElement('div');
-    panel.className = 'guest-inline-select';
-    const label = document.createElement('div');
-    label.className = 'guest-select-label dark';
-    label.textContent = 'Tap an item to select';
-    panel.appendChild(label);
-    const list = document.createElement('div');
-    list.className = 'guest-select-list';
-    itemRows.forEach((item) => list.appendChild(buildItemChoice(item)));
-    panel.appendChild(list);
+    panel.className = 'guest-inline-select guest-shop-shelf';
+    if (subChips && subChips.length) {
+        const subLabel = document.createElement('div');
+        subLabel.className = 'guest-select-label dark';
+        subLabel.textContent = 'Shop by subcategory';
+        panel.appendChild(subLabel);
+        const subRow = document.createElement('div');
+        subRow.className = 'guest-chip-row guest-subcat-row';
+        subChips.forEach((item) => subRow.appendChild(buildChip({ ...item, style: 'chip' })));
+        panel.appendChild(subRow);
+    }
+    if (itemRows && itemRows.length) {
+        const label = document.createElement('div');
+        label.className = 'guest-select-label dark';
+        label.textContent = categoryList ? 'Shop by category — tap to open' : 'Products — set qty and tap ADD';
+        panel.appendChild(label);
+        const list = document.createElement('div');
+        list.className = 'guest-select-list';
+        itemRows.forEach((item, idx) => {
+            const row = buildProductShelfRow(item, idx);
+            list.appendChild(row);
+            if (row.dataset.shelfProduct === '1') {
+                wireShelfProductRow(row, item);
+            }
+        });
+        panel.appendChild(list);
+    }
     box.appendChild(panel);
     box.scrollTop = box.scrollHeight;
+}
+
+function appendInlineSelection(itemRows, labelText) {
+    appendShopShelf(itemRows, [], labelText === 'Shop by category — tap to open');
 }
 
 function appendInlineCart(cartRows) {
@@ -1360,14 +1648,136 @@ function buildCartLine(item) {
     return card;
 }
 
+function shelfQtyFor(manualId) {
+    const key = String(manualId);
+    if (!shelfQty[key] || shelfQty[key] < 1) shelfQty[key] = 1;
+    return shelfQty[key];
+}
+
+function addShelfProduct(item, qty) {
+    if (!item || !item.manual_id || sending) return;
+    const useQty = Math.max(1, Number(qty) || 1);
+    const input = document.getElementById('guest-message');
+    input.value = `ADDITEM ${item.manual_id} ${useQty}`;
+    sendMessage(new Event('submit'));
+}
+
+function buildProductShelfRow(item, index) {
+    const isCategory = /^CAT\s/i.test(String(item.payload || ''));
+    const manualId = Number(item.manual_id) || 0;
+    if (isCategory || !manualId) {
+        return buildItemChoice(item);
+    }
+    const card = document.createElement('div');
+    card.className = 'guest-shelf-product';
+    card.dataset.shelfProduct = '1';
+    card.dataset.manualId = String(manualId);
+    card.dataset.shelfIndex = String(index);
+    if (shelfAddedManualIds.has(String(manualId))) {
+        card.classList.add('guest-shelf-product-added');
+    }
+
+    const body = document.createElement('div');
+    body.className = 'guest-shelf-product-body';
+    const title = document.createElement('div');
+    title.className = 'guest-shelf-title';
+    title.textContent = item.title || `Item ${manualId}`;
+    body.appendChild(title);
+    if (shelfAddedManualIds.has(String(manualId))) {
+        const badge = document.createElement('span');
+        badge.className = 'guest-shelf-added-badge';
+        badge.textContent = 'In cart';
+        body.appendChild(badge);
+    }
+    if (item.subtitle) {
+        const meta = document.createElement('div');
+        meta.className = 'guest-shelf-meta';
+        meta.textContent = item.subtitle;
+        body.appendChild(meta);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'guest-shelf-actions';
+    const price = document.createElement('div');
+    price.className = 'guest-shelf-price';
+    price.textContent = item.meta || '';
+    actions.appendChild(price);
+
+    const qtyWrap = document.createElement('div');
+    qtyWrap.className = 'guest-shelf-qty';
+    const dec = document.createElement('button');
+    dec.type = 'button';
+    dec.className = 'guest-shelf-qty-btn';
+    dec.setAttribute('data-shelf-qty-minus', String(manualId));
+    dec.setAttribute('aria-label', 'Decrease quantity');
+    dec.textContent = '−';
+    const qtyVal = document.createElement('span');
+    qtyVal.className = 'guest-shelf-qty-val';
+    qtyVal.setAttribute('data-shelf-qty-val', String(manualId));
+    qtyVal.textContent = String(shelfQtyFor(manualId));
+    const inc = document.createElement('button');
+    inc.type = 'button';
+    inc.className = 'guest-shelf-qty-btn';
+    inc.setAttribute('data-shelf-qty-plus', String(manualId));
+    inc.setAttribute('aria-label', 'Increase quantity');
+    inc.textContent = '+';
+    qtyWrap.appendChild(dec);
+    qtyWrap.appendChild(qtyVal);
+    qtyWrap.appendChild(inc);
+    actions.appendChild(qtyWrap);
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'guest-shelf-add';
+    addBtn.setAttribute('data-shelf-add', String(manualId));
+    addBtn.textContent = 'ADD';
+    actions.appendChild(addBtn);
+
+    card.appendChild(body);
+    card.appendChild(actions);
+    return card;
+}
+
+function wireShelfProductRow(card, item) {
+    const manualId = Number(item.manual_id) || 0;
+    if (!manualId) return;
+    const addWithQty = () => addShelfProduct(item, shelfQtyFor(manualId));
+    card.querySelector('[data-shelf-add]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        addWithQty();
+    });
+    card.querySelector('[data-shelf-qty-minus]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        shelfQty[String(manualId)] = Math.max(1, shelfQtyFor(manualId) - 1);
+        const label = card.querySelector(`[data-shelf-qty-val="${manualId}"]`);
+        if (label) label.textContent = String(shelfQty[String(manualId)]);
+    });
+    card.querySelector('[data-shelf-qty-plus]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        shelfQty[String(manualId)] = shelfQtyFor(manualId) + 1;
+        const label = card.querySelector(`[data-shelf-qty-val="${manualId}"]`);
+        if (label) label.textContent = String(shelfQty[String(manualId)]);
+    });
+    card.querySelector('.guest-shelf-product-body')?.addEventListener('click', (event) => {
+        if (event.target.closest('[data-shelf-add], [data-shelf-qty-minus], [data-shelf-qty-plus]')) {
+            return;
+        }
+        addWithQty();
+    });
+}
+
 function buildItemChoice(item) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'guest-item-choice';
+    const isCategory = /^CAT\s/i.test(String(item.payload || ''));
+    btn.className = isCategory ? 'guest-item-choice guest-category-choice' : 'guest-item-choice';
     btn.setAttribute('data-payload', item.payload);
     const num = document.createElement('span');
     num.className = 'guest-item-num';
-    num.textContent = String(item.payload || '');
+    num.textContent = isCategory ? '▦' : String(item.payload || '');
     const body = document.createElement('span');
     body.className = 'guest-item-body';
     const title = document.createElement('span');

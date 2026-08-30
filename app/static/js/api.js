@@ -64,6 +64,45 @@ const Api = {
     post(url, body, opts) { return this.request('POST', url, body, opts); },
     put(url, body, opts) { return this.request('PUT', url, body, opts); },
     delete(url, opts) { return this.request('DELETE', url, null, opts); },
+
+    async upload(url, formData, { timeoutMs = 300000 } = {}) {
+        const headers = {};
+        const token = this.getToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: formData,
+                credentials: 'include',
+                signal: controller.signal,
+            });
+        } catch (err) {
+            if (err?.name === 'AbortError') {
+                throw new Error('Upload timed out. Try a smaller image.');
+            }
+            throw new Error('Cannot reach server for upload.');
+        } finally {
+            clearTimeout(timer);
+        }
+        const raw = await response.text();
+        let data;
+        try {
+            data = raw ? JSON.parse(raw) : {};
+        } catch {
+            data = { detail: `Server error (${response.status}).` };
+        }
+        if (!response.ok) {
+            const message = typeof data.detail === 'string'
+                ? data.detail
+                : data.message || 'Upload failed.';
+            throw new Error(message);
+        }
+        return data;
+    },
 };
 
 /**

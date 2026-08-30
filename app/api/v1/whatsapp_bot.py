@@ -269,14 +269,16 @@ def public_offline_chat(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
-    otp = MobileOtpService()
-    if otp.is_required() and body.phone.strip() and not otp.is_verified(body.phone):
+    otp = MobileOtpService(db)
+    if otp.is_required() and (
+        not body.phone.strip() or not otp.is_verified(body.phone)
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
                 "code": "mobile_not_verified",
                 "message": (
-                    "Please verify your mobile number with the OTP code "
+                    "Please register your mobile number and verify OTP "
                     "before using web chat."
                 ),
             },
@@ -285,14 +287,17 @@ def public_offline_chat(
 
 
 @public_router.post("/mobile-otp/send", response_model=MobileOtpResponse)
-def public_send_mobile_otp(body: MobileOtpSendRequest) -> MobileOtpResponse:
+def public_send_mobile_otp(
+    body: MobileOtpSendRequest,
+    db: Session = Depends(get_business_db),
+) -> MobileOtpResponse:
     if not settings.whatsapp_bot_enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
     try:
-        result = MobileOtpService().send_otp(body.phone)
+        result = MobileOtpService(db).send_otp(body.phone)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -307,20 +312,41 @@ def public_send_mobile_otp(body: MobileOtpSendRequest) -> MobileOtpResponse:
 
 
 @public_router.post("/mobile-otp/verify", response_model=MobileOtpResponse)
-def public_verify_mobile_otp(body: MobileOtpVerifyRequest) -> MobileOtpResponse:
+def public_verify_mobile_otp(
+    body: MobileOtpVerifyRequest,
+    db: Session = Depends(get_business_db),
+) -> MobileOtpResponse:
     if not settings.whatsapp_bot_enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
     try:
-        result = MobileOtpService().verify_otp(body.phone, body.code)
+        result = MobileOtpService(db).verify_otp(body.phone, body.code)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
     return MobileOtpResponse(**result)
+
+
+@public_router.get("/mobile-otp/status")
+def public_mobile_otp_status(
+    mobile: str = Query("", max_length=30),
+    db: Session = Depends(get_business_db),
+) -> dict:
+    otp = MobileOtpService(db)
+    verified = False
+    if mobile.strip():
+        verified = otp.is_verified(mobile)
+    required = otp.is_required()
+    return {
+        "required": required,
+        "otp_required": required,
+        "verified": verified,
+        "provider": (getattr(settings, "guest_mobile_otp_provider", "sms_db") or "sms_db"),
+    }
 
 
 @router.get("/status", response_model=WhatsAppBotStatus)

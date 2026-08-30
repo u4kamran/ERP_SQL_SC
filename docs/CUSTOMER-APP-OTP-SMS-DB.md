@@ -19,8 +19,8 @@
 ## Flow
 
 ```text
-Request OTP → hash in customer_app_otp → INSERT SMS_DB_ (STATUS=1)
-→ existing SMS app sends → Verify OTP → VERIFIED for 30 days
+Request OTP → hash in customer_app_otp → INSERT SMS_DB_ (STATUS=1) → COMMIT
+→ launch `consoleapp2_lock.exe` (SendSMSActive) → Verify OTP → VERIFIED for 30 days
 → Register / Save Cart
 ```
 
@@ -35,11 +35,12 @@ Request OTP → hash in customer_app_otp → INSERT SMS_DB_ (STATUS=1)
 
 | Setting | Default |
 |---------|---------|
-| `CUSTOMER_APP_OTP_REQUIRED` | `true` |
+| `CUSTOMER_APP_OTP_REQUIRED` | env fallback only; live switch is [OTP Master Control](OTP-MASTER-CONTROL.md) |
 | `CUSTOMER_APP_OTP_PROVIDER` | `sms_db` (`test` only for local) |
 | `CUSTOMER_APP_OTP_TTL_SECONDS` | `300` |
 | `CUSTOMER_APP_OTP_VERIFIED_DAYS` | `30` |
 | `CUSTOMER_APP_OTP_SMS_SENDER` | `923004017067` |
+| `CUSTOMER_APP_OTP_SMS_SENDER_EXE` | `\\shaheenhp\Backup\localfiles\SendSMSActive\consoleapp2_lock.exe` |
 
 ## Setup
 

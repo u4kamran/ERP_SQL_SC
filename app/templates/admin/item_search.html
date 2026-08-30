@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Item Search - {{ app_name }}{% endblock %}
+{% block page_title %}Item Search{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0"><i class="bi bi-search me-2"></i>Item Search</h5>
+        <p class="text-muted small mb-0">
+            Autocomplete settings, aliases, and searches with no results.
+        </p>
+    </div>
+    <button class="btn btn-primary btn-sm" type="button" id="btn-refresh">Refresh</button>
+</div>
+<div id="item-search-alert"></div>
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Search settings</div>
+            <div class="card-body">
+                <form id="settings-form" class="vstack gap-2">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small mb-1" for="min_chars">Min characters</label>
+                            <input type="number" class="form-control form-control-sm" id="min_chars" min="1" max="5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1" for="max_results">Max results</label>
+                            <input type="number" class="form-control form-control-sm" id="max_results" min="5" max="20">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1" for="debounce_ms">Debounce ms</label>
+                            <input type="number" class="form-control form-control-sm" id="debounce_ms" min="120" max="800">
+                        </div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="fuzzy_enabled">
+                        <label class="form-check-label" for="fuzzy_enabled">Fuzzy search</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="alias_enabled">
+                        <label class="form-check-label" for="alias_enabled">Alias search</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="barcode_enabled">
+                        <label class="form-check-label" for="barcode_enabled">Barcode search</label>
+                    </div>
+                    <button class="btn btn-success btn-sm" type="submit">Save settings</button>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header fw-semibold">Aliases</div>
+            <div class="card-body">
+                <form id="alias-form" class="row g-2 mb-2">
+                    <div class="col-5">
+                        <input class="form-control form-control-sm" id="alias_text" placeholder="coke" maxlength="80">
+                    </div>
+                    <div class="col-5">
+                        <input class="form-control form-control-sm" id="expand_text" placeholder="coca cola" maxlength="120">
+                    </div>
+                    <div class="col-2">
+                        <button class="btn btn-outline-primary btn-sm w-100" type="submit">Add</button>
+                    </div>
+                </form>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Alias</th><th>Expands to</th><th></th></tr></thead>
+                        <tbody id="alias-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header fw-semibold">Search terms with no results</div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Search term</th><th class="text-end">Searches</th></tr></thead>
+                    <tbody id="no-result-body">
+                        <tr><td colspan="2" class="text-muted">No empty searches yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/js/item_search_admin.js?v=1"></script>
+{% endblock %}

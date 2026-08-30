@@ -70,7 +70,7 @@ def verify_mobile_otp(body: MobileOtpVerifyRequest, db: Session = Depends(get_bu
 
 @public_router.get("/mobile-otp/status")
 def mobile_otp_status(
-    mobile: str = Query(..., min_length=10, max_length=20),
+    mobile: str = Query("", max_length=20),
     db: Session = Depends(get_business_db),
 ):
     return CustomerAppOtpService(db).status(mobile)

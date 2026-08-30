@@ -15,6 +15,12 @@ from sqlalchemy.orm import Session
 
 from app.config.settings import settings
 from app.repositories.customer_app_otp_repository import CustomerAppOtpRepository
+from app.services.otp_sms_control_service import (
+    CHANNEL_MOBILE,
+    assert_otp_config_available,
+    is_channel_otp_required,
+)
+from app.services.sms_db_queue_service import build_otp_sms_body, trigger_sms_sender_app
 
 logger = logging.getLogger("ahsteellab")
 
@@ -68,7 +74,7 @@ class CustomerAppOtpService:
         return f"{secrets.randbelow(1_000_000):06d}"
 
     def is_required(self) -> bool:
-        return bool(getattr(settings, "customer_app_otp_required", True))
+        return is_channel_otp_required(CHANNEL_MOBILE, self.db)
 
     def is_verified(self, mobile: str) -> bool:
         try:
@@ -95,13 +101,34 @@ class CustomerAppOtpService:
             verified = self.is_verified(mobile) if mobile else False
         except HTTPException:
             verified = False
+        required = self.is_required()
         return {
-            "required": self.is_required(),
+            "required": required,
+            "otp_required": required,
             "verified": verified,
             "provider": (settings.customer_app_otp_provider or "sms_db").lower(),
         }
 
     def request_otp(self, mobile: str, *, client_ip: str | None = None) -> dict[str, Any]:
+        control = assert_otp_config_available(self.db)
+        display_early = None
+        try:
+            display_early = self.mobile_display(mobile)
+        except HTTPException:
+            display_early = ""
+        if not control["mobile_effective"]:
+            return {
+                "ok": True,
+                "otp_required": False,
+                "phone": display_early or "",
+                "request_id": None,
+                "expires_in": None,
+                "sent_via": None,
+                "verified": False,
+                "message": "OTP verification is not required.",
+                "dev_code": None,
+            }
+
         key = self.mobile_key(mobile)
         display = self.mobile_display(mobile)
         recipient = self.mobile_recipient_92(mobile)
@@ -136,12 +163,7 @@ class CustomerAppOtpService:
         otp_hash = self._hash_otp(code, salt)
         request_id = secrets.token_urlsafe(18)
         expires_at = datetime.now() + timedelta(seconds=ttl)
-        minutes = max(1, ttl // 60)
-        company = (settings.company_name or settings.app_name or "Shafique Departmental Store").rstrip(".")
-        body = (
-            f"{company}: Your verification code is {code}. "
-            f"It is valid for {minutes} minutes. Do not share this code with anyone."
-        )
+        body = build_otp_sms_body(code, ttl_seconds=ttl)
 
         try:
             self.repo.supersede_pending(key)
@@ -186,6 +208,10 @@ class CustomerAppOtpService:
                 detail="Could not send verification code. Please try again.",
             ) from exc
 
+        # SMS_DB_ must be committed before the Windows sender reads the queue.
+        if sent_via == "sms_db" and sms_id is not None:
+            trigger_sms_sender_app()
+
         logger.info(
             "OTP requested for %s request_id=%s sms_id=%s via=%s",
             _mask_mobile(display),
@@ -196,6 +222,7 @@ class CustomerAppOtpService:
 
         result: dict[str, Any] = {
             "ok": True,
+            "otp_required": True,
             "phone": display,
             "request_id": request_id,
             "expires_in": ttl,
@@ -225,6 +252,25 @@ class CustomerAppOtpService:
         *,
         request_id: str | None = None,
     ) -> dict[str, Any]:
+        control = assert_otp_config_available(self.db)
+        if not control["mobile_effective"]:
+            phone = ""
+            try:
+                phone = self.mobile_display(mobile)
+            except HTTPException:
+                phone = ""
+            return {
+                "ok": True,
+                "otp_required": False,
+                "phone": phone,
+                "request_id": None,
+                "verified": False,
+                "message": "OTP verification is not required.",
+                "expires_in": None,
+                "sent_via": None,
+                "dev_code": None,
+            }
+
         key = self.mobile_key(mobile)
         display = self.mobile_display(mobile)
         clean = "".join(ch for ch in (code or "") if ch.isdigit())
@@ -295,6 +341,7 @@ class CustomerAppOtpService:
         )
         return {
             "ok": True,
+            "otp_required": True,
             "phone": display,
             "request_id": row.get("request_id"),
             "verified": True,

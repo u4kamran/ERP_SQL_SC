@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Item Image Manager - {{ app_name }}{% endblock %}
+{% block page_title %}Item Image Manager{% endblock %}
+{% block extra_css %}
+<link href="/static/css/item_images.css?v=20260826a" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="iimg-wrap">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+      <h5 class="mb-0"><i class="bi bi-images me-2"></i>Item Image Manager</h5>
+      <p class="text-muted small mb-0">
+        Links product images via separate tables. <code>FIN_ITEM</code> stays read-only.
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-refresh">Refresh</button>
+      <button type="button" class="btn btn-outline-primary btn-sm" id="btn-settings">Settings</button>
+      <button type="button" class="btn btn-success btn-sm" id="btn-bulk" data-perm="inventory.item_images.bulk">
+        Fetch Missing Images
+      </button>
+    </div>
+  </div>
+
+  <div id="iimg-alert"></div>
+
+  <div class="row g-2 mb-3" id="dash-cards">
+    <div class="col-6 col-md-3"><div class="iimg-stat"><div class="lbl">Total Items</div><div class="val" id="d-total">—</div></div></div>
+    <div class="col-6 col-md-3"><div class="iimg-stat"><div class="lbl">Approved</div><div class="val" id="d-approved">—</div></div></div>
+    <div class="col-6 col-md-3"><div class="iimg-stat"><div class="lbl">Needs Review</div><div class="val" id="d-review">—</div></div></div>
+    <div class="col-6 col-md-3"><div class="iimg-stat"><div class="lbl">Coverage</div><div class="val" id="d-coverage">—</div></div></div>
+  </div>
+
+  <div class="card mb-3" id="job-card" hidden>
+    <div class="card-body py-2 d-flex flex-wrap align-items-center gap-3">
+      <strong>Bulk job</strong>
+      <span id="job-progress">Processed: 0 / 0</span>
+      <span class="text-muted small" id="job-counts"></span>
+      <div class="ms-auto d-flex gap-1">
+        <button type="button" class="btn btn-sm btn-outline-warning" id="btn-job-pause">Pause</button>
+        <button type="button" class="btn btn-sm btn-outline-success" id="btn-job-resume">Resume</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" id="btn-job-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header d-flex flex-wrap gap-2 align-items-center">
+          <input type="search" class="form-control form-control-sm" id="filter-q" placeholder="Item name or barcode" style="max-width:220px">
+          <select class="form-select form-select-sm" id="filter-status" style="max-width:160px">
+            <option value="APPROVED" selected>Approved</option>
+            <option value="ALL">All Items</option>
+            <option value="NO_IMAGE">No Image</option>
+            <option value="IMAGE_FOUND">Image Found</option>
+            <option value="NEEDS_REVIEW">Needs Review</option>
+            <option value="FAILED">Failed</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-filter">Search</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0 align-middle">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="chk-all"></th>
+                <th>Image</th>
+                <th>Item</th>
+                <th>Barcode</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <span class="small text-muted" id="page-info"></span>
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-secondary" id="btn-prev">Prev</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-next">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card" id="detail-card">
+        <div class="card-header fw-semibold">Item detail</div>
+        <div class="card-body" id="detail-body">
+          <p class="text-muted mb-0">Select an item to search, review candidates, or upload.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="settings-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Image search settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small">Auto-accept min</label>
+              <input type="number" class="form-control form-control-sm" id="auto_accept_min" min="50" max="100">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Review min</label>
+              <input type="number" class="form-control form-control-sm" id="review_min" min="20" max="99">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Requests / minute</label>
+              <input type="number" class="form-control form-control-sm" id="requests_per_minute" min="1" max="120">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Max concurrent</label>
+              <input type="number" class="form-control form-control-sm" id="max_concurrent" min="1" max="8">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Timeout (sec)</label>
+              <input type="number" class="form-control form-control-sm" id="timeout_seconds" min="5" max="60">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Retry count</label>
+              <input type="number" class="form-control form-control-sm" id="retry_count" min="0" max="5">
+            </div>
+            <div class="col-6">
+              <label class="form-label small">No-match min</label>
+              <input type="number" class="form-control form-control-sm" id="no_match_min" min="0" max="75">
+            </div>
+          </div>
+          <p class="small text-muted mt-2 mb-1">Pakistani providers (Naheed live; others stubbed until integrated)</p>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="naheed_enabled" checked>
+            <label class="form-check-label" for="naheed_enabled">Naheed (GraphQL storefront)</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="metro_enabled">
+            <label class="form-check-label" for="metro_enabled">METRO Pakistan (live)</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="carrefour_enabled">
+            <label class="form-check-label" for="carrefour_enabled">Carrefour Pakistan (coming soon)</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="imtiaz_enabled">
+            <label class="form-check-label" for="imtiaz_enabled">Imtiaz (coming soon)</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="alfatah_enabled">
+            <label class="form-check-label" for="alfatah_enabled">Al-Fatah (coming soon)</label>
+          </div>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="download_enabled">
+            <label class="form-check-label" for="download_enabled">Download &amp; cache locally (WEBP)</label>
+          </div>
+          <p class="small text-muted mb-1">Optional global fallbacks</p>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="open_food_facts_enabled">
+            <label class="form-check-label" for="open_food_facts_enabled">Open Food Facts provider</label>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="upcitemdb_enabled">
+            <label class="form-check-label" for="upcitemdb_enabled">UPCitemdb provider (optional API key in .env)</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk modal -->
+<div class="modal fade" id="bulkModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="bulk-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Fetch Missing Images</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small">Scope</label>
+            <select class="form-select form-select-sm" id="bulk-scope">
+              <option value="missing">All missing / failed</option>
+              <option value="selected">Selected items</option>
+              <option value="filter">Current filter</option>
+              <option value="test">Test mode (5–25)</option>
+            </select>
+          </div>
+          <div class="mb-2" id="test-limit-wrap" hidden>
+            <label class="form-label small">Test limit</label>
+            <select class="form-select form-select-sm" id="bulk-test-limit">
+              <option value="5">5 items</option>
+              <option value="10">10 items</option>
+              <option value="25">25 items</option>
+            </select>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="bulk-dry-run">
+            <label class="form-check-label" for="bulk-dry-run">Dry run (search only — do not save)</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success btn-sm">Start</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/item_images.js?v=20260826a"></script>
+{% endblock %}
