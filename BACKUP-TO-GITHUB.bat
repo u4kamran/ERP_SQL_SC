@@ -27,6 +27,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
+for /f "delims=" %%B in ('git rev-parse --abbrev-ref HEAD') do set "BRANCH=%%B"
+
+echo  Current branch: %BRANCH%
+echo.
 echo  Changed files:
 echo  --------------
 git status --short
@@ -40,6 +44,9 @@ if errorlevel 1 goto :has_changes
 echo  Nothing to backup - no changes since last commit.
 echo.
 git log -1 --oneline
+echo.
+echo  Tip: if you expected changes here, you may be on branch %BRANCH%
+echo       while other work was committed on another branch.
 echo.
 pause
 exit /b 0
@@ -68,7 +75,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo  [2/3] Saving snapshot (commit)...
+echo  [2/3] Saving snapshot (commit) on branch %BRANCH%...
 git commit -m "%MSG%"
 if errorlevel 1 (
     echo  ERROR: Commit failed. Nothing was uploaded.
@@ -76,17 +83,26 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo  [3/3] Uploading to GitHub...
-git push erpsqlsc main
+echo  [3/3] Uploading branch %BRANCH% to GitHub...
+git push -u erpsqlsc HEAD
 if errorlevel 1 (
     echo.
     echo  ERROR: Push failed.
     echo.
-    echo  Common fixes:
+    if /I "%BRANCH%"=="main" (
+        echo  GitHub often blocks direct pushes to main ^(branch protection^).
+        echo  Work on a feature branch instead, then open a Pull Request:
+        echo    git checkout -b feature/my-change
+        echo    BACKUP-TO-GITHUB.bat
+        echo.
+    )
+    echo  Other common fixes:
     echo    - Check internet connection
     echo    - Log in to GitHub when Git asks
     echo    - Use a Personal Access Token as password
     echo      GitHub - Settings - Developer settings - Tokens
+    echo    - Remove secrets from files before commit
+    echo      ^(.env, API keys in .env.example, etc.^)
     echo.
     pause
     exit /b 1
@@ -97,10 +113,15 @@ echo  ============================================
 echo   BACKUP COMPLETE
 echo  ============================================
 echo.
-echo  Your code is saved on GitHub:
+echo  Branch %BRANCH% is saved on GitHub:
 echo  https://github.com/u4kamran/ERP_SQL_SC
 echo.
 git log -1 --oneline
 echo.
+if /I not "%BRANCH%"=="main" (
+    echo  Note: backup went to branch %BRANCH%, not main.
+    echo  Open a Pull Request on GitHub when ready to merge.
+    echo.
+)
 pause
 exit /b 0

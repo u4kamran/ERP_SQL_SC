@@ -59,10 +59,10 @@ cd D:\CursorProject\ahsteellab-nsds2626
 git status
 git add -A
 git commit -m "Brief description of what you changed"
-git push erpsqlsc main
+git push -u erpsqlsc HEAD
 ```
 
-**Tip:** Back up at least once per week, or after every important change.
+Pushes the **current branch** (not always `main`). GitHub may block direct pushes to `main` if branch protection is enabled — use a feature branch and open a Pull Request instead.
 
 ---
 
