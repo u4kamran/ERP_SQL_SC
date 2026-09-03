@@ -23,15 +23,31 @@ _ACTION_SPECS = (
     ("delete", "Delete"),
 )
 
+# Report delivery actions (Option A: PDF stays with View; Email/WhatsApp are separate).
+# Each report has its own permission stem.
+_DELIVERY_ACTIONS_BY_VIEW: dict[str, tuple[tuple[str, str], ...]] = {
+    "reports.gl_ledger.view": (("email", "Email"), ("whatsapp", "WhatsApp")),
+    "reports.gl_ledger_detailed.view": (("email", "Email"), ("whatsapp", "WhatsApp")),
+    "reports.gl_ledger_mobile.view": (("email", "Email"), ("whatsapp", "WhatsApp")),
+    "reports.gl_credit_summary.view": (("email", "Email"),),
+    "reports.trial_balance_d2d.view": (("email", "Email"), ("whatsapp", "WhatsApp")),
+    "reports.trial_balance_d2d_mobile.view": (("email", "Email"), ("whatsapp", "WhatsApp")),
+    "reports.stock_balance_d2d.view": (("email", "Email"),),
+    "reports.sales_dashboard.view": (("email", "Email"),),
+}
+
 
 def _action_codes_for_view(view_code: str) -> list[tuple[str, str, str]]:
-    """Return (action, label, permission_code) for view/create/edit/delete."""
+    """Return (action, label, permission_code) for view/create/edit/delete (+ delivery)."""
     code = (view_code or "").strip()
     if not code:
         return []
     if code.endswith(".view"):
         stem = code[: -len(".view")]
-        return [(action, label, f"{stem}.{action}") for action, label in _ACTION_SPECS]
+        actions = [(action, label, f"{stem}.{action}") for action, label in _ACTION_SPECS]
+        for action, label in _DELIVERY_ACTIONS_BY_VIEW.get(code, ()):
+            actions.append((action, label, f"{stem}.{action}"))
+        return actions
     # Non-standard codes: only the exact permission (treat as View)
     return [("view", "View", code)]
 
@@ -82,11 +98,21 @@ def build_menu_access_catalog(db: Session, role: Role) -> MenuAccessCatalogRespo
     missing: list[str] = []
 
     for group in get_internal_link_groups():
-        items: list[MenuAccessItem] = []
+        # One row per unique permission code within the group.
+        items_by_code: dict[str, MenuAccessItem] = {}
+        shared_labels: dict[str, list[str]] = {}
+        order: list[str] = []
+
         for link in group["links"]:
             view_code = (link.get("permission") or "").strip()
             if not view_code:
                 # Always-visible account items (Dashboard/Profile/Password) are not grantable.
+                continue
+
+            link_label = (link.get("label") or view_code).strip()
+
+            if view_code in items_by_code:
+                shared_labels.setdefault(view_code, []).append(link_label)
                 continue
 
             actions: list[MenuAccessAction] = []
@@ -108,24 +134,39 @@ def build_menu_access_catalog(db: Session, role: Role) -> MenuAccessCatalogRespo
 
             view_action = next((a for a in actions if a.action == "view"), None)
             view_perm = perm_by_code.get(view_code)
-            items.append(
-                MenuAccessItem(
-                    label=link.get("label") or view_code,
-                    path=link.get("path") or "",
-                    icon=link.get("icon") or "",
-                    description=link.get("description") or "",
-                    group=group["title"],
-                    permission_code=view_code,
-                    permission_id=view_perm.PermissionId if view_perm else (
-                        view_action.permission_id if view_action else None
-                    ),
-                    permission_found=bool(view_perm) if view_perm is not None else bool(
-                        view_action and view_action.permission_found
-                    ),
-                    granted=bool(view_action and view_action.granted),
-                    actions=actions,
-                )
+            order.append(view_code)
+            shared_labels[view_code] = [link_label]
+            items_by_code[view_code] = MenuAccessItem(
+                label=link_label,
+                path=link.get("path") or "",
+                icon=link.get("icon") or "",
+                description=link.get("description") or "",
+                group=group["title"],
+                permission_code=view_code,
+                permission_id=view_perm.PermissionId if view_perm else (
+                    view_action.permission_id if view_action else None
+                ),
+                permission_found=bool(view_perm) if view_perm is not None else bool(
+                    view_action and view_action.permission_found
+                ),
+                granted=bool(view_action and view_action.granted),
+                actions=actions,
             )
+
+        items: list[MenuAccessItem] = []
+        for code in order:
+            item = items_by_code[code]
+            labels = shared_labels.get(code) or [item.label]
+            if len(labels) > 1:
+                item.label = f"{labels[0]} (+{len(labels) - 1} linked menus)"
+                shared = ", ".join(labels)
+                base = (item.description or "").strip()
+                item.description = (
+                    f"Shared right ({code}): {shared}"
+                    + (f" — {base}" if base else "")
+                )
+            items.append(item)
+
         if items:
             groups.append(MenuAccessGroup(title=group["title"], items=items))
 
@@ -155,7 +196,7 @@ def save_menu_access(
     actor_user_id: int,
 ) -> int:
     """
-    Update menu-linked permissions for a role (View / Add / Edit / Delete).
+    Update menu-linked permissions for a role (View / Add / Edit / Delete / Email / WhatsApp).
     Non-menu permissions (API-only, admin.full, etc.) are preserved.
     """
     perm_by_code = _permission_map(db)

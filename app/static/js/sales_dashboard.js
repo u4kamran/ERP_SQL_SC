@@ -8,7 +8,20 @@ let dashboardTopInvoices = null;
 let cumulativeLoaded = false;
 let dashboardLoaded = false;
 
+function updateBusinessDayNote(data) {
+    const noteEl = document.getElementById('sales-business-day-note');
+    const dayWiseNote = document.getElementById('day-wise-note');
+    const note = data?.business_hours_note || (typeof businessDayDisplayNote === 'function' ? businessDayDisplayNote() : '');
+    if (noteEl && note) {
+        noteEl.innerHTML = `<i class="bi bi-clock me-1"></i>${note}`;
+    }
+    if (dayWiseNote && note) {
+        dayWiseNote.textContent = `Each row = one business day (${note.replace('Business day: ', '')})`;
+    }
+}
+
 function initSalesDashboard() {
+    updateBusinessDayNote();
     setDefaultDates();
     document.getElementById('btn-refresh-sales').addEventListener('click', () => {
         extendRangeToNow();
@@ -745,6 +758,11 @@ function formatReportDateTime(value) {
 const SALES_EMAIL_API = '/api/v1/reports/sales-dashboard/email';
 
 function initSalesDashboardEmail() {
+    const allowed = ReportDeliveryRights.applySalesEmailGate({
+        sectionId: 'sales-email-panel',
+        allowed: ReportDeliveryRights.canEmailSales(),
+    });
+    if (!allowed) return;
     document.getElementById('btn-sales-email-save')?.addEventListener('click', saveSalesEmailConfig);
     document.getElementById('btn-sales-email-test')?.addEventListener('click', sendSalesEmailTest);
     document.getElementById('btn-sales-email-now')?.addEventListener('click', sendSalesEmailNow);

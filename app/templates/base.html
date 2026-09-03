@@ -85,7 +85,7 @@
                     <i class="bi bi-graph-up-arrow"></i> <span class="nav-label">Sales Dashboard</span>
                 </a>
             </li>
-            <li class="nav-item" data-perm="reports.gl_ledger.view">
+            <li class="nav-item" data-perm="reports.gl_ledger_mobile.view">
                 <a class="nav-link" href="/admin/gl-ledger-mobile" data-page="gl-ledger-mobile">
                     <i class="bi bi-phone"></i> <span class="nav-label">GL Ledger (Mobile)</span>
                 </a>
@@ -95,19 +95,29 @@
                     <i class="bi bi-journal-text"></i> <span class="nav-label">GL Ledger Report</span>
                 </a>
             </li>
-            <li class="nav-item" data-perm="reports.gl_ledger.view">
+            <li class="nav-item" data-perm="reports.gl_ledger_detailed.view">
+                <a class="nav-link" href="/admin/gl-ledger-detailed" data-page="gl-ledger-detailed">
+                    <i class="bi bi-journal-richtext"></i> <span class="nav-label">Customer Ledger (Detailed)</span>
+                </a>
+            </li>
+            <li class="nav-item" data-perm="reports.gl_credit_summary.view">
                 <a class="nav-link" href="/admin/gl-ledger-credit-summary" data-page="gl-ledger-credit-summary">
                     <i class="bi bi-journal-check"></i> <span class="nav-label">Credit Summary Ledger</span>
                 </a>
             </li>
-            <li class="nav-item" data-perm="reports.gl_ledger.view">
+            <li class="nav-item" data-perm="reports.trial_balance_d2d.view">
                 <a class="nav-link" href="/admin/trial-balance-d2d" data-page="trial-balance-d2d">
                     <i class="bi bi-table"></i> <span class="nav-label">Trial Balance D2D</span>
                 </a>
             </li>
-            <li class="nav-item" data-perm="reports.gl_ledger.view">
+            <li class="nav-item" data-perm="reports.trial_balance_d2d_mobile.view">
                 <a class="nav-link" href="/admin/trial-balance-d2d-mobile" data-page="trial-balance-d2d-mobile">
                     <i class="bi bi-phone"></i> <span class="nav-label">Trial Balance (Mobile)</span>
+                </a>
+            </li>
+            <li class="nav-item" data-perm="reports.stock_balance_d2d.view">
+                <a class="nav-link" href="/admin/stock-balance-d2d" data-page="stock-balance-d2d">
+                    <i class="bi bi-boxes"></i> <span class="nav-label">Stock Balance D2D</span>
                 </a>
             </li>
             <li class="nav-item" data-perm="reports.sms_email.manage">
@@ -200,6 +210,11 @@
             <li class="nav-item" data-perm="auth.login_notify.view">
                 <a class="nav-link" href="/admin/login-alerts" data-page="login-alerts">
                     <i class="bi bi-envelope-exclamation"></i> <span class="nav-label">Login Alerts</span>
+                </a>
+            </li>
+            <li class="nav-item" data-perm="auth.admin.full">
+                <a class="nav-link" href="/admin/default-setup" data-page="default-setup">
+                    <i class="bi bi-sliders"></i> <span class="nav-label">Default Setup</span>
                 </a>
             </li>
             <li class="nav-item" data-perm="auth.otp_sms_control.view">

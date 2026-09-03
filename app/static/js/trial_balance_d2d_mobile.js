@@ -14,7 +14,7 @@ let lastPdfBlob = null;
 let whatsappConfigured = false;
 
 function canViewGlLedger() {
-    return Auth.hasPermission('reports.gl_ledger.view') ||
+    return Auth.hasPermission('reports.trial_balance_d2d_mobile.view') ||
         Auth.hasPermission('inventory.fin_item.view') ||
         Auth.hasPermission('auth.admin.full');
 }
@@ -31,10 +31,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     whatsappSearchModal = new bootstrap.Modal(document.getElementById('whatsappSearchModal'));
     setDefaultDates();
     setDefaultAccounts();
-    loadSavedWhatsAppPhone();
-    await loadUserEmail();
-    await loadEmailStatus();
-    await loadWhatsAppStatus();
+    const canEmail = ReportDeliveryRights.applyEmailGate({
+        allowed: ReportDeliveryRights.canEmailTrialMobile(),
+    });
+    const canWhatsApp = ReportDeliveryRights.applyWhatsAppGate({
+        allowed: ReportDeliveryRights.canWhatsAppTrialMobile(),
+    });
+    if (canWhatsApp) {
+        loadSavedWhatsAppPhone();
+        await loadWhatsAppStatus();
+    }
+    if (canEmail) {
+        await loadUserEmail();
+        await loadEmailStatus();
+    }
     bindEvents();
     AccountRangeSync.bind(validateAccount);
     wireSearchModalFocus('searchModal', 'search-query');
@@ -114,6 +124,8 @@ function loadSavedWhatsAppPhone() {
 }
 
 function updateShareReadyState() {
+    const canWa = typeof ReportDeliveryRights === 'undefined' || ReportDeliveryRights.canWhatsAppTrialMobile();
+    const canEmail = typeof ReportDeliveryRights === 'undefined' || ReportDeliveryRights.canEmailTrialMobile();
     const ready = Boolean(lastViewUrl && lastPayload);
     const shareHint = document.getElementById('share-not-ready');
     if (shareHint) shareHint.classList.toggle('d-none', ready);
@@ -121,17 +133,20 @@ function updateShareReadyState() {
     const emailHint = document.getElementById('email-not-ready');
     if (emailHint) emailHint.classList.toggle('d-none', ready);
 
-    const autoBtn = document.getElementById('btn-whatsapp-auto');
-    if (autoBtn) autoBtn.disabled = !ready || !whatsappConfigured;
+    if (canWa) {
+        const autoBtn = document.getElementById('btn-whatsapp-auto');
+        if (autoBtn) autoBtn.disabled = !ready || !whatsappConfigured;
 
-    const emailBtn = document.getElementById('btn-email');
-    if (emailBtn) emailBtn.disabled = !ready;
-
-    ['btn-whatsapp-link', 'btn-copy-whatsapp-msg'].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = !ready;
-    });
-    updateShareFileSupport();
+        ['btn-whatsapp-link', 'btn-copy-whatsapp-msg'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = !ready;
+        });
+        updateShareFileSupport();
+    }
+    if (canEmail) {
+        const emailBtn = document.getElementById('btn-email');
+        if (emailBtn) emailBtn.disabled = !ready;
+    }
 }
 
 async function loadWhatsAppStatus() {

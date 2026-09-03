@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     debug: bool = False
     secret_key: str = Field(..., min_length=32)
     api_v1_prefix: str = "/api/v1"
+    # Parallel Detailed Customer Ledger (does not alter existing GL Ledger). Rollback: false.
+    gl_ledger_detailed_enabled: bool = Field(default=True, alias="GL_LEDGER_DETAILED_ENABLED")
 
     # Server
     host: str = "0.0.0.0"

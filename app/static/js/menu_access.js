@@ -1,10 +1,19 @@
-/** Admin Menu Access — View / Add / Edit / Delete per sidebar menu. */
+/** Admin Menu Access — View / Add / Edit / Delete (+ Email / WhatsApp for reports). */
 
 (() => {
     let roles = [];
     let selectedRoleId = null;
     let catalog = null;
     let canManage = false;
+
+    const ACTION_COLUMNS = [
+        { key: 'view', label: 'View' },
+        { key: 'create', label: 'Add' },
+        { key: 'edit', label: 'Edit' },
+        { key: 'delete', label: 'Delete' },
+        { key: 'email', label: 'Email' },
+        { key: 'whatsapp', label: 'WhatsApp' },
+    ];
 
     const rolesEl = () => document.getElementById('menu-access-roles');
     const groupsEl = () => document.getElementById('menu-access-groups');
@@ -95,8 +104,20 @@
     function bindActionLogic(root) {
         root.querySelectorAll('.menu-access-check').forEach((cb) => {
             cb.addEventListener('change', () => {
-                const rowKey = cb.getAttribute('data-row');
+                const permId = (cb.value || '').trim();
                 const action = cb.getAttribute('data-action');
+                const rowKey = cb.getAttribute('data-row');
+
+                // Keep every checkbox for the same permission_id in sync
+                // (prevents "unchecked one menu, save still grants it via a twin row").
+                if (permId) {
+                    root.querySelectorAll('.menu-access-check').forEach((el) => {
+                        if (el !== cb && el.value === permId && !el.disabled) {
+                            el.checked = cb.checked;
+                        }
+                    });
+                }
+
                 if (!rowKey) return;
                 const rowCbs = [...root.querySelectorAll('.menu-access-check')].filter(
                     (el) => el.getAttribute('data-row') === rowKey
@@ -111,6 +132,12 @@
                 }
                 if (action !== 'view' && cb.checked && viewCb && !viewCb.disabled) {
                     viewCb.checked = true;
+                    const viewId = (viewCb.value || '').trim();
+                    if (viewId) {
+                        root.querySelectorAll('.menu-access-check').forEach((el) => {
+                            if (el.value === viewId && !el.disabled) el.checked = true;
+                        });
+                    }
                 }
             });
         });
@@ -128,7 +155,7 @@
         titleEl().textContent = `2. Menu rights — ${catalog.role_name}`;
         subEl().textContent = catalog.role_code === 'SUPER_ADMIN'
             ? 'SUPER_ADMIN has full access. Rights cannot be reduced here.'
-            : 'Per menu: View (show in panel), Add, Edit, Delete.';
+            : 'Per menu: View, Add, Edit, Delete; each report has its own Email / WhatsApp.';
 
         if (catalog.role_code === 'SUPER_ADMIN') {
             groupsEl().innerHTML = `
@@ -146,11 +173,16 @@
                </div>`
             : '';
 
+        const headerCols = ACTION_COLUMNS.map(
+            (col) => `<th class="text-center" style="width:4.5rem">${escapeHtml(col.label)}</th>`
+        ).join('');
+
         const groupsHtml = (catalog.groups || []).map((group) => {
             const rows = (group.items || []).map((item) => {
                 const missingBadge = item.permission_found
                     ? ''
                     : '<span class="badge bg-warning text-dark ms-1">View not seeded</span>';
+                const cells = ACTION_COLUMNS.map((col) => actionCell(item, col.key)).join('');
                 return `
                     <tr class="${item.permission_found ? '' : 'is-missing'}">
                         <td>
@@ -160,10 +192,7 @@
                             </div>
                             <div class="menu-access-item-meta">${escapeHtml(item.description || item.path)}</div>
                         </td>
-                        ${actionCell(item, 'view')}
-                        ${actionCell(item, 'create')}
-                        ${actionCell(item, 'edit')}
-                        ${actionCell(item, 'delete')}
+                        ${cells}
                     </tr>
                 `;
             }).join('');
@@ -175,10 +204,7 @@
                             <thead>
                                 <tr>
                                     <th>Menu</th>
-                                    <th class="text-center" style="width:4.5rem">View</th>
-                                    <th class="text-center" style="width:4.5rem">Add</th>
-                                    <th class="text-center" style="width:4.5rem">Edit</th>
-                                    <th class="text-center" style="width:4.5rem">Delete</th>
+                                    ${headerCols}
                                 </tr>
                             </thead>
                             <tbody>${rows}</tbody>

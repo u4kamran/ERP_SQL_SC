@@ -219,6 +219,15 @@ async def admin_otp_sms_control_page(request: Request):
     )
 
 
+@app.get("/admin/default-setup", response_class=HTMLResponse)
+async def admin_default_setup_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/default_setup.html",
+        {"app_name": settings.app_name},
+    )
+
+
 @app.get("/admin/profile", response_class=HTMLResponse)
 async def admin_profile_page(request: Request):
     return templates.TemplateResponse(request, "admin/profile.html", {"app_name": settings.app_name})
@@ -314,6 +323,15 @@ async def admin_gl_ledger_report_page(request: Request):
     )
 
 
+@app.get("/admin/gl-ledger-detailed", response_class=HTMLResponse)
+async def admin_gl_ledger_detailed_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/gl_ledger_detailed.html",
+        {"app_name": settings.app_name},
+    )
+
+
 @app.get("/admin/trial-balance-d2d-mobile", response_class=HTMLResponse)
 async def admin_trial_balance_d2d_mobile_page(request: Request):
     return templates.TemplateResponse(
@@ -328,6 +346,15 @@ async def admin_trial_balance_d2d_page(request: Request):
     return templates.TemplateResponse(
         request,
         "admin/trial_balance_d2d.html",
+        {"app_name": settings.app_name},
+    )
+
+
+@app.get("/admin/stock-balance-d2d", response_class=HTMLResponse)
+async def admin_stock_balance_d2d_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "admin/stock_balance_d2d.html",
         {"app_name": settings.app_name},
     )
 

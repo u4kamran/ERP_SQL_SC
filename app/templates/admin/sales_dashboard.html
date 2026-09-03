@@ -15,8 +15,8 @@
                 <span class="badge bg-light text-dark border period-badge ms-2" id="sales-total-days">—</span>
             </div>
             <div class="text-muted small mt-1" id="sales-compare-period-text">—</div>
-            <div class="text-muted small mt-1">
-                <i class="bi bi-clock me-1"></i>Business day: <strong>08:00</strong> today → <strong>05:00</strong> next morning
+            <div class="text-muted small mt-1" id="sales-business-day-note">
+                <i class="bi bi-clock me-1"></i>Business day: loading…
             </div>
         </div>
         <div class="d-flex flex-wrap gap-1">
@@ -152,7 +152,7 @@
                 </button>
             </div>
         </div>
-        <p class="text-muted small mb-2" id="day-wise-note">Each row = one business day (08:00 -> next day 05:00)</p>
+        <p class="text-muted small mb-2" id="day-wise-note">Each row = one business day</p>
         <div class="table-responsive">
             <table class="table table-sm compare-table mb-0">
                 <thead>
@@ -321,9 +321,10 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/business_day.js?v=4"></script>
+<script src="/static/js/business_day.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/js/sales_dashboard.js?v=24"></script>
+<script src="/static/js/report_delivery_rights.js?v=2"></script>
+<script src="/static/js/sales_dashboard.js?v=27"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     await Auth.requireAuth();
@@ -332,6 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<div class="alert alert-danger">Access denied.</div>';
         return;
     }
+    await loadBusinessDayConfig();
     initSalesDashboard();
     initSalesDashboardEmail();
 });

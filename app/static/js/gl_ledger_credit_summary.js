@@ -7,7 +7,7 @@ let lastPdfFilename = null;
 let lastPdfViewUrl = null;
 
 function canViewGlLedger() {
-    return Auth.hasPermission('reports.gl_ledger.view') ||
+    return Auth.hasPermission('reports.gl_credit_summary.view') ||
         Auth.hasPermission('inventory.fin_item.view') ||
         Auth.hasPermission('auth.admin.full');
 }
@@ -28,8 +28,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
     setDefaultDates();
     setDefaultAccounts();
-    await loadUserEmail();
-    await loadEmailStatus();
+    const canEmail = ReportDeliveryRights.applyEmailGate({
+        allowed: ReportDeliveryRights.canEmailCredit(),
+    });
+    if (canEmail) {
+        await loadUserEmail();
+        await loadEmailStatus();
+    }
     bindEvents();
     AccountRangeSync.bind(validateAccount);
     wireSearchModalFocus('searchModal', 'search-query');

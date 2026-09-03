@@ -22,7 +22,12 @@ from app.schemas.sales_dashboard import (
     TopInvoiceRow,
     TopInvoicesResponse,
 )
-from app.utils.business_day import align_previous_trend_dates, count_business_days, shift_business_period
+from app.utils.business_day import (
+    align_previous_trend_dates,
+    business_hours_note,
+    count_business_days,
+    shift_business_period,
+)
 
 def _build_period(
     repo: SalesDashboardRepository,
@@ -103,11 +108,7 @@ class SalesDashboardService:
         rows = SalesDashboardRepository(self.db).get_day_wise_sales(
             params.start_date, params.end_date
         )
-        from app.config.settings import settings
-        note = (
-            f"Business day: {settings.business_day_start_hour:02d}:00"
-            f" → next day {settings.business_day_end_hour:02d}:00"
-        )
+        note = business_hours_note()
         return DayWiseSalesResponse(
             items=[DayWiseSalesRow(**row) for row in rows],
             business_hours_note=note,
@@ -120,11 +121,7 @@ class SalesDashboardService:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-        from app.config.settings import settings
-        note = (
-            f"Business day: {settings.business_day_start_hour:02d}:00"
-            f" → next day {settings.business_day_end_hour:02d}:00"
-        )
+        note = business_hours_note()
         return CumulativeSalesResponse(
             start_date=params.start_date,
             end_date=params.end_date,

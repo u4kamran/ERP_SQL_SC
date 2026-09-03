@@ -71,7 +71,7 @@ def test_cumulative_month_boundary():
     start = datetime(2026, 7, 30, 8, 0, 0)
     end = datetime(2026, 8, 2, 5, 0, 0)
     fixed_start, ends = cumulative_period_ends(start, end)
-    assert len(ends) == 4
+    assert len(ends) == 3
     label = cumulative_period_label(fixed_start, ends[-1])
     assert label == "30 Jul 2026 08:00 -> 02 Aug 2026 05:00"
 
