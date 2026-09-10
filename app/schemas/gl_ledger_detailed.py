@@ -75,6 +75,8 @@ class GlLedgerInvoiceDetailLine(BaseModel):
     value: Optional[float] = None
     gst: Optional[float] = None
     gst_display: str = "-"
+    # Value + GST (GST-exclusive value). Numeric zero when GST is blank/"-".
+    line_total: Optional[float] = None
 
 
 class GlLedgerDetailedTransactionRow(BaseModel):
@@ -105,6 +107,8 @@ class GlLedgerDetailedAccountSection(BaseModel):
     total_qty: float = 0
     total_value: float = 0
     total_gst: float = 0
+    # SUM(Value) + SUM(GST) == SUM(line_total)
+    grand_total: float = 0
 
 
 class GlLedgerDetailedReportData(BaseModel):

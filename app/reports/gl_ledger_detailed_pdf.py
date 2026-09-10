@@ -7,13 +7,13 @@ Invoice line detail uses a nested table with data-aware column widths.
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Iterable, List, Sequence
+from typing import List, Sequence
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Indenter, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.schemas.gl_ledger_detailed import (
     GlLedgerDetailedAccountSection,
@@ -31,10 +31,9 @@ TOP_MARGIN = 42 * mm
 BOTTOM_MARGIN = 12 * mm
 USABLE_WIDTH = PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN
 
-ROWS_PER_CHUNK = 20
 LINE_COLOR = colors.HexColor("#666666")
-DETAIL_BG = colors.HexColor("#F5F7FA")
-DETAIL_HEADER_BG = colors.HexColor("#E8EEF5")
+# Item-detail separators only — light grey so the child block is not a heavy dark frame.
+DETAIL_LINE_COLOR = colors.HexColor("#D0D0D0")
 CELL_PAD = 3
 
 # Parent: Date | Voucher | Bn | Type | Reference | Narration | Debit | Credit | Running Bal.
@@ -73,16 +72,22 @@ HEADERS = [
     "Running Bal.",
 ]
 
-# Nested invoice-detail columns (under each sales TX)
+# Nested item-detail columns (child of parent TX; starts under Narration)
 DETAIL_SPECS: tuple[ColSpec, ...] = (
-    ColSpec("item", "Item Title", min_pt=55, max_pt=260, flex=8.0, font_size=6.5),
-    ColSpec("gp", "GP", min_pt=22, max_pt=48, flex=0.2, font_size=6.5),
-    ColSpec("bill", "Bill", min_pt=22, max_pt=48, flex=0.2, font_size=6.5),
-    ColSpec("qty", "Qty", min_pt=34, max_pt=58, flex=0.1, font_size=6.5),
-    ColSpec("rate", "Rate", min_pt=34, max_pt=58, flex=0.1, font_size=6.5),
-    ColSpec("value", "Value", min_pt=42, max_pt=72, flex=0.15, font_size=6.5),
-    ColSpec("gst", "GST", min_pt=22, max_pt=42, flex=0.05, font_size=6.5),
+    ColSpec("item", "Item Title", min_pt=50, max_pt=380, flex=8.0, font_size=6.5),
+    ColSpec("gp", "GP", min_pt=20, max_pt=44, flex=0.15, font_size=6.5),
+    ColSpec("bill", "Bill", min_pt=20, max_pt=44, flex=0.15, font_size=6.5),
+    ColSpec("qty", "Qty", min_pt=30, max_pt=52, flex=0.1, font_size=6.5),
+    ColSpec("rate", "Rate", min_pt=30, max_pt=52, flex=0.1, font_size=6.5),
+    ColSpec("value", "Value", min_pt=38, max_pt=68, flex=0.15, font_size=6.5),
+    ColSpec("gst", "GST", min_pt=22, max_pt=48, flex=0.1, font_size=6.5),
+    ColSpec("total", "Total", min_pt=38, max_pt=72, flex=0.15, font_size=6.5),
 )
+
+# Width available to the child detail block = Narration → right edge.
+# Leave a small safety margin so Indenter + detail table never overflow the frame
+# (overflow makes ReportLab compress the left indent).
+DETAIL_AREA_WIDTH = max(120.0, sum(COL_WIDTHS[COL_NARRATION:]) - 2.0)
 
 NARRATION_STYLE = ParagraphStyle(
     "gl_det_narration",
@@ -139,9 +144,8 @@ def _para(text: str, style: ParagraphStyle = NARRATION_STYLE) -> Paragraph | str
     safe = (text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     if not safe:
         return ""
-    # Allow soft breaks on long codes without spaces
-    safe = safe.replace("***", "***&#8203;")
-    safe = safe.replace("-", "-&#8203;")
+    # Do NOT insert U+200B / &#8203; soft breaks: Helvetica has no glyph for it and
+    # PDF viewers render .notdef as solid black rectangular boxes.
     return Paragraph(safe, style)
 
 
@@ -153,15 +157,21 @@ def _collect_detail_lines(report: GlLedgerDetailedReportData) -> list[GlLedgerIn
     return lines
 
 
-def _detail_cell_strings(line: GlLedgerInvoiceDetailLine) -> tuple[str, str, str, str, str, str, str]:
+def _detail_cell_strings(line: GlLedgerInvoiceDetailLine) -> tuple[str, str, str, str, str, str, str, str]:
+    value = float(line.value or 0)
+    gst = float(line.gst or 0)
+    line_total = line.line_total
+    if line_total is None:
+        line_total = value + gst
     return (
         (line.item_title or "").strip() or "Item",
         (line.gate_pass or "").strip() or "-",
         (line.bill_no or "").strip() or "-",
         _qty(line.qty) or "-",
         _money(line.rate or 0) if line.rate is not None else "-",
-        _money(line.value or 0) if line.value is not None else "-",
+        _money(value, always=True),
         (line.gst_display or "-").strip() or "-",
+        _money(float(line_total), always=True),
     )
 
 
@@ -253,23 +263,24 @@ def _transaction_row(tx: GlLedgerDetailedTransactionRow) -> list:
 
 
 def _detail_header_inner(widths: list[float]) -> Table:
+    """One header row: Item Title | GP | Bill | Qty | Rate | Value | GST | Total."""
     headers = [spec.header for spec in DETAIL_SPECS]
     data = [[_para(h, DETAIL_HEADER_STYLE) for h in headers]]
     table = Table(data, colWidths=widths)
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, 0), DETAIL_HEADER_BG),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, 0), 6.5),
-                ("ALIGN", (3, 0), (-1, 0), "RIGHT"),
                 ("ALIGN", (0, 0), (2, 0), "LEFT"),
+                ("ALIGN", (3, 0), (-1, 0), "RIGHT"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 2),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 2),
                 ("TOPPADDING", (0, 0), (-1, -1), 1),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ("BOX", (0, 0), (-1, -1), 0.25, LINE_COLOR),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.2, DETAIL_LINE_COLOR),
+                ("LINEABOVE", (0, 0), (-1, 0), 0.2, DETAIL_LINE_COLOR),
             ]
         )
     )
@@ -277,7 +288,8 @@ def _detail_header_inner(widths: list[float]) -> Table:
 
 
 def _detail_data_inner(line: GlLedgerInvoiceDetailLine, widths: list[float]) -> Table:
-    item, gp, bill, qty, rate, value, gst = _detail_cell_strings(line)
+    """One data row: Item Title | GP | Bill | Qty | Rate | Value | GST | Total."""
+    item, gp, bill, qty, rate, value, gst, total = _detail_cell_strings(line)
     data = [[
         _para(item, DETAIL_ITEM_STYLE),
         gp,
@@ -286,12 +298,12 @@ def _detail_data_inner(line: GlLedgerInvoiceDetailLine, widths: list[float]) -> 
         rate,
         value,
         gst,
+        total,
     ]]
     table = Table(data, colWidths=widths)
     table.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), DETAIL_BG),
                 ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
                 ("FONTSIZE", (0, 0), (-1, -1), 6.5),
                 ("ALIGN", (0, 0), (2, -1), "LEFT"),
@@ -301,47 +313,103 @@ def _detail_data_inner(line: GlLedgerInvoiceDetailLine, widths: list[float]) -> 
                 ("RIGHTPADDING", (0, 0), (-1, -1), 2),
                 ("TOPPADDING", (0, 0), (-1, -1), 1),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                ("BOX", (0, 0), (-1, -1), 0.2, LINE_COLOR),
-                ("LINEBELOW", (0, 0), (-1, -1), 0.15, LINE_COLOR),
+                ("LINEBELOW", (0, 0), (-1, -1), 0.15, DETAIL_LINE_COLOR),
             ]
         )
     )
     return table
 
 
-def _spanned_detail_row(inner: Table) -> list:
-    """Place nested detail table across the full parent ledger width."""
-    row = [""] * 9
-    row[0] = inner
-    return row
-
-
-def _flatten_transactions(
-    transactions: List[GlLedgerDetailedTransactionRow],
+def _detail_block_flowables(
+    lines: list[GlLedgerInvoiceDetailLine],
     detail_widths: list[float],
-) -> list[tuple[str, list]]:
-    """Return list of (kind, row) where kind is tx | detail_hdr | detail."""
-    out: list[tuple[str, list]] = []
-    for tx in transactions:
-        out.append(("tx", _transaction_row(tx)))
-        if not tx.line_details:
-            continue
-        out.append(("detail_hdr", _spanned_detail_row(_detail_header_inner(detail_widths))))
-        for line in tx.line_details:
-            out.append(("detail", _spanned_detail_row(_detail_data_inner(line, detail_widths))))
-    return out
+) -> list:
+    """
+    Indent item-detail to Narration using ReportLab Indenter.
+    Left indent = Date + Voucher + Bn + Voucher + Reference (from parent COL_WIDTHS).
+    Detail table width must fit in remaining frame width or ReportLab compresses the indent.
+    """
+    left_offset = sum(COL_WIDTHS[:COL_NARRATION])
+    inner = _detail_transaction_inner(lines, detail_widths)
+    return [Indenter(left_offset), inner, Indenter(-left_offset)]
 
 
-def _chunk_pairs(items: list[tuple[str, list]], size: int) -> Iterable[list[tuple[str, list]]]:
-    for i in range(0, len(items), size):
-        yield items[i : i + size]
+def _detail_transaction_inner(
+    lines: list[GlLedgerInvoiceDetailLine],
+    widths: list[float],
+) -> Table:
+    """
+    Child item-detail block:
+      header once: Item Title | GP | Bill | Qty | Rate | Value | GST | Total
+      then one row per item (all columns on the same line)
+      then TOTAL row: Qty / Value / GST / Grand Total sums (Rate/GP/Bill blank).
+    """
+    data: list[list] = []
+    data.append([_para(spec.header, DETAIL_HEADER_STYLE) for spec in DETAIL_SPECS])
+    sum_qty = 0.0
+    sum_value = 0.0
+    sum_gst = 0.0
+    sum_total = 0.0
+    for line in lines:
+        item, gp, bill, qty, rate, value, gst, total = _detail_cell_strings(line)
+        data.append([_para(item, DETAIL_ITEM_STYLE), gp, bill, qty, rate, value, gst, total])
+        sum_qty += float(line.qty or 0)
+        sum_value += float(line.value or 0)
+        sum_gst += float(line.gst or 0)
+        line_total = line.line_total
+        if line_total is None:
+            line_total = float(line.value or 0) + float(line.gst or 0)
+        sum_total += float(line_total)
+
+    # TOTAL row — do not sum GP / Bill / Rate
+    data.append(
+        [
+            _para("TOTAL", DETAIL_HEADER_STYLE),
+            "",
+            "",
+            _qty(sum_qty),
+            "",
+            _money(sum_value, always=True),
+            _money(sum_gst) or "-",
+            _money(sum_total, always=True),
+        ]
+    )
+
+    last_data_row = len(data) - 2
+    total_row = len(data) - 1
+    table = Table(data, colWidths=widths)
+    style_cmds: list[tuple] = [
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 6.5),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), CELL_PAD),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+        ("TOPPADDING", (0, 0), (-1, -1), 1),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (0, 0), (2, 0), "LEFT"),
+        ("ALIGN", (3, 0), (-1, 0), "RIGHT"),
+        # Thin light separators only — no BOX / no dark frame / no double rules.
+        ("LINEBELOW", (0, 0), (-1, 0), 0.15, DETAIL_LINE_COLOR),
+        ("ALIGN", (0, 1), (2, last_data_row), "LEFT"),
+        ("ALIGN", (3, 1), (-1, last_data_row), "RIGHT"),
+        ("FONTNAME", (0, total_row), (-1, total_row), "Helvetica-Bold"),
+        ("ALIGN", (0, total_row), (2, total_row), "LEFT"),
+        ("ALIGN", (3, total_row), (-1, total_row), "RIGHT"),
+        ("LINEABOVE", (0, total_row), (-1, total_row), 0.2, DETAIL_LINE_COLOR),
+        ("LINEBELOW", (0, total_row), (-1, total_row), 0.2, DETAIL_LINE_COLOR),
+    ]
+    # Horizontal rules between item rows only (not under last item — TOTAL LINEABOVE).
+    if last_data_row > 1:
+        style_cmds.append(
+            ("LINEBELOW", (0, 1), (-1, last_data_row - 1), 0.1, DETAIL_LINE_COLOR)
+        )
+    table.setStyle(TableStyle(style_cmds))
+    return table
 
 
-def _table_style(
-    header_rows: int = 0,
-    footer_row: int | None = None,
-    span_rows: list[int] | None = None,
-) -> TableStyle:
+def _parent_table(data: list[list], *, header_rows: int = 0, footer_row: int | None = None) -> Table:
+    table = Table(data, colWidths=COL_WIDTHS, repeatRows=0)
     style = TableStyle(
         [
             ("FONTSIZE", (0, 0), (-1, -1), 7),
@@ -360,24 +428,26 @@ def _table_style(
     )
     if header_rows:
         style.add("FONTNAME", (0, 0), (-1, header_rows - 1), "Helvetica-Bold")
-    for r in span_rows or []:
-        style.add("SPAN", (0, r), (-1, r))
-        style.add("LEFTPADDING", (0, r), (-1, r), 1)
-        style.add("RIGHTPADDING", (0, r), (-1, r), 1)
-        style.add("TOPPADDING", (0, r), (-1, r), 1)
-        style.add("BOTTOMPADDING", (0, r), (-1, r), 1)
-        style.add("LINEBELOW", (0, r), (-1, r), 0, colors.white)
+        style.add("SPAN", (0, 0), (-1, 0))
+        style.add("LINEABOVE", (0, 0), (-1, 0), 0.5, LINE_COLOR)
     if footer_row is not None:
         style.add("FONTNAME", (0, footer_row), (-1, footer_row), "Helvetica-Bold")
         style.add("LINEABOVE", (0, footer_row), (-1, footer_row), 0.5, LINE_COLOR)
-    return style
+    table.setStyle(style)
+    return table
 
 
-def _account_tables(
+def _account_flowables(
     section: GlLedgerDetailedAccountSection,
     detail_widths: list[float],
-) -> list[Table]:
-    tables: list[Table] = []
+) -> list:
+    """
+    Parent ledger rows and item-detail blocks as sibling flowables.
+    Detail is a separate table with an explicit left spacer = Date..Reference,
+    so Item Title starts exactly under Narration.
+    """
+    flowables: list = []
+
     account_label = _para(f"{section.ac_id_display}  {section.ac_title}", ACCOUNT_STYLE)
     opening_row = _blank_row()
     opening_row[COL_NARRATION] = "Opening Balance :"
@@ -385,58 +455,44 @@ def _account_tables(
     opening_row[COL_CREDIT] = _money(section.opening_credit)
     opening_row[COL_RUNNING] = _money(section.opening_balance, always=True)
 
-    flat = _flatten_transactions(section.transactions, detail_widths)
-    chunks = list(_chunk_pairs(flat, ROWS_PER_CHUNK)) or [[]]
+    flowables.append(
+        _parent_table(
+            [[account_label, "", "", "", "", "", "", "", ""], opening_row],
+            header_rows=1,
+        )
+    )
 
-    for index, chunk in enumerate(chunks):
-        footer_row = None
-        span_rows: list[int] = []
-        if index == 0:
-            data = [
-                [account_label, "", "", "", "", "", "", "", ""],
-                opening_row,
-            ]
-            header_rows = 1
-            start_idx = 2
-        else:
-            data = []
-            header_rows = 0
-            start_idx = 0
+    for tx in section.transactions:
+        flowables.append(_parent_table([_transaction_row(tx)]))
+        if tx.line_details:
+            flowables.extend(_detail_block_flowables(tx.line_details, detail_widths))
 
-        for offset, (kind, row) in enumerate(chunk):
-            data.append(row)
-            if kind in ("detail", "detail_hdr"):
-                span_rows.append(start_idx + offset)
+    if section.transaction_count > 0:
+        footer = _blank_row()
+        footer[COL_VOUCHER_NO] = _count(section.transaction_count)
+        footer[COL_NARRATION] = _para(
+            f"Number of transaction(s)  |  "
+            f"Qty {_qty(section.total_qty)}  |  "
+            f"Value {_money(section.total_value, always=True)}  |  "
+            f"GST {_money(section.total_gst) or '-'}  |  "
+            f"Grand Total {_money(section.grand_total, always=True)}",
+            DETAIL_ITEM_STYLE,
+        )
+        footer[COL_DEBIT] = _money(section.total_debit, always=True)
+        footer[COL_CREDIT] = _money(section.total_credit, always=True)
+        footer[COL_RUNNING] = "Total:"
+        flowables.append(_parent_table([footer], footer_row=0))
 
-        if section.transaction_count > 0 and index == len(chunks) - 1:
-            footer = _blank_row()
-            footer[COL_VOUCHER_NO] = _count(section.transaction_count)
-            footer[COL_NARRATION] = _para(
-                f"Number of transaction(s)  |  "
-                f"Qty {_qty(section.total_qty)}  |  "
-                f"Value {_money(section.total_value, always=True)}  |  "
-                f"GST {_money(section.total_gst) or '-'}",
-                DETAIL_ITEM_STYLE,
-            )
-            footer[COL_DEBIT] = _money(section.total_debit, always=True)
-            footer[COL_CREDIT] = _money(section.total_credit, always=True)
-            footer[COL_RUNNING] = "Total:"
-            data.append(footer)
-            footer_row = len(data) - 1
-
-        table = Table(data, colWidths=COL_WIDTHS, repeatRows=0)
-        style = _table_style(header_rows, footer_row, span_rows)
-        if index == 0:
-            style.add("SPAN", (0, 0), (-1, 0))
-            style.add("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold")
-            style.add("LINEABOVE", (0, 0), (-1, 0), 0.5, LINE_COLOR)
-        table.setStyle(style)
-        tables.append(table)
-    return tables
+    return flowables
 
 
 def render_gl_ledger_detailed_pdf(report: GlLedgerDetailedReportData) -> bytes:
-    detail_widths = compute_detail_col_widths(_collect_detail_lines(report), USABLE_WIDTH)
+    # Child detail width is derived from the real parent grid:
+    # Narration + Debit + Credit + Running Bal.
+    detail_widths = compute_detail_col_widths(
+        _collect_detail_lines(report),
+        DETAIL_AREA_WIDTH,
+    )
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -452,9 +508,9 @@ def render_gl_ledger_detailed_pdf(report: GlLedgerDetailedReportData) -> bytes:
     story: list = []
 
     for idx, section in enumerate(report.accounts):
-        for table in _account_tables(section, detail_widths):
-            story.append(table)
-            story.append(Spacer(1, 1 * mm))
+        for flowable in _account_flowables(section, detail_widths):
+            story.append(flowable)
+        story.append(Spacer(1, 1 * mm))
         if report.page_wise and idx < len(report.accounts) - 1:
             story.append(PageBreak())
 

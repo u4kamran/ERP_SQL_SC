@@ -82,21 +82,78 @@ class GlLedgerDetailedReportService:
             start_ac_id, end_ac_id, params.date_from, params.date_to
         )
         tx_by_account: dict[int, list] = defaultdict(list)
-        serials: list[int] = []
+        # Classify serials by voucher abbreviation for targeted detail lookups
+        serials_inv: list[int] = []
+        serials_srt: list[int] = []
+        serials_pur: list[int] = []
+        serials_purr: list[int] = []
+        _ABBR_INV = {"INV"}
+        _ABBR_SRT = {"SRT"}
+        _ABBR_PUR = {"PUR"}
+        _ABBR_PURR = {"PURR", "PRT", "PRT_"}
         for row in tx_rows:
             ac = int(row["ac_id"])
             tx_by_account[ac].append(row)
             sn = row.get("SERIAL_NO")
-            if sn is not None:
-                serials.append(int(sn))
+            if sn is None:
+                continue
+            sn_int = int(sn)
+            abbr = str(row.get("VOUCHER_ABBR") or "").strip().upper()
+            if abbr in _ABBR_INV:
+                serials_inv.append(sn_int)
+            elif abbr in _ABBR_SRT:
+                serials_srt.append(sn_int)
+            elif abbr in _ABBR_PUR:
+                serials_pur.append(sn_int)
+            elif abbr in _ABBR_PURR:
+                serials_purr.append(sn_int)
 
+        # Fetch detail from the correct source tables per voucher type
         headers_by_serial: dict[int, dict] = {}
         lines_by_serial: dict[int, list] = {}
-        if params.include_invoice_detail and serials:
-            headers_by_serial = self.repo.fetch_invoice_headers_by_serials(serials)
-            lines_by_serial = self.repo.fetch_invoice_lines_by_serials(
-                list(headers_by_serial.keys())
-            )
+        # Track which value column name each serial uses (SALE_AMT vs PUR_AMT)
+        _val_col_by_serial: dict[int, str] = {}
+
+        if params.include_invoice_detail:
+            # INV — Sales Invoice
+            if serials_inv:
+                inv_hdrs = self.repo.fetch_invoice_headers_by_serials(serials_inv)
+                headers_by_serial.update(inv_hdrs)
+                inv_lines = self.repo.fetch_invoice_lines_by_serials(list(inv_hdrs.keys()))
+                lines_by_serial.update(inv_lines)
+                for sn in inv_hdrs:
+                    _val_col_by_serial[sn] = "SALE_AMT"
+            # SRT — Sale Return
+            if serials_srt:
+                srt_hdrs = self.repo.fetch_sale_return_headers_by_serials(serials_srt)
+                # Normalize header keys: INV_ID → doc_id for display
+                for sn, hdr in srt_hdrs.items():
+                    headers_by_serial[sn] = hdr
+                srt_lines = self.repo.fetch_sale_return_lines_by_serials(list(srt_hdrs.keys()))
+                lines_by_serial.update(srt_lines)
+                for sn in srt_hdrs:
+                    _val_col_by_serial[sn] = "SALE_AMT"
+            # PUR — GRN / Purchase Receipt
+            if serials_pur:
+                pur_hdrs = self.repo.fetch_purchase_headers_by_serials(serials_pur)
+                # Normalize: PROD_ID → INV_ID key for uniform header access
+                for sn, hdr in pur_hdrs.items():
+                    hdr["INV_ID"] = hdr.get("PROD_ID", "")
+                    headers_by_serial[sn] = hdr
+                pur_lines = self.repo.fetch_purchase_lines_by_serials(list(pur_hdrs.keys()))
+                lines_by_serial.update(pur_lines)
+                for sn in pur_hdrs:
+                    _val_col_by_serial[sn] = "PUR_AMT"
+            # PURR — Purchase Return
+            if serials_purr:
+                purr_hdrs = self.repo.fetch_purchase_return_headers_by_serials(serials_purr)
+                for sn, hdr in purr_hdrs.items():
+                    hdr["INV_ID"] = hdr.get("PROD_ID", "")
+                    headers_by_serial[sn] = hdr
+                purr_lines = self.repo.fetch_purchase_return_lines_by_serials(list(purr_hdrs.keys()))
+                lines_by_serial.update(purr_lines)
+                for sn in purr_hdrs:
+                    _val_col_by_serial[sn] = "PUR_AMT"
 
         sections: list[GlLedgerDetailedAccountSection] = []
         for account in accounts:
@@ -118,6 +175,7 @@ class GlLedgerDetailedReportService:
             total_qty = 0.0
             total_value = 0.0
             total_gst = 0.0
+            grand_total = 0.0
             transactions: list[GlLedgerDetailedTransactionRow] = []
 
             for row in tx_by_account.get(ac_id, []):
@@ -147,14 +205,27 @@ class GlLedgerDetailedReportService:
                     header = headers_by_serial[serial_no]
                     gate_pass = str(header.get("GP_ID") or "").strip()
                     bill_no = str(header.get("INV_ID") or "").strip()
+                    val_col = _val_col_by_serial.get(serial_no, "SALE_AMT")
                     for line in lines_by_serial.get(serial_no, []):
                         qty = float(line.get("QTY") or 0)
                         rate = float(line.get("RATE") or 0)
-                        value = float(line.get("SALE_AMT") or 0)
+                        # Value is GST-exclusive: Qty × Rate (matches SALE_AMT/PUR_AMT).
+                        value = round(qty * rate, 4)
+                        stored_amt = float(line.get(val_col) or 0)
+                        if abs(stored_amt) >= 0.0005 and abs(stored_amt - value) > 0.02:
+                            # Prefer stored exclusive amount if qty×rate drifts (rare rounding).
+                            value = stored_amt
+                        # Actual GST amount from the document line (not a guessed %).
                         gst = float(line.get("STAX_AMT") or 0)
+                        # TOTAL_AMT in source = exclusive amt + STAX_AMT when GST applies.
+                        stored_total = float(line.get("TOTAL_AMT") or 0)
+                        line_total = round(value + gst, 4)
+                        if abs(stored_total) >= 0.0005 and abs(stored_total - line_total) <= 0.02:
+                            line_total = stored_total
                         total_qty += qty
                         total_value += value
                         total_gst += gst
+                        grand_total += line_total
                         line_details.append(
                             GlLedgerInvoiceDetailLine(
                                 item_title=str(line.get("ITEM_TITLE") or "").strip(),
@@ -165,6 +236,7 @@ class GlLedgerDetailedReportService:
                                 value=value,
                                 gst=gst if abs(gst) >= 0.0005 else None,
                                 gst_display=_gst_display(gst),
+                                line_total=line_total,
                             )
                         )
 
@@ -199,6 +271,7 @@ class GlLedgerDetailedReportService:
                     total_qty=total_qty,
                     total_value=total_value,
                     total_gst=total_gst,
+                    grand_total=grand_total,
                 )
             )
 

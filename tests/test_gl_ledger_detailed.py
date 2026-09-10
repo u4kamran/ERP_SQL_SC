@@ -159,8 +159,89 @@ def test_build_report_opening_running_and_invoice_detail():
     assert inv.line_details[0].gate_pass == "7918"
     assert inv.line_details[0].bill_no == "264"
     assert inv.line_details[0].gst_display == "-"
+    assert inv.line_details[0].line_total == pytest.approx(6000)  # value + 0 GST
+    # Value from qty×rate for first mock line (5×1200); remaining lines use SALE_AMT from mock
     assert sum(d.value or 0 for d in inv.line_details) == pytest.approx(23450)
     assert section.total_value == pytest.approx(23450)
+    assert section.grand_total == pytest.approx(section.total_value + section.total_gst)
+
+
+def test_item_value_gst_and_grand_total_calculation():
+    """Value = Qty×Rate (GST exclusive); Item Total = Value + GST; Grand = SUM."""
+    db = MagicMock()
+    svc = GlLedgerDetailedReportService(db)
+    svc.repo.fetch_accounts = MagicMock(
+        return_value=[{"ac_id": 1, "ac_title": "TEST", "obal": 0, "cbal": 0}]
+    )
+    svc.repo.fetch_opening_totals = MagicMock(return_value={})
+    svc.repo.fetch_transactions = MagicMock(
+        return_value=[
+            {
+                "ac_id": 1,
+                "VOUCHER_ID": 202,
+                "book_id": 121,
+                "v_mode": 1,
+                "VOUCHER_DATE": date(2026, 7, 24),
+                "FISCAL": 0,
+                "SERIAL_NO": 999,
+                "serial_order": 1,
+                "NARRATION": "Invoice No.  202",
+                "DEBIT": 9500,
+                "CREDIT": 0,
+                "ADCN": "7855",
+                "EXTERNAL_ID": 0,
+                "REF_ID": 0,
+                "VOUCHER_ABBR": "INV",
+            }
+        ]
+    )
+    svc.repo.fetch_invoice_headers_by_serials = MagicMock(
+        return_value={999: {"SERIAL_NO": 999, "INV_ID": 202, "GP_ID": "7855"}}
+    )
+    svc.repo.fetch_invoice_lines_by_serials = MagicMock(
+        return_value={
+            999: [
+                {
+                    "SERIAL_NO": 999,
+                    "QTY": 50,
+                    "RATE": 46,
+                    "SALE_AMT": 2300,
+                    "STAX_AMT": 414,
+                    "TOTAL_AMT": 2714,
+                    "ITEM_TITLE": "POTASIUM IODIDE ***P-211",
+                },
+                {
+                    "SERIAL_NO": 999,
+                    "QTY": 6,
+                    "RATE": 1200,
+                    "SALE_AMT": 7200,
+                    "STAX_AMT": 1296,
+                    "TOTAL_AMT": 8496,
+                    "ITEM_TITLE": "SILICONE RODE ***P-236",
+                },
+            ]
+        }
+    )
+    with patch("app.services.gl_ledger_detailed_service.settings") as mock_settings:
+        mock_settings.gl_ledger_detailed_enabled = True
+        mock_settings.company_name = "Test Co"
+        report = svc.build_report(_params(start_ac_id=1, end_ac_id=1))
+
+    section = report.accounts[0]
+    a, b = section.transactions[0].line_details
+    assert a.value == pytest.approx(50 * 46)
+    assert a.gst == pytest.approx(414)
+    assert a.line_total == pytest.approx(2714)
+    assert b.value == pytest.approx(6 * 1200)
+    assert b.gst == pytest.approx(1296)
+    assert b.line_total == pytest.approx(8496)
+    assert section.total_qty == pytest.approx(56)
+    assert section.total_value == pytest.approx(9500)
+    assert section.total_gst == pytest.approx(1710)
+    assert section.grand_total == pytest.approx(11210)
+    assert section.grand_total == pytest.approx(section.total_value + section.total_gst)
+    # Parent debit unchanged by item totals
+    assert section.transactions[0].debit == pytest.approx(9500)
 
 
 def test_feature_flag_disables_report():
@@ -209,6 +290,7 @@ def test_pdf_includes_detail_and_parent_columns():
                                 rate=1200,
                                 value=6000,
                                 gst_display="-",
+                                line_total=6000,
                             ),
                             GlLedgerInvoiceDetailLine(
                                 item_title="COOPER MOULD TUBE 1000-90 RS-12 (7-4)",
@@ -217,7 +299,9 @@ def test_pdf_includes_detail_and_parent_columns():
                                 qty=1500,
                                 rate=190,
                                 value=285000,
-                                gst_display="-",
+                                gst=51300,
+                                gst_display="51,300.00",
+                                line_total=336300,
                             ),
                         ],
                     )
@@ -227,15 +311,29 @@ def test_pdf_includes_detail_and_parent_columns():
                 transaction_count=1,
                 total_qty=1505,
                 total_value=291000,
+                total_gst=51300,
+                grand_total=342300,
             )
         ],
     )
-    from app.reports.gl_ledger_detailed_pdf import USABLE_WIDTH, compute_detail_col_widths
+    from app.reports.gl_ledger_detailed_pdf import (
+        DETAIL_AREA_WIDTH,
+        USABLE_WIDTH,
+        compute_detail_col_widths,
+    )
 
     widths = compute_detail_col_widths(report.accounts[0].transactions[0].line_details)
-    assert len(widths) == 7
+    assert len(widths) == 8
     assert abs(sum(widths) - USABLE_WIDTH) < 1.0
     assert widths[0] == max(widths)  # item title prioritized
+
+    detail_widths = compute_detail_col_widths(
+        report.accounts[0].transactions[0].line_details,
+        DETAIL_AREA_WIDTH,
+    )
+    assert abs(sum(detail_widths) - DETAIL_AREA_WIDTH) < 1.0
+    assert detail_widths[0] == max(detail_widths)
+
     pdf = render_gl_ledger_detailed_pdf(report)
     assert pdf[:4] == b"%PDF"
     assert len(pdf) > 800
