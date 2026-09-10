@@ -1,0 +1,384 @@
+Private Sub CmdSave_Click()
+
+On Error GoTo TrapError
+
+    Dim iCounter    As Integer
+
+    '
+
+    If Val(TxtID) = 0 Then
+
+        TxtID.SetFocus
+
+        Exit Sub
+
+    End If
+
+    'Temp block the code
+
+'    If Val(TxtRate) = 0 And cAudit = 0 Then
+
+'        MsgBox "Invalid:  Please enter Rate ...  ", vbInformation, "Production Receipt"
+
+'        TxtRate.SetFocus
+
+'        Exit Sub
+
+'    End If
+
+    If Val(TxtQty) = 0 Then
+
+        MsgBox "Invalid:  Please enter Quantity ...  ", vbInformation, "Production Receipt"
+
+        TxtQty.SetFocus
+
+        Exit Sub
+
+    End If
+
+   
+
+    If txtCoID.Text = "" Then
+
+        MsgBox "Invalid:  Please enter Company ID ...  ", vbInformation, "Production Receipt"
+
+        txtCoID.SetFocus
+
+        Exit Sub
+
+    End If
+
+   
+
+       
+
+        
+
+        
+
+        If Not Val(TxtID) < 0 Then
+
+            SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+
+            Set RsOld = FetchAll(SQL)
+
+            If Not (RsOld.EOF And RsOld.BOF) Then
+
+            
+
+            End If
+
+            
+
+        End If
+
+        
+
+        
+
+        
+
+    With Cmd
+
+'        MsgBox Rs!Inv_id
+
+        .ActiveConnection = Con
+
+        '.CommandText = "update fin_item set disc_p1 = " & CDbl(txtMRP.Text) & _
+
+                        " where item_ID = " & CDbl(TxtID.Text)
+
+        .CommandText = "update fin_item set disc_p1 = " & CDbl(txtMRP.Text) & " , STAX_REG = " & Val(TxtStaxRate) & " , oamt1 = " & Format(Val(TxtStaxAmount) / Val(TxtQty), "#######.00") & _
+
+                        " , camt1 = " & Format((Val(TxtAmount) - Val(txtDiscAmt) - Val(txtOffInvDiscAmt)) / Val(TxtQty), "#######.00") & _
+
+                        " , cqty1 = " & Format(CDbl(TxtRate.Text), "#######.00") & _
+
+                        " , co_id = " & txtCoID.Text & _
+
+                        " where item_ID = " & CDbl(TxtID.Text) '& " and STAX_REG = " & Val(TxtStaxRate) & " and oamt1 = " & Val(TxtStaxAmount)
+
+
+
+
+
+        Debug.Print .CommandText
+
+        .Execute
+
+    End With
+
+        
+
+        If Not Val(TxtID) < 0 Then
+
+            SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+
+            Set Rs = FetchAll(SQL)
+
+            If Not (Rs.EOF And Rs.BOF) Then
+
+'                Rs!disc_p1 = CDbl(txtMRP.Text)
+
+'                Rs!STAX_REG = Val(TxtStaxRate)
+
+'                Rs!oamt1 = Format(Val(TxtStaxAmount) / Val(TxtQty), "#######.00")
+
+'                Rs!camt1 = Format((Val(TxtAmount) - Val(txtDiscAmt) - Val(txtOffInvDiscAmt)) / Val(TxtQty), "#######.00")
+
+'                Rs!cqty1 = Format(CDbl(TxtRate.Text), "#######.00")
+
+'
+
+'                Rs.Update
+
+            End If
+
+        End If
+
+        
+
+        Call SaveLogData("FIN_PUR_D", Rs, RsOld, RsOld!Item_ID, RsOld!manualid)
+
+        
+
+        RsOld.Close
+
+        Rs.Close
+
+
+
+    
+
+    
+
+'    Call SaveLogData("PUR_ITEM", Rs, RsOld, RsOld!Item_ID, RsOld!manualid)
+
+    
+
+    ' Check Duplicate item
+
+    'IF CONDITION ADD BY MKB
+
+    'If mEditRowID > 0 Then
+
+    If lEdit = False Then
+
+        With Fin_PurM.VGrid
+
+                'Dim iCounter As Integer
+
+                iCounter = 0
+
+                Do While iCounter + 1 <> .Rows
+
+                    .Row = iCounter + 1
+
+                    .Col = 1
+
+                    If Val(.Text) = Val(TxtID) Then
+
+                        'MsgBox "meditrowid = " & mEditRowID & "   icounter +1 = " & iCounter + 1
+
+                        'IF CONDITION CLOSE BY MKB
+
+                        'If iCounter + 1 <> mEditRowID Then
+
+                            MsgBox "Duplicate: Item ID Already Exists .... ", vbInformation
+
+                            Exit Sub
+
+                        'End If
+
+                    End If
+
+                     iCounter = iCounter + 1
+
+                Loop
+
+        End With
+
+    End If
+
+    '
+
+    With Fin_PurM.VGrid
+
+        If lEdit = False Then
+
+            .Row = nCounter
+
+        Else
+
+            .Row = mEditRowID
+
+        End If
+
+        
+
+        .CellAlignment = 1
+
+        .Col = 1
+
+        .Text = " " & TxtID.Text
+
+        .Col = 2
+
+        .Text = " " & Trim(TxtTitle.Caption)
+
+        '
+
+        .Col = 3
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(TxtQty), "#########.#0")
+
+        '
+
+        .Col = 4
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(TxtRate), "#########.#0")
+
+        '
+
+        .Col = 5
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(TxtRate) * Val(TxtQty), "#########.#0")
+
+        'Stax %
+
+        .Col = 6
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(TxtStaxRate), "#########.#0")
+
+        'Stax amount
+
+        .Col = 7
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(TxtStaxAmount), "#########.#0")
+
+        'Discount
+
+        .Col = 8
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(txtDiscPer), "#########.#0")
+
+        'Discount amount
+
+        .Col = 9
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(txtDiscAmt), "#########.#0")
+
+        '****************************
+
+        'Discount OFF Invoice
+
+        .Col = 10
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(TxtOffInvDiscPer), "#########.#0")
+
+        'Discount amount
+
+        .Col = 11
+
+        .CellAlignment = 6
+
+        .Text = Format(Val(txtOffInvDiscAmt), "#########.#0")
+
+        
+
+        '****************************
+
+        
+
+        '
+
+        'Included amount
+
+        .Col = 12
+
+        .CellAlignment = 6
+
+        '.Text = Format(Val(TxtRate) * Val(TxtQty) + Val(TxtStaxAmount) - Val(txtDiscAmt) - Val(txtOffInvDiscAmt), "#########.#0")
+
+        .Text = Format((((Val(TxtRate) * Val(TxtQty)) + Val(TxtStaxAmount)) - Val(txtDiscAmt)) - Val(txtOffInvDiscAmt), "#########.#0")
+
+        
+
+        ' Remarks
+
+        .Col = 13
+
+        .CellAlignment = 1
+
+        .Text = TxtsRemarks
+
+        
+
+        ' Expiry Date
+
+        .Col = 14
+
+        .CellAlignment = 1
+
+        .Text = Format(TxtExpDate.Value, "dd/MM/yyyy")
+
+        
+
+        
+
+    End With
+
+    mEditRowID = 0
+
+    
+
+    lEdit = False
+
+    If lEdit = True Then
+
+        Unload Me
+
+        Exit Sub
+
+    Else
+
+        nCounter = nCounter + 1
+
+    End If
+
+   '******************************************************
+
+   Call PUpdateBalance
+
+   Call clearform
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+
+
+

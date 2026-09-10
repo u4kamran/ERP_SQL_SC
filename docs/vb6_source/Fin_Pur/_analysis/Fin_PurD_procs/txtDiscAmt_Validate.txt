@@ -1,0 +1,20 @@
+Private Sub txtDiscAmt_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+    If txtDiscAmt.Text = "" Then Exit Sub
+
+    Call Calc_Rate
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+

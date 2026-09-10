@@ -7,7 +7,19 @@ import hmac
 import json
 import logging
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, require_permission
@@ -24,16 +36,28 @@ from app.schemas.whatsapp_bot import (
     OfflineChatRequest,
     OfflineChatResponse,
     StaffReplyRequest,
+    VoiceTranscribeResponse,
     WhatsAppBotConfig,
     WhatsAppBotConfigUpdate,
     WhatsAppBotStatus,
 )
+from app.services.speech_to_text_service import SpeechToTextError, SpeechToTextService
 from app.schemas.whatsapp_order import ChatOrder, ChatOrderStatusUpdate, ChatOrderSummary
+from app.services import voice_search_control_store as voice_control
 from app.services.mobile_otp_service import MobileOtpService
 from app.services.whatsapp_bot_service import WhatsAppBotService
 from app.services.whatsapp_order_service import WhatsAppOrderService
 
 logger = logging.getLogger("ahsteellab")
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    if forwarded:
+        return forwarded[:64]
+    if request.client and request.client.host:
+        return str(request.client.host)[:64]
+    return ""
 
 router = APIRouter()
 public_router = APIRouter()
@@ -136,6 +160,105 @@ async def whatsapp_webhook_receive(
     return {"status": "ok"}
 
 
+@public_router.post("/voice-transcribe", response_model=VoiceTranscribeResponse)
+async def public_voice_transcribe(
+    request: Request,
+    file: UploadFile = File(...),
+    mobile: str = Form(""),
+    language_hint: str = Query(
+        "Urdu or English (Pakistan)",
+        max_length=80,
+        description="Spoken language hint for Gemini STT",
+    ),
+) -> VoiceTranscribeResponse:
+    """Transcribe guest-chat voice notes (mobile-friendly MediaRecorder upload)."""
+    if not settings.whatsapp_bot_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Chatbot is disabled.",
+        )
+    ip = _client_ip(request)
+    ua = (request.headers.get("user-agent") or "")[:180]
+    mobile_key = voice_control.normalize_mobile(mobile)
+    allowed, reason = voice_control.check_allowed(
+        channel="guest",
+        mobile=mobile_key,
+        ip=ip,
+    )
+    if not allowed:
+        voice_control.record_event(
+            channel="guest",
+            mobile=mobile_key,
+            ip=ip,
+            status="blocked",
+            block_reason=reason,
+            user_agent=ua,
+            detail="guest voice-transcribe blocked",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=reason,
+        )
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty audio file.",
+        )
+    if len(raw) < 800:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Voice note too short. Hold mic 1–2 seconds and speak.",
+        )
+    if len(raw) > 4_000_000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Voice note is too large. Keep it under 15 seconds.",
+        )
+    mime = (file.content_type or "audio/webm").split(";")[0].strip() or "audio/webm"
+    stt = SpeechToTextService()
+    if not stt.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Voice STT not configured. Set GEMINI_API_KEY in .env.",
+        )
+    try:
+        text, model, body = stt.transcribe_audio_with_meta(
+            raw,
+            mime_type=mime,
+            language_hint=(language_hint or "").strip() or "Urdu or English (Pakistan)",
+        )
+    except SpeechToTextError as exc:
+        voice_control.record_event(
+            channel="guest",
+            mobile=mobile_key,
+            ip=ip,
+            status="failed",
+            detail=str(exc)[:240],
+            user_agent=ua,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    voice_control.record_event(
+        channel="guest",
+        mobile=mobile_key,
+        ip=ip,
+        search_text=text,
+        status="ok",
+        model=model,
+        body=body,
+        user_agent=ua,
+        detail="guest voice-transcribe",
+    )
+    return VoiceTranscribeResponse(
+        text=text,
+        message=f"Voice transcribed ({stt.provider_label()}).",
+    )
+
+
 @public_router.post("/offline-chat", response_model=OfflineChatResponse)
 def public_offline_chat(
     body: OfflineChatRequest,
@@ -146,14 +269,16 @@ def public_offline_chat(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
-    otp = MobileOtpService()
-    if otp.is_required() and body.phone.strip() and not otp.is_verified(body.phone):
+    otp = MobileOtpService(db)
+    if otp.is_required() and (
+        not body.phone.strip() or not otp.is_verified(body.phone)
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
                 "code": "mobile_not_verified",
                 "message": (
-                    "Please verify your mobile number with the OTP code "
+                    "Please register your mobile number and verify OTP "
                     "before using web chat."
                 ),
             },
@@ -162,14 +287,17 @@ def public_offline_chat(
 
 
 @public_router.post("/mobile-otp/send", response_model=MobileOtpResponse)
-def public_send_mobile_otp(body: MobileOtpSendRequest) -> MobileOtpResponse:
+def public_send_mobile_otp(
+    body: MobileOtpSendRequest,
+    db: Session = Depends(get_business_db),
+) -> MobileOtpResponse:
     if not settings.whatsapp_bot_enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
     try:
-        result = MobileOtpService().send_otp(body.phone)
+        result = MobileOtpService(db).send_otp(body.phone)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -184,20 +312,41 @@ def public_send_mobile_otp(body: MobileOtpSendRequest) -> MobileOtpResponse:
 
 
 @public_router.post("/mobile-otp/verify", response_model=MobileOtpResponse)
-def public_verify_mobile_otp(body: MobileOtpVerifyRequest) -> MobileOtpResponse:
+def public_verify_mobile_otp(
+    body: MobileOtpVerifyRequest,
+    db: Session = Depends(get_business_db),
+) -> MobileOtpResponse:
     if not settings.whatsapp_bot_enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Chatbot is disabled.",
         )
     try:
-        result = MobileOtpService().verify_otp(body.phone, body.code)
+        result = MobileOtpService(db).verify_otp(body.phone, body.code)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
     return MobileOtpResponse(**result)
+
+
+@public_router.get("/mobile-otp/status")
+def public_mobile_otp_status(
+    mobile: str = Query("", max_length=30),
+    db: Session = Depends(get_business_db),
+) -> dict:
+    otp = MobileOtpService(db)
+    verified = False
+    if mobile.strip():
+        verified = otp.is_verified(mobile)
+    required = otp.is_required()
+    return {
+        "required": required,
+        "otp_required": required,
+        "verified": verified,
+        "provider": (getattr(settings, "guest_mobile_otp_provider", "sms_db") or "sms_db"),
+    }
 
 
 @router.get("/status", response_model=WhatsAppBotStatus)

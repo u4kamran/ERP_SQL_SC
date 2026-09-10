@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from app.config.settings import settings
 from app.schemas.guest_price_lookup import GuestPriceLookupResponse, GuestPriceSearchMatch
 from app.schemas.whatsapp_order import ChatOrder, ChatOrderSummary, OrderCartItem
 from app.services import whatsapp_order_store as order_store
-from app.services.guest_price_lookup_service import to_proper_case
+from app.services.guest_price_lookup_service import is_hidden_shop_title, to_proper_case
+
+_PK_TZ = ZoneInfo("Asia/Karachi")
 
 
 class WhatsAppOrderService:
@@ -34,6 +37,18 @@ class WhatsAppOrderService:
             "customer_mobile": customer_mobile or "",
             "customer_address": customer_address or "",
             "notes": "",
+            "order_type": "",
+            "city": "",
+            "area": "",
+            "shop_view": "hub",
+            "shop_category_id": None,
+            "shop_category_title": "",
+            "shop_parent_id": None,
+            "shop_q": "",
+            "shop_page": 1,
+            "shop_has_more": False,
+            "shop_list": [],
+            "shop_promo": False,
         }
 
     def item_from_lookup(
@@ -77,6 +92,8 @@ class WhatsAppOrderService:
         cart: list[dict[str, Any]],
         item: OrderCartItem,
     ) -> list[dict[str, Any]]:
+        if is_hidden_shop_title(item.item_title):
+            return self.purge_hidden_titles(cart)
         rows = list(cart or [])
         for row in rows:
             if int(row.get("manual_id") or 0) == item.manual_id:
@@ -96,9 +113,18 @@ class WhatsAppOrderService:
                 )
                 row.clear()
                 row.update(updated.model_dump())
-                return rows
+                return self.purge_hidden_titles(rows)
         rows.append(item.model_dump())
-        return rows
+        return self.purge_hidden_titles(rows)
+
+    @staticmethod
+    def purge_hidden_titles(cart: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+        """Drop ERP placeholder lines (title starts with Empty) from cart."""
+        return [
+            row
+            for row in (cart or [])
+            if not is_hidden_shop_title(str(row.get("item_title") or ""))
+        ]
 
     def remove_from_cart(
         self,
@@ -109,6 +135,49 @@ class WhatsAppOrderService:
         if 1 <= index <= len(rows):
             rows.pop(index - 1)
         return rows
+
+    def set_cart_qty(
+        self,
+        cart: list[dict[str, Any]],
+        index: int,
+        qty: float,
+    ) -> list[dict[str, Any]]:
+        rows = list(cart or [])
+        if not (1 <= index <= len(rows)):
+            return rows
+        qty = self._safe_qty(qty)
+        row = rows[index - 1]
+        updated = self.item_from_lookup(
+            {
+                "manual_id": row.get("manual_id"),
+                "item_title": row.get("item_title"),
+                "item_short": row.get("item_short"),
+                "barcodeid": row.get("barcodeid"),
+                "uom_title": row.get("uom_title"),
+                "sales_rate": row.get("unit_price") or row.get("sales_rate"),
+                "gst_amount": row.get("gst_amount"),
+                "sales_price_wo_gst": row.get("price_wo_gst")
+                or row.get("sales_price_wo_gst"),
+            },
+            qty,
+        )
+        rows[index - 1] = updated.model_dump()
+        return rows
+
+    def adjust_cart_qty(
+        self,
+        cart: list[dict[str, Any]],
+        index: int,
+        delta: float,
+    ) -> list[dict[str, Any]]:
+        rows = list(cart or [])
+        if not (1 <= index <= len(rows)):
+            return rows
+        current = float(rows[index - 1].get("qty") or 1)
+        new_qty = current + float(delta)
+        if new_qty <= 0:
+            return self.remove_from_cart(rows, index)
+        return self.set_cart_qty(rows, index, new_qty)
 
     def totals(self, cart: list[dict[str, Any]]) -> dict[str, float | int]:
         items = [OrderCartItem(**row) for row in (cart or [])]
@@ -158,9 +227,6 @@ class WhatsAppOrderService:
                 lines.append(f"   {qty} × Rs {unit}")
                 lines.append(f"                 Rs {line_total}")
         lines.append("──────────────────────────")
-        lines.append(f"Subtotal (ex-GST)  Rs {self._money(float(totals['subtotal_wo_gst']))}")
-        lines.append(f"GST                Rs {self._money(float(totals['gst_total']))}")
-        lines.append("──────────────────────────")
         lines.append(f"ORDER TOTAL        Rs {self._money(float(totals['order_total']))}")
         lines.append("══════════════════════════")
         lines.append(
@@ -176,14 +242,7 @@ class WhatsAppOrderService:
         else:
             data = order
         company = settings.company_name or settings.app_name
-        created = data.get("created_at") or ""
-        if isinstance(created, datetime):
-            created_txt = created.strftime("%d %b %Y %H:%M")
-        else:
-            try:
-                created_txt = datetime.fromisoformat(str(created)).strftime("%d %b %Y %H:%M")
-            except ValueError:
-                created_txt = str(created)[:16]
+        created_txt = self._format_order_time(data.get("created_at"))
         cart = data.get("items") or []
         return self._build_receipt(company, data, cart, created_txt)
 
@@ -234,11 +293,6 @@ class WhatsAppOrderService:
         totals = self.totals(norm_cart)
         lines.append("──────────────────────────")
         lines.append(
-            f"Subtotal (ex-GST)  Rs {self._money(float(totals['subtotal_wo_gst']))}"
-        )
-        lines.append(f"GST                Rs {self._money(float(totals['gst_total']))}")
-        lines.append("──────────────────────────")
-        lines.append(
             f"ORDER TOTAL        Rs {self._money(float(totals['order_total']))}"
         )
         lines.append("══════════════════════════")
@@ -258,7 +312,7 @@ class WhatsAppOrderService:
         if not cart:
             raise ValueError("Cart is empty.")
         totals = self.totals(cart)
-        now = datetime.utcnow()
+        now = order_store._now()
         order = {
             "order_id": str(uuid.uuid4()),
             "order_no": order_store.next_order_no(),
@@ -329,6 +383,21 @@ class WhatsAppOrderService:
     @staticmethod
     def pending_count() -> int:
         return order_store.pending_count()
+
+    @staticmethod
+    def _format_order_time(created: Any) -> str:
+        """Show order time in Pakistan local time on receipts."""
+        if isinstance(created, datetime):
+            dt = created
+        else:
+            try:
+                dt = datetime.fromisoformat(str(created).replace("Z", "+00:00"))
+            except ValueError:
+                return str(created)[:16]
+        if dt.tzinfo is None:
+            # Legacy UTC-naive timestamps → treat as UTC, then convert.
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(_PK_TZ).strftime("%d %b %Y %H:%M")
 
     @staticmethod
     def _safe_qty(qty: float) -> float:

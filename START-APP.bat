@@ -17,6 +17,16 @@ echo  For PUBLIC website use: START-SITE.bat  (app + Cloudflare tunnel)
 echo  URL: https://erp.ahsteellab.com
 echo.
 
+schtasks /Query /TN "AHSteelLab-ERP-App" >nul 2>&1
+if %errorlevel%==0 (
+    echo  Always-on ERP tasks are already installed.
+    echo  Do not start this watchdog — it will duplicate port 8000.
+    echo  Use START-ERP-SERVICES.bat instead.
+    echo.
+    pause
+    exit /b 1
+)
+
 if not exist "venv\Scripts\python.exe" (
     echo ERROR: Run INSTALL.bat first.
     pause

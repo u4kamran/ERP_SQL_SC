@@ -1,0 +1,16 @@
+Private Sub Form_KeyUp(Keycode As Integer, Shift As Integer)
+
+'On Error GoTo TrapError
+
+'    Call EnterKeyEnable(Keycode)
+
+'Exit Sub
+
+'TrapError:
+
+'    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

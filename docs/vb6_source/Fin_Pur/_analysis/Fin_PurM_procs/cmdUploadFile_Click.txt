@@ -1,0 +1,248 @@
+Private Sub cmdUploadFile_Click()
+
+'Option Explicit
+
+On Error GoTo TrapError
+
+
+
+    Dim cn As ADODB.Connection
+
+    Dim Cmd As ADODB.Command
+
+    Dim Rs As ADODB.Recordset
+
+'    Dim fileData() As Byte
+
+    Dim filePath As String
+
+    Dim fileName As String
+
+    Dim connectionString As String
+
+    
+
+    If TxtDocID.Text = "" Then
+
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+
+        Exit Sub
+
+    End If
+
+    
+
+    
+
+    If Not CDbl(TxtDocID.Text) > 0 Or TxtDocID.Text = "" Then
+
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+
+        Exit Sub
+
+    End If
+
+    
+
+'''    ' Path to your PDF file
+
+'''    filePath = App.Path & "\upload\" & TxtDocID & ".pdf" '"C:\path\to\your\file.pdf"
+
+'''
+
+'''    ' Connection string
+
+'''    'connectionString = "Provider=SQLOLEDB;Data Source=myServerAddress;Initial Catalog=myDatabase;User ID=myUsername;Password=myPassword;"
+
+'''    If Dir(filePath) = "" Then
+
+'''        MsgBox "File does not exist.", vbExclamation
+
+'''        Exit Sub
+
+'''    End If
+
+'''
+
+'''    ' Read file data into a byte array
+
+'''    Open filePath For Binary As #1
+
+'''    ReDim fileData(LOF(1) - 1)
+
+'''    Get #1, , fileData
+
+'''    Close #1
+
+'''
+
+'''    ' Get the file name from the file path
+
+'''    fileName = Mid(filePath, InStrRev(filePath, "\") + 1)
+
+    
+
+    With CommonDialog1
+
+        .DialogTitle = "Select File to Save"
+
+        .Filter = "All PDF Files (*.PDF)|*.PDF"
+
+        .ShowOpen
+
+    End With
+
+
+
+    ' Check if a file was selected
+
+    If CommonDialog1.fileName <> "" Then
+
+        ' Read the file contents
+
+        Dim fileData() As Byte
+
+        Open CommonDialog1.fileName For Binary As #1
+
+        ReDim fileData(LOF(1) - 1)
+
+        Get #1, , fileData
+
+        Close #1
+
+    Else
+
+        Exit Sub
+
+        
+
+        ' Save file to the database
+
+        'SaveFileToDatabase CInt(TxtVoucherID), SerialCode, CommonDialog1.fileName, fileData
+
+'        SaveFileToDatabase CInt(TxtVoucherID), SerialCode, fileData
+
+    End If
+
+    
+
+    
+
+    ' Create ADO objects
+
+    'Set cn = New ADODB.Connection
+
+    Set Cmd = New ADODB.Command
+
+    
+
+    ' Open connection
+
+    Dim ConDoc As New ADODB.Connection
+
+    Dim strConDocString As String
+
+    
+
+    strConDocString = "Provider=SQLOLEDB.1;Persist Security Info=false;" & _
+
+                    "Server=" & SERVER_NAME & ";" & _
+
+                    "UID=appsuser;" & _
+
+                    "PWD=redgreen;" & _
+
+                    "trusted_connection=no;" & _
+
+                    "Initial Catalog=" & dduser & "_" & nYear & ";" & _
+
+                    "Data Source=" & SERVER_IP  'SERVER_NAME
+
+                    
+
+
+
+    ConDoc.connectionString = strConDocString
+
+    ConDoc.Open
+
+
+
+
+
+
+
+    
+
+    With Cmd
+
+        .ActiveConnection = ConDoc
+
+        .CommandText = "delete from fin_pur_m_doc where prod_id = " & CInt(TxtDocID)
+
+        .CommandType = adCmdText
+
+        .Execute
+
+    End With
+
+    
+
+    
+
+    ' Set up command object
+
+    Set Cmd.ActiveConnection = ConDoc
+
+    Cmd.CommandText = "INSERT INTO  fin_pur_m_doc (prod_id, serial_no, pdf_doc) VALUES (?, ?, ?)"
+
+    Cmd.CommandType = adCmdText
+
+    
+
+    ' Add parameters to the command
+
+    'cmd.Parameters.Append cmd.CreateParameter("FileName", adVarChar, adParamInput, Len(fileName), fileName)
+
+    
+
+    Cmd.Parameters.Append Cmd.CreateParameter("prod_id", adInteger, adParamInput, , CInt(TxtDocID))
+
+    Cmd.Parameters.Append Cmd.CreateParameter("serial_no", adInteger, adParamInput, , SerialCode)
+
+    Cmd.Parameters.Append Cmd.CreateParameter("pdf_doc", adVarBinary, adParamInput, UBound(fileData) + 1, fileData)
+
+    
+
+    ' Execute command
+
+    Cmd.Execute
+
+    
+
+    MsgBox "File uploaded successfully.", vbInformation
+
+    
+
+    ' Cleanup
+
+    Set Cmd = Nothing
+
+    ConDoc.Close
+
+    'Set Con = Nothing
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+    
+
+End Sub
+
+
+
+
+

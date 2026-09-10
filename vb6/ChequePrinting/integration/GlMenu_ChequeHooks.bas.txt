@@ -1,0 +1,62 @@
+'===============================================================================
+' INTEGRATION — GlMenu.frm menu hooks
+' Add under Utilities or Voucher menu. Paste event handlers into GlMenu.
+'===============================================================================
+
+'--- Menu structure (add in form designer) ---
+'
+' MnuCheque
+'   Caption = "Cheque Printing"
+'   MnuChequePrint      = "Print Cheque..."
+'   MnuChequeBatch      = "Batch Print..."
+'   MnuChequeSearch     = "Cheque Register..."
+'   MnuChequeHistory    = "Print Audit..."
+'   MnuChequeDesigner   = "Layout Designer..."
+'   MnuChequeCalibrate  = "Alignment Wizard..."
+'
+
+Private Sub MnuChequePrint_Click()
+    Dim sVoucher As String
+    sVoucher = InputBox("Enter Voucher No to print cheque:", "Print Cheque")
+    If Len(Trim$(sVoucher)) = 0 Then Exit Sub
+    Dim frm As New frmChequePrint
+    Call frm.InitFromVoucher(Trim$(sVoucher))
+    frm.Show vbModal, Me
+End Sub
+
+Private Sub MnuChequeBatch_Click()
+    frmChequeBatch.Show vbModal, Me
+End Sub
+
+Private Sub MnuChequeSearch_Click()
+    frmChequeSearch.Show vbModal, Me
+End Sub
+
+Private Sub MnuChequeHistory_Click()
+    frmChequeHistory.Show vbModal, Me
+End Sub
+
+Private Sub MnuChequeDesigner_Click()
+    frmChequeLayoutDesigner.Show vbModal, Me
+End Sub
+
+Private Sub MnuChequeCalibrate_Click()
+    frmChequeCalibration.Show vbModal, Me
+End Sub
+
+'--- Optional: grant CHEQUE_PERMISSION rows for current user on first login ---
+Public Sub EnsureChequeAdminRights(ByVal sUserID As String)
+    On Error Resume Next
+    Dim codes As Variant
+    Dim i As Long
+    codes = Array("cheque.print", "cheque.reprint", "cheque.preview", _
+                  "cheque.layout.create", "cheque.layout.edit", "cheque.layout.delete", _
+                  "cheque.cancel", "cheque.export_pdf", "cheque.calibrate", _
+                  "cheque.batch", "cheque.history")
+    For i = LBound(codes) To UBound(codes)
+        ChqExecute "IF NOT EXISTS (SELECT 1 FROM CHEQUE_PERMISSION WHERE UserID='" & SqlSafe(sUserID) & _
+                   "' AND PermissionCode='" & codes(i) & "') " & _
+                   "INSERT INTO CHEQUE_PERMISSION (UserID, PermissionCode, Allowed) VALUES ('" & _
+                   SqlSafe(sUserID) & "','" & codes(i) & "',1)"
+    Next i
+End Sub

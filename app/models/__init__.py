@@ -1,6 +1,7 @@
 """ORM models for the authentication system."""
 
 from app.models.audit import AuditLog, LoginHistory
+from app.models.menu import Menu, UserMenuRight
 from app.models.module import Feature, Module
 from app.models.permission import Permission, RolePermission
 from app.models.role import Role, UserRole
@@ -23,4 +24,6 @@ __all__ = [
     "LoginHistory",
     "AuditLog",
     "UserPreference",
+    "Menu",
+    "UserMenuRight",
 ]

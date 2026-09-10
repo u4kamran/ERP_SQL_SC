@@ -7,14 +7,18 @@ let historyLoadedFor = null;
 document.addEventListener('DOMContentLoaded', async () => {
     await Auth.requireAuth();
     if (!Auth.hasPermission('inventory.fin_item.view')) {
-        document.querySelector('.vbc-form').innerHTML = '<div class="alert alert-danger">Access denied.</div>';
+        document.getElementById('item-app').innerHTML = '<div class="alert alert-danger">Access denied.</div>';
         return;
     }
 
     searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
     bindEvents();
+    bindVb6Keyboard();
+    bindSsTabs();
     loadStats();
+    updateActionButtons();
     document.getElementById('manual_id').focus();
+    document.getElementById('manual_id').select?.();
 });
 
 function bindEvents() {
@@ -62,7 +66,173 @@ function bindEvents() {
         }
     });
     document.getElementById('btn-refresh-history').addEventListener('click', refreshHistory);
+
+    bindPrintButtons();
 }
+
+/** VB6-like Enter moves to next control; Shift+Enter goes back (except ID load fields). */
+function bindVb6Keyboard() {
+    const form = document.querySelector('.vb6-form');
+    form.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || e.target.closest('.modal')) return;
+        const id = e.target.id;
+        // ID load fields keep Enter = validate/load (bound separately)
+        if (['item_id', 'manual_id', 'barcodeid', 'barcodeid_ws'].includes(id)) return;
+        if (e.target.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        focusNav(e.target, e.shiftKey ? -1 : 1);
+    });
+}
+
+function focusNav(fromEl, dir) {
+    const list = [...document.querySelectorAll('.vb6-form [data-nav]')]
+        .filter((el) => !el.disabled && !el.readOnly && el.offsetParent !== null)
+        .sort((a, b) => Number(a.dataset.nav) - Number(b.dataset.nav));
+    const idx = list.indexOf(fromEl);
+    if (idx < 0) return;
+    const next = list[idx + dir];
+    if (!next) return;
+    next.focus();
+    if (next.select) next.select();
+}
+
+function bindSsTabs() {
+    document.querySelectorAll('.sstab-headers .sstab').forEach((btn) => {
+        btn.addEventListener('shown.bs.tab', () => {
+            document.querySelectorAll('.sstab-headers .sstab').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+        // Bootstrap Tab needs data-bs-toggle already set; sync active class on click
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sstab-headers .sstab').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+}
+
+function updateActionButtons() {
+    const viewBtn = document.getElementById('btn-view');
+    if (viewBtn) viewBtn.disabled = !!isExisting;
+    const openBal = document.getElementById('btn-opening-bal');
+    if (openBal) openBal.disabled = !isExisting;
+}
+
+function bindPrintButtons() {
+    const map = {
+        'btn-print-rail': 'rail',
+        'btn-print-rail-sm': 'rail-sm',
+        'btn-print-des-exp': 'des-exp',
+        'btn-print-desc': 'desc',
+        'btn-print-label': 'label',
+    };
+    Object.entries(map).forEach(([id, kind]) => {
+        document.getElementById(id)?.addEventListener('click', () => printItemLabel(kind));
+    });
+    document.getElementById('btn-opening-bal')?.addEventListener('click', openOpeningBal);
+    document.getElementById('chkBarPrint')?.addEventListener('click', () => {
+        const el = document.getElementById('barcodeid');
+        el?.focus();
+        el?.select?.();
+    });
+}
+
+function requireLoadedItem() {
+    const itemId = (val('item_id') || '').trim();
+    if (!itemId || itemId === '0') {
+        showAlert('Load an item first (Item ID / Manual ID / Barcode).');
+        return null;
+    }
+    return itemId;
+}
+
+function printItemLabel(kind) {
+    const itemId = requireLoadedItem();
+    if (!itemId) return;
+
+    if (!confirm('Do you want to take a print :  are you sure ? ')) return;
+
+    let hidePrice = false;
+    if (kind === 'desc' || kind === 'des-exp') {
+        hidePrice = confirm('Do you want to hide price :  are you sure ? ');
+    }
+
+    const copies = Math.max(1, parseInt(val('no_of_pur'), 10) || 1);
+    const title = (document.getElementById('item_title')?.textContent || '').trim();
+    const shortName = val('item_short');
+    const barcode = val('barcodeid');
+    const sales = hidePrice ? '' : val('sales_rate');
+    const cost = hidePrice ? '' : val('cost_rate');
+    const company = (document.getElementById('co_title')?.textContent || '').trim();
+
+    const labels = {
+        rail: 'Print Rail',
+        'rail-sm': 'Print Rail SM',
+        'des-exp': 'Print Des Exp',
+        desc: 'Print Desc',
+        label: 'Print Label',
+    };
+
+    const sizeClass = {
+        rail: 'rail',
+        'rail-sm': 'rail-sm',
+        'des-exp': 'des-exp',
+        desc: 'desc',
+        label: 'label',
+    }[kind] || 'desc';
+
+    let cards = '';
+    for (let i = 0; i < (kind === 'rail' ? 1 : copies); i++) {
+        cards += `
+        <div class="card ${sizeClass}">
+            <div class="co">${esc(company)}</div>
+            <div class="id">${esc(itemId)}</div>
+            <div class="title">${esc(title)}</div>
+            <div class="short">${esc(shortName)}</div>
+            <div class="bc">*${esc(barcode)}*</div>
+            ${hidePrice ? '' : `<div class="price">Rs. ${esc(sales || '0.00')}</div>`}
+            ${kind === 'des-exp' && !hidePrice ? `<div class="cost">Cost ${esc(cost || '0.00')}</div>` : ''}
+        </div>`;
+    }
+
+    const html = `<!DOCTYPE html><html><head><title>${labels[kind] || 'Item Print'}</title>
+<style>
+  body { font-family: "MS Sans Serif", Tahoma, sans-serif; margin: 8px; color: #000; }
+  .card { border: 1px solid #000; padding: 6px 8px; margin: 0 0 8px; page-break-inside: avoid; }
+  .card.rail { width: 180px; }
+  .card.rail-sm { width: 140px; font-size: 10px; }
+  .card.desc, .card.des-exp, .card.label { width: 260px; }
+  .co { font-size: 10px; font-weight: 700; }
+  .id { font-size: 12px; font-weight: 700; }
+  .title { font-size: 12px; margin: 2px 0; }
+  .short { font-size: 11px; }
+  .bc { font-family: "Libre Barcode 39", "Courier New", monospace; font-size: 22px; letter-spacing: 1px; margin-top: 4px; }
+  .price { font-size: 16px; font-weight: 700; margin-top: 4px; }
+  .cost { font-size: 11px; }
+  @media print { body { margin: 0; } }
+</style></head><body>${cards}
+<script>window.onload=function(){window.print();}</scr` + `ipt>
+</body></html>`;
+
+    const w = window.open('', '_blank', 'width=420,height=560');
+    if (!w) {
+        showAlert('Pop-up blocked. Allow pop-ups to print.');
+        return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+}
+
+function openOpeningBal() {
+    if (!isExisting) {
+        showAlert('Opening Bal is available only for existing items.');
+        return;
+    }
+    const itemId = requireLoadedItem();
+    if (!itemId) return;
+    showAlert(`Opening Balance for item ${itemId} — Fin_OpBal screen is not migrated yet.`, 'warning');
+}
+
 
 function bindEnterKey(id, loader) {
     document.getElementById(id).addEventListener('keydown', (e) => {
@@ -87,13 +257,19 @@ function showAlert(msg, type = 'danger') {
 }
 
 function setStatus(label) {
-    document.getElementById('status-label').textContent = label;
-    document.getElementById('form-status').textContent = label;
+    const text = label || 'Ready';
+    document.getElementById('status-label').textContent = text;
+    document.getElementById('form-status').textContent = text;
+    const el = document.getElementById('status-label');
+    el.classList.toggle('is-edit', /^edit$/i.test(text));
 }
 
 function val(id) { return document.getElementById(id).value; }
 function numVal(id, fallback = 0) {
-    const n = parseAmount(val(id));
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    const raw = (el.tagName === 'INPUT' || el.tagName === 'SELECT') ? el.value : (el.textContent || '');
+    const n = parseAmount(raw);
     return Number.isNaN(n) ? fallback : n;
 }
 function amountDecimals(id) {
@@ -109,18 +285,20 @@ function set(id, v) {
 function setNumber(id, v, decimals = null) {
     const el = document.getElementById(id);
     if (!el) return;
-    if (v === null || v === undefined || v === '') {
-        el.value = '';
-        return;
+    let text = '';
+    if (!(v === null || v === undefined || v === '')) {
+        const n = parseAmount(v);
+        if (!Number.isNaN(n)) {
+            const places = decimals ?? amountDecimals(id);
+            text = formatAmount(n, places);
+        }
     }
-    const n = parseAmount(v);
-    if (Number.isNaN(n)) {
-        el.value = '';
-        return;
+    if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+        if (el.type === 'number') el.type = 'text';
+        el.value = text;
+    } else {
+        el.textContent = text || '0';
     }
-    const places = decimals ?? amountDecimals(id);
-    if (el.type === 'number') el.type = 'text';
-    el.value = formatAmount(n, places);
 }
 
 const AMOUNT_FIELD_IDS = [
@@ -134,7 +312,7 @@ const AMOUNT_FIELD_IDS = [
 function bindAmountFields() {
     AMOUNT_FIELD_IDS.forEach((id) => {
         const el = document.getElementById(id);
-        if (!el || el.readOnly) return;
+        if (!el || el.tagName !== 'INPUT' || el.readOnly) return;
         el.addEventListener('focus', () => {
             const n = parseAmount(el.value);
             if (!Number.isNaN(n)) el.value = String(n);
@@ -264,7 +442,7 @@ function populateForm(d) {
     historyLoadedFor = null;
 
     set('item_id', fmt(d.item_id));
-    setText('item_title', d.item_title || '—');
+    setText('item_title', d.item_title || 'Item Title');
     set('item_short', fmt(d.item_short));
     set('item_oem', fmt(d.item_oem));
     set('manual_id', fmt(d.manual_id));
@@ -295,7 +473,9 @@ function populateForm(d) {
     setNumber('saved_cost_price', pick(d, 'saved_cost_price', 'COST_RATE'));
     setNumber('tp_rate', pick(d, 'tp_rate', 'CQTY1'));
     setNumber('average_cost', d.average_cost);
+    setNumber('avg_cost_bal', d.average_cost);
     setNumber('profit_percent', d.profit_percent);
+    setNumber('last_pur_pct', 0);
     set('remarks', fmt(d.remarks));
     set('co_id', fmt(d.co_id));
     setText('co_title', d.co_title || '');
@@ -316,6 +496,10 @@ function populateForm(d) {
     setNumber('cqty', d.cqty);
     setNumber('oamt', d.oamt);
     setNumber('camt', d.camt);
+    setNumber('oqty1', d.oqty1);
+    setNumber('cqty1', d.cqty1);
+    setNumber('store_min_disp', d.min_level1);
+    setNumber('store_max_disp', d.max_level1);
 
     fillGrid('grid-purchases', [], true);
     fillGrid('grid-sales', [], false);
@@ -323,6 +507,14 @@ function populateForm(d) {
     setStatus(d.status_label || (isExisting ? 'Edit' : 'New'));
     document.getElementById('item_id').readOnly = true;
     document.getElementById('manual_id').readOnly = isExisting;
+    updateActionButtons();
+
+    if (document.getElementById('chkSetFocus')?.checked) {
+        const focusId = isExisting ? 'sales_rate' : 'item_short';
+        const el = document.getElementById(focusId);
+        el?.focus();
+        el?.select?.();
+    }
 
     if (!isExisting) {
         showAlert('Item category found but no Item Master record yet. Enter details and Save.', 'warning');
@@ -375,11 +567,18 @@ function fillGrid(tableId, rows, withExtra) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-muted">No records</td></tr>';
         return;
     }
-    rows.forEach(r => {
+    rows.forEach((r, idx) => {
         const date = r.doc_date ? new Date(r.doc_date).toLocaleDateString() : '';
         const cells = [r.doc_no, date, r.party_title, formatAmount(r.qty, 0), r.rate != null ? fmtNum(r.rate) : ''];
         if (withExtra) cells.push(r.extra || '');
-        tbody.innerHTML += `<tr>${cells.map(c => `<td>${esc(String(c ?? ''))}</td>`).join('')}</tr>`;
+        const sel = idx === 0 ? ' class="selected"' : '';
+        tbody.innerHTML += `<tr${sel}>${cells.map(c => `<td>${esc(String(c ?? ''))}</td>`).join('')}</tr>`;
+    });
+    tbody.querySelectorAll('tr').forEach((tr) => {
+        tr.addEventListener('click', () => {
+            tbody.querySelectorAll('tr').forEach((x) => x.classList.remove('selected'));
+            tr.classList.add('selected');
+        });
     });
 }
 
@@ -442,9 +641,11 @@ async function validateGl(kind) {
 }
 
 function buildPayload() {
+    let title = (document.getElementById('item_title').textContent || '').trim();
+    if (!title || title === 'Item Title' || title === '—') title = (val('item_short') || '').trim();
     return {
         item_id: parseFloat(val('item_id')),
-        item_title: document.getElementById('item_title').textContent.trim(),
+        item_title: title,
         item_short: val('item_short'),
         item_oem: val('item_oem'),
         manual_id: parseInt(val('manual_id'), 10),
@@ -514,27 +715,38 @@ async function deleteItem() {
 function clearForm() {
     isExisting = false;
     historyLoadedFor = null;
-    document.querySelectorAll('.vbc-form input, .vbc-form select').forEach(el => {
+    document.querySelectorAll('.vb6-form input, .vb6-form select').forEach(el => {
         if (el.type === 'checkbox') {
             el.checked = false;
         } else if (!el.readOnly) {
             el.value = '';
         }
     });
-    document.querySelectorAll('.vbc-form input[readonly], .vbc-form input.vbc-readonly').forEach(el => {
+    document.querySelectorAll('.vb6-form input[readonly], .vb6-form input.ro').forEach(el => {
         el.value = '';
     });
     set('barcodeid', '0');
     set('barcodeid_ws', '0');
-    setText('item_title', '—');
-    ['uom_title', 'country_title', 'co_title', 'gl_sales_title', 'gl_pur_title', 'gl_cons_title', 'gl_disc_title', 'gl_stax_title'].forEach(id => setText(id, ''));
+    set('item_nature', '0');
+    set('no_of_pur', '5');
+    const setFocus = document.getElementById('chkSetFocus');
+    if (setFocus) setFocus.checked = true;
+    setText('item_title', 'Item Title');
+    setText('profit_percent', '%');
+    setText('average_cost', '0');
+    setText('uom_title', '');
+    setText('country_title', 'Country of Origin');
+    setText('co_title', 'Title of Company');
+    ['gl_sales_title', 'gl_pur_title', 'gl_cons_title', 'gl_disc_title', 'gl_stax_title'].forEach(id => setText(id, ''));
+    ['oqty1', 'cqty1', 'store_min_disp', 'store_max_disp', 'avg_cost_bal', 'last_pur_pct'].forEach((id) => setNumber(id, id === 'last_pur_pct' ? 0 : ''));
     fillGrid('grid-purchases', [], true);
     fillGrid('grid-sales', [], false);
-    set('no_of_pur', '5');
     document.getElementById('item_id').readOnly = false;
     document.getElementById('manual_id').readOnly = false;
+    updateActionButtons();
     setStatus('Ready');
     document.getElementById('manual_id').focus();
+    document.getElementById('manual_id').select?.();
 }
 
 function openSearch() {

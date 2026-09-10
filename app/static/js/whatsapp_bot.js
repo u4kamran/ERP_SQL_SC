@@ -46,12 +46,18 @@ async function refreshAll() {
 async function loadStatus() {
     try {
         const status = await Api.get(`${WA_BOT_API}/status`);
-        document.getElementById('st-mode').textContent = status.online_mode ? 'Online' : 'Offline';
+        document.getElementById('st-mode').textContent = status.online_mode
+            ? 'WA delivery ON'
+            : 'WA delivery OFF';
         document.getElementById('st-wa').textContent = status.whatsapp_configured ? 'Ready' : 'Not set';
         document.getElementById('st-chats').textContent = status.conversation_count;
         document.getElementById('st-unread').textContent = status.unread_total;
         document.getElementById('st-orders').textContent = status.pending_orders ?? 0;
-        document.getElementById('config-hint').textContent = status.configuration_hint;
+        const hint = document.getElementById('config-hint');
+        hint.textContent = status.configuration_hint;
+        hint.className = status.whatsapp_configured && status.online_mode
+            ? 'alert alert-success py-2 small'
+            : 'alert alert-warning py-2 small';
         document.getElementById('webhook-url').textContent = status.webhook_url;
     } catch (error) {
         Auth.showAlert('wa-bot-alert', error.message, 'danger');

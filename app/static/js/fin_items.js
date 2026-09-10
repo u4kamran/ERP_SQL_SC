@@ -66,6 +66,7 @@ async function loadItems() {
                 <td>${i.ed_status === 0 ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</td>
                 <td class="text-end table-actions">
                     <button class="btn btn-sm btn-outline-info" onclick='viewItem(${i.item_id})' title="View"><i class="bi bi-eye"></i></button>
+                    ${Auth.hasPermission('inventory.item_images.view') ? `<a class="btn btn-sm btn-outline-secondary" href="/admin/item-images" title="Images" onclick="sessionStorage.setItem('iimg_open_item','${i.item_id}')"><i class="bi bi-images"></i></a>` : ''}
                     ${Auth.hasPermission('inventory.fin_item.update') ? `<button class="btn btn-sm btn-outline-primary" onclick='editItem(${i.item_id})' title="Edit"><i class="bi bi-pencil"></i></button>` : ''}
                     ${Auth.hasPermission('inventory.fin_item.delete') ? `<button class="btn btn-sm btn-outline-danger" onclick='deleteItem(${i.item_id}, "${esc(i.item_title)}")' title="Delete"><i class="bi bi-trash"></i></button>` : ''}
                 </td>

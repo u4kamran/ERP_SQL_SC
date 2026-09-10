@@ -30,7 +30,7 @@ echo.
 if %OK% equ 1 (
     echo  All OK. Open: https://erp.ahsteellab.com/login
 ) else (
-    echo  FIX: Double-click START-ERP.bat and keep window open.
+        echo  FIX: Double-click START-ERP-SERVICES.bat  (or START-ERP.bat)
 )
 echo.
 pause

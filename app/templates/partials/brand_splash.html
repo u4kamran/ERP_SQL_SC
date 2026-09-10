@@ -1,0 +1,15 @@
+{% if site_code == 'arp' %}
+<div id="ahs-splash" class="ahs-splash" role="status" aria-label="{{ brand_short }} loading">
+    <div class="ahs-splash-inner">
+        <img src="{{ brand_logo_url }}" alt="{{ company_name }}">
+    </div>
+</div>
+<script>
+window.addEventListener('load', function () {
+    var el = document.getElementById('ahs-splash');
+    if (!el) return;
+    window.setTimeout(function () { el.classList.add('is-done'); }, 800);
+    window.setTimeout(function () { el.remove(); }, 1500);
+});
+</script>
+{% endif %}

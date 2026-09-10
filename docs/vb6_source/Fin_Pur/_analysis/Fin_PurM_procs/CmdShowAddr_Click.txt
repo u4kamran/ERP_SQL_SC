@@ -1,0 +1,50 @@
+Private Sub CmdShowAddr_Click()
+
+On Error GoTo TrapError
+
+    FrameAddress.Visible = True
+
+    If CmdShowAddr.Caption = "S&how Address" Then
+
+        FrameAddress.Visible = True
+
+        TxtDesc.Visible = True
+
+        TxtAddress.Visible = True
+
+        TxtStaxID.Visible = True
+
+        TxtCityID.Visible = True
+
+        TxtCityTitle.Visible = True
+
+        CmdShowAddr.Caption = "&Hide Address"
+
+    Else
+
+        FrameAddress.Visible = False
+
+        TxtDesc.Visible = False
+
+        TxtAddress.Visible = False
+
+        TxtStaxID.Visible = False
+
+        TxtCityID.Visible = False
+
+        TxtCityTitle.Visible = False
+
+        CmdShowAddr.Caption = "S&how Address"
+
+    End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

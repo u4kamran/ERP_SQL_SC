@@ -6,7 +6,6 @@ import hashlib
 import hmac
 import json
 import logging
-import random
 import secrets
 import threading
 from datetime import datetime, timedelta
@@ -14,6 +13,13 @@ from pathlib import Path
 from typing import Any
 
 from app.config.settings import settings
+from app.database.business_session import BusinessSessionLocal
+from app.services.otp_sms_control_service import (
+    CHANNEL_WEB,
+    assert_otp_config_available,
+    is_channel_otp_required,
+)
+from app.services.sms_db_queue_service import build_otp_sms_body, queue_sms
 from app.services.whatsapp_service import (
     WhatsAppDeliveryError,
     WhatsAppNotConfiguredError,
@@ -71,11 +77,12 @@ def _save(data: dict[str, Any]) -> None:
 class MobileOtpService:
     """Send + verify OTP for guest web chat mobile authentication."""
 
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db
         self.whatsapp = WhatsAppService()
 
     def is_required(self) -> bool:
-        return bool(getattr(settings, "guest_mobile_otp_required", True))
+        return is_channel_otp_required(CHANNEL_WEB, self.db)
 
     def is_verified(self, phone: str) -> bool:
         key = _mobile_key(phone)
@@ -97,13 +104,26 @@ class MobileOtpService:
             return True
 
     def send_otp(self, phone: str) -> dict[str, Any]:
+        control = assert_otp_config_available(self.db)
         key = _mobile_key(phone)
+        display = "0" + key if key else ""
+        if not control["web_effective"]:
+            return {
+                "ok": True,
+                "otp_required": False,
+                "phone": display,
+                "expires_in": None,
+                "sent_via": None,
+                "verified": False,
+                "message": "OTP verification is not required.",
+            }
         if not key:
             raise ValueError("Enter a valid Pakistan mobile number.")
         storage_phone = normalize_pk_phone(phone) or f"92{key}"
-        display = "0" + key
 
-        with _LOCK:
+        if not _LOCK.acquire(timeout=5):
+            raise RuntimeError("OTP service is busy. Please try again.")
+        try:
             data = _load()
             pending = data["pending"].get(key) or {}
             last_sent = pending.get("sent_at")
@@ -113,10 +133,10 @@ class MobileOtpService:
                     if elapsed < RESEND_COOLDOWN_SECONDS:
                         wait = int(RESEND_COOLDOWN_SECONDS - elapsed)
                         raise ValueError(f"Please wait {wait}s before requesting another code.")
-                except ValueError:
-                    pass
-
-            code = f"{random.randint(0, 999999):06d}"
+                except ValueError as exc:
+                    if str(exc).startswith("Please wait"):
+                        raise
+            code = f"{secrets.randbelow(1_000_000):06d}"
             salt = secrets.token_hex(8)
             data["pending"][key] = {
                 "code_hash": _hash_code(code, salt),
@@ -127,14 +147,17 @@ class MobileOtpService:
                 "phone": storage_phone,
             }
             _save(data)
+        finally:
+            _LOCK.release()
 
         sent_via = self._deliver(storage_phone, code, display)
         result: dict[str, Any] = {
             "ok": True,
+            "otp_required": True,
             "phone": display,
             "expires_in": OTP_TTL_SECONDS,
             "sent_via": sent_via,
-            "message": f"Verification code sent to {display} via {sent_via}.",
+            "message": f"Verification code sent to {display} by SMS.",
         }
         # Dev-only echo so local testing works without WhatsApp/SMS gateway.
         if (
@@ -146,7 +169,18 @@ class MobileOtpService:
         return result
 
     def verify_otp(self, phone: str, code: str) -> dict[str, Any]:
+        control = assert_otp_config_available(self.db)
         key = _mobile_key(phone)
+        display = "0" + key if key else ""
+        if not control["web_effective"]:
+            return {
+                "ok": True,
+                "otp_required": False,
+                "phone": display,
+                "verified": False,
+                "message": "OTP verification is not required.",
+            }
+
         clean_code = "".join(ch for ch in (code or "") if ch.isdigit())
         if not key or len(clean_code) != 6:
             raise ValueError("Enter the 6-digit verification code.")
@@ -189,34 +223,53 @@ class MobileOtpService:
         display = "0" + key
         return {
             "ok": True,
+            "otp_required": True,
             "phone": display,
             "verified": True,
             "message": f"Mobile {display} verified successfully.",
         }
 
     def _deliver(self, storage_phone: str, code: str, display: str) -> str:
-        company = settings.company_name or settings.app_name
-        text = (
-            f"{company} verification code: *{code}*\n"
-            f"Valid for {OTP_TTL_SECONDS // 60} minutes.\n"
-            "Do not share this code."
-        )
-        if self.whatsapp.is_configured() and settings.whatsapp_enabled:
+        body = build_otp_sms_body(code, ttl_seconds=OTP_TTL_SECONDS)
+        digits = "".join(ch for ch in (storage_phone or "") if ch.isdigit())
+        if len(digits) < 10:
+            raise RuntimeError("Enter a valid Pakistan mobile number.")
+        recipient = digits if digits.startswith("92") else f"92{digits[-10:]}"
+
+        # Always insert SMS_DB_ first (same path as the customer app).
+        # SendSMSActive reads this table — WhatsApp must not skip the insert.
+        db = self.db
+        owned_session = False
+        if db is None:
+            db = BusinessSessionLocal()
+            owned_session = True
+        try:
+            sms_id = queue_sms(db, body=body, recipient=recipient, commit=True)
+            logger.info(
+                "Guest chat OTP queued to SMS_DB_ id=%s recipient=%s",
+                sms_id,
+                recipient,
+            )
+        except Exception as exc:
+            logger.exception("Guest chat OTP SMS_DB_ insert failed for %s", display)
+            if owned_session:
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+            raise RuntimeError(
+                "Could not queue SMS OTP. Please try again."
+            ) from exc
+        finally:
+            if owned_session:
+                db.close()
+
+        provider = (getattr(settings, "guest_mobile_otp_provider", "sms_db") or "sms_db").lower().strip()
+        if provider in {"whatsapp", "auto"}:
             try:
-                self.whatsapp.send_text(storage_phone, text)
-                return "whatsapp"
+                self.whatsapp.send_text(storage_phone, body)
+                logger.info("Guest chat OTP also sent via WhatsApp to %s", display)
             except (WhatsAppNotConfiguredError, WhatsAppDeliveryError) as exc:
-                logger.warning("OTP WhatsApp delivery failed: %s", exc)
+                logger.warning("Guest chat OTP WhatsApp extra send failed for %s: %s", display, exc)
 
-        if (
-            settings.app_env.lower() in {"development", "dev", "local"}
-            and getattr(settings, "guest_mobile_otp_dev_echo", False)
-        ):
-            logger.info("DEV OTP for %s: %s", display, code)
-            return "dev"
-
-        raise RuntimeError(
-            "Cannot authenticate mobile on web: WhatsApp API is not configured "
-            "to send the OTP. Set WHATSAPP_ENABLED=true with Cloud API credentials, "
-            "or enable GUEST_MOBILE_OTP_DEV_ECHO=true for local testing only."
-        )
+        return "sms"

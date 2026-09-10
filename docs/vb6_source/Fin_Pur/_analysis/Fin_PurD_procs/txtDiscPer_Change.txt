@@ -1,0 +1,20 @@
+Private Sub txtDiscPer_Change()
+
+'    If Val(txtDiscPer) = 0 Then
+
+'        txtDiscAmt.Enabled = True
+
+'    Else
+
+'        txtDiscAmt.Enabled = False
+
+'    End If
+
+'    If txtDiscPer.Text = "" Then Exit Sub
+
+'    Call Calc_Rate
+
+End Sub
+
+
+

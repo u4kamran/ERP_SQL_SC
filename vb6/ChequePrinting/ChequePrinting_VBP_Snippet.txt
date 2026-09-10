@@ -1,0 +1,27 @@
+'===============================================================================
+' Add these modules to your VB6 .vbp (Project → Add File)
+' Paths relative to vb6/ChequePrinting/
+'===============================================================================
+'
+' Module=modChequeEnums;modChequeEnums.bas
+' Module=modChequeWinAPI;modChequeWinAPI.bas
+' Module=modChequeUtils;modChequeUtils.bas
+' Class=clsLayoutObject;clsLayoutObject.cls
+' Class=clsLayoutCacheEntry;clsLayoutCacheEntry.cls
+' Class=clsAmountToWords;clsAmountToWords.cls
+' Class=clsPrinterManager;clsPrinterManager.cls
+' Class=clsLayoutManager;clsLayoutManager.cls
+' Class=clsChequeData;clsChequeData.cls
+' Class=clsChequeAudit;clsChequeAudit.cls
+' Class=clsChequePrinter;clsChequePrinter.cls
+' Form=frmChequePrint.frm
+' Form=frmChequeLayoutDesigner.frm
+' Form=frmChequeCalibration.frm
+' Form=frmChequeHistory.frm
+' Form=frmChequeSearch.frm
+' Form=frmChequeBatch.frm
+'
+' Object={5E9E78A0-531B-11CF-91F6-C2863C385E30}#1.0#0; MSFLXGRD.OCX
+' Object={86CF1D34-0C5F-11D2-A9FC-0000F8754DA1}#2.0#0; MSCOMCT2.OCX
+' Reference=*\G{00000205-0000-0010-8000-00AA006D2EA4}#2.5#0#...\msado25.tlb#Microsoft ActiveX Data Objects 2.5 Library
+'

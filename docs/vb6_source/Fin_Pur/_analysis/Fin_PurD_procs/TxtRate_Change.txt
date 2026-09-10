@@ -1,0 +1,32 @@
+Private Sub TxtRate_Change()
+
+On Error GoTo TrapError
+
+    If Val(TxtRate.Text) <> 0 Then
+
+        If lblSale.Caption <> 0 Then
+
+            Dim RateDiff As Integer
+
+            RateDiff = Val(lblSale.Caption) - Val(TxtRate.Text)
+
+            'lblProfitPer.Caption = Format((100 - ((Val(txtrate.text) / Val(lblsale.caption)) * 100)), "########.#0")
+
+            'lblProfitPer.Caption = CDbl(Format(((RateDiff * 100) / (Val(txtrate.text))), "########.#0"))
+
+            lblProfitPer.Caption = CDbl(Format(((RateDiff / Val(TxtRate.Text) * 100)), "########.#0"))
+
+        End If
+
+    End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

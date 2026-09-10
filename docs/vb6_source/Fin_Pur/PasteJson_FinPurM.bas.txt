@@ -1,0 +1,438 @@
+'*********************************************************************
+' Paste JSON
+' Copy the invoice JSON, then press this button. Each item is matched
+' on manual id, the amount is recalculated as Qty x Rate, and the row
+' is written to VGrid in the same columns Fin_PurD.CmdSave_Click uses.
+' Nothing is posted to the document until CmdSave is pressed.
+'*********************************************************************
+Private Sub CmdPasteJson_Click()
+On Error GoTo TrapError
+    Dim sJson       As String
+    Dim sItems      As String
+    Dim colItems    As Collection
+    Dim vItem       As Variant
+    Dim sObj        As String
+    Dim sLabel      As String
+    Dim sSkipped    As String
+    Dim nAdded      As Integer
+    Dim nSkipped    As Integer
+    Dim mManualID   As Double
+    Dim mItemID     As Double
+    Dim mQty        As Double
+    Dim mRate       As Double
+    Dim mAmount     As Double
+    Dim mDiscAmt    As Double
+    Dim mDiscPer    As Double
+    Dim mStaxRate   As Double
+    Dim mStaxAmt    As Double
+    Dim mTotalAmt   As Double
+    Dim mTitle      As String
+    Dim mCoID       As String
+    Dim RsMan       As ADODB.Recordset
+    Dim RsItm       As ADODB.Recordset
+    Dim CmdUpd      As ADODB.Command
+    Dim cSQL        As String
+
+    If Val(TxtID) = 0 Then
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+        TxtID.SetFocus
+        Exit Sub
+    End If
+
+    sJson = Trim(Clipboard.GetText)
+    If Len(sJson) = 0 Then
+        MsgBox "No JSON on the clipboard. Copy the invoice JSON first ...", vbInformation, cSelFormId
+        Exit Sub
+    End If
+
+    sItems = JsonArray(sJson, "items")
+    If Len(sItems) = 0 Then sItems = JsonArray(sJson, "lines")
+    If Len(sItems) = 0 Then
+        MsgBox "JSON has no 'items' list ...", vbInformation, cSelFormId
+        Exit Sub
+    End If
+
+    Set colItems = JsonObjects(sItems)
+    If colItems.Count = 0 Then
+        MsgBox "JSON has no item rows ...", vbInformation, cSelFormId
+        Exit Sub
+    End If
+
+    Screen.MousePointer = vbHourglass
+    For Each vItem In colItems
+        sObj = CStr(vItem)
+        sLabel = JsonValue(sObj, "description")
+        If Len(sLabel) = 0 Then sLabel = JsonValue(sObj, "item_title")
+
+        If nCounter > max_entries Then
+            Screen.MousePointer = vbDefault
+            MsgBox "Limit of Transactions exahausted " & Chr(13) & "Consult default values ...", vbInformation, cSelFormId
+            Exit For
+        End If
+
+        mManualID = JsonNum(JsonValue(sObj, "manual_id"))
+        If mManualID = 0 Then mManualID = JsonNum(JsonValue(sObj, "manualid"))
+        If mManualID = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Manual ID missing."
+            GoTo NextItem
+        End If
+
+        cSQL = "select * from v_fin_item where manualid = " & JsonSqlNum(mManualID)
+        Set RsMan = FetchAll(cSQL)
+        If RsMan.EOF And RsMan.BOF Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Manual ID " & JsonSqlNum(mManualID) & " not found."
+            RsMan.Close
+            GoTo NextItem
+        End If
+        mItemID = Val("" & RsMan!Item_ID)
+        RsMan.Close
+
+        cSQL = "select * from FIN_ITEM where item_id=" & JsonSqlNum(mItemID)
+        Set RsItm = FetchAll(cSQL)
+        If RsItm.EOF And RsItm.BOF Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Item ID not found, please re-enter ... "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        If Val("" & RsItm!ed_status) = 1 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Item ID is Disabled, Consultant Administrator .... "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        mCoID = Trim("" & RsItm!co_id)
+        If Len(mCoID) = 0 Or Val(mCoID) = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Invalid:  Please enter Company ID ...  "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        If JsonGridHasItem(mItemID) Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Duplicate: Item ID Already Exists .... "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        mQty = JsonNum(JsonValue(sObj, "qty"))
+        If mQty = 0 Then mQty = JsonNum(JsonValue(sObj, "quantity"))
+        If mQty = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Invalid:  Please enter Quantity ...  "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        ' Rate first, then Qty x Rate. A printed amount is only used to
+        ' derive a missing rate, never as the line amount itself.
+        mRate = JsonNum(JsonValue(sObj, "rate"))
+        mAmount = JsonNum(JsonValue(sObj, "amount"))
+        If mRate = 0 And mAmount <> 0 Then mRate = mAmount / mQty
+        If mRate = 0 Then mRate = Val("" & RsItm!Cqty1)
+        If mRate = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : No Rate and no Amount to work it out."
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        mTitle = "" & RsItm!Item_Title & " --- " & "" & RsItm!manualid
+        mStaxRate = Val("" & RsItm!STAX_REG)
+        mDiscAmt = JsonR2(JsonNum(JsonValue(sObj, "discount")))
+        ' S-Tax Amt comes from "tax", or "gst" / "sales_tax" / "stax_amt"
+        mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "tax")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "gst")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "sales_tax")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "stax_amt")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "gst_amount")))
+        mAmount = JsonR2(mRate * mQty)
+        If mAmount <> 0 Then mDiscPer = JsonR2((mDiscAmt / mAmount) * 100)
+        mTotalAmt = JsonR2(((mAmount + mStaxAmt) - mDiscAmt))
+
+        ' Same FIN_ITEM update Fin_PurD does when a line is saved by hand
+        Set CmdUpd = New ADODB.Command
+        With CmdUpd
+            .ActiveConnection = Con
+            .CommandText = "update fin_item set disc_p1 = " & JsonSqlNum(Val("" & RsItm!disc_p1)) & _
+                           " , STAX_REG = " & JsonSqlNum(mStaxRate) & _
+                           " , oamt1 = " & JsonSqlNum(mStaxAmt / mQty) & _
+                           " , camt1 = " & JsonSqlNum((mAmount - mDiscAmt) / mQty) & _
+                           " , cqty1 = " & JsonSqlNum(mRate) & _
+                           " , co_id = " & Trim(mCoID) & _
+                           " where item_ID = " & JsonSqlNum(mItemID)
+            .CommandType = adCmdText
+            .Execute
+        End With
+        Set CmdUpd = Nothing
+        RsItm.Close
+
+        With VGrid
+            .Row = nCounter
+            .CellAlignment = 1
+            .Col = 1
+            .Text = " " & Format(mItemID, "0")
+            .Col = 2
+            .Text = " " & Trim(mTitle)
+            .Col = 3
+            .CellAlignment = 6
+            .Text = Format(mQty, "#########.#0")
+            .Col = 4
+            .CellAlignment = 6
+            .Text = Format(mRate, "#########.#0")
+            .Col = 5
+            .CellAlignment = 6
+            .Text = Format(mAmount, "#########.#0")
+            'Stax %
+            .Col = 6
+            .CellAlignment = 6
+            .Text = Format(mStaxRate, "#########.#0")
+            'Stax amount
+            .Col = 7
+            .CellAlignment = 6
+            .Text = Format(mStaxAmt, "#########.#0")
+            'Discount
+            .Col = 8
+            .CellAlignment = 6
+            .Text = Format(mDiscPer, "#########.#0")
+            'Discount amount
+            .Col = 9
+            .CellAlignment = 6
+            .Text = Format(mDiscAmt, "#########.#0")
+            'Discount OFF Invoice
+            .Col = 10
+            .CellAlignment = 6
+            .Text = Format(0, "#########.#0")
+            .Col = 11
+            .CellAlignment = 6
+            .Text = Format(0, "#########.#0")
+            'Included amount
+            .Col = 12
+            .CellAlignment = 6
+            .Text = Format(mTotalAmt, "#########.#0")
+            ' Remarks
+            .Col = 13
+            .CellAlignment = 1
+            .Text = JsonValue(sObj, "remarks")
+            ' Expiry Date
+            .Col = 14
+            .CellAlignment = 1
+            .Text = Format(TxtDocDAte.Value, "dd/MM/yyyy")
+        End With
+
+        nCounter = nCounter + 1
+        nAdded = nAdded + 1
+        mDiscPer = 0
+NextItem:
+    Next
+
+    Screen.MousePointer = vbDefault
+    Call UpdateBalance
+    If nCounter > 1 Then
+        TxtDocID.Enabled = False
+        CmdSave.Enabled = True
+        CmdDelete.Enabled = True
+        CmdDiscount.Enabled = True
+    End If
+
+    If nSkipped > 0 Then
+        MsgBox nAdded & " Items Added successfully." & Chr(13) & Chr(13) & _
+               "Skipped " & nSkipped & " :" & sSkipped, vbInformation, cSelFormId
+    Else
+        MsgBox nAdded & " Items Added successfully.", vbOKOnly, cSelFormId
+    End If
+Exit Sub
+TrapError:
+    Screen.MousePointer = vbDefault
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+' True when the item is already sitting in the grid (same check Fin_PurD makes)
+Private Function JsonGridHasItem(ByVal mID As Double) As Boolean
+On Error GoTo TrapError
+    Dim iCounter As Integer
+    With VGrid
+        iCounter = 0
+        Do While iCounter + 1 <> .Rows
+            .Row = iCounter + 1
+            .Col = 1
+            If Val(.Text) = mID Then
+                JsonGridHasItem = True
+                Exit Function
+            End If
+            iCounter = iCounter + 1
+        Loop
+    End With
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Text between the brackets of  "name" : [ ... ]  , "" when not present
+Private Function JsonArray(ByVal sJson As String, ByVal sName As String) As String
+On Error GoTo TrapError
+    Dim nPos As Long, nStart As Long, nDepth As Long, i As Long
+    Dim ch As String, bInStr As Boolean
+    nPos = InStr(1, sJson, """" & sName & """", vbTextCompare)
+    If nPos = 0 Then Exit Function
+    nStart = InStr(nPos, sJson, "[")
+    If nStart = 0 Then Exit Function
+    nDepth = 0
+    bInStr = False
+    For i = nStart To Len(sJson)
+        ch = Mid$(sJson, i, 1)
+        If bInStr Then
+            If ch = "\" Then
+                i = i + 1
+            ElseIf ch = """" Then
+                bInStr = False
+            End If
+        Else
+            If ch = """" Then
+                bInStr = True
+            ElseIf ch = "[" Then
+                nDepth = nDepth + 1
+            ElseIf ch = "]" Then
+                nDepth = nDepth - 1
+                If nDepth = 0 Then
+                    JsonArray = Mid$(sJson, nStart + 1, i - nStart - 1)
+                    Exit Function
+                End If
+            End If
+        End If
+    Next
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Splits an array body into its top level { } objects
+Private Function JsonObjects(ByVal sArray As String) As Collection
+On Error GoTo TrapError
+    Dim col As New Collection
+    Dim i As Long, nDepth As Long, nStart As Long
+    Dim ch As String, bInStr As Boolean
+    nDepth = 0
+    nStart = 0
+    bInStr = False
+    For i = 1 To Len(sArray)
+        ch = Mid$(sArray, i, 1)
+        If bInStr Then
+            If ch = "\" Then
+                i = i + 1
+            ElseIf ch = """" Then
+                bInStr = False
+            End If
+        Else
+            If ch = """" Then
+                bInStr = True
+            ElseIf ch = "{" Then
+                If nDepth = 0 Then nStart = i
+                nDepth = nDepth + 1
+            ElseIf ch = "}" Then
+                nDepth = nDepth - 1
+                If nDepth = 0 And nStart > 0 Then
+                    col.Add Mid$(sArray, nStart, i - nStart + 1)
+                    nStart = 0
+                End If
+            End If
+        End If
+    Next
+    Set JsonObjects = col
+Exit Function
+TrapError:
+    Set JsonObjects = New Collection
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Scalar value of a key inside one object, "" when not present
+Private Function JsonValue(ByVal sObj As String, ByVal sKey As String) As String
+On Error GoTo TrapError
+    Dim nPos As Long, i As Long
+    Dim ch As String, sOut As String
+    nPos = InStr(1, sObj, """" & sKey & """", vbTextCompare)
+    If nPos = 0 Then Exit Function
+    i = nPos + Len(sKey) + 2
+    Do While i <= Len(sObj)
+        ch = Mid$(sObj, i, 1)
+        If ch = ":" Then
+            i = i + 1
+            Exit Do
+        ElseIf Not JsonIsWhite(ch) Then
+            Exit Function
+        End If
+        i = i + 1
+    Loop
+    Do While i <= Len(sObj)
+        If Not JsonIsWhite(Mid$(sObj, i, 1)) Then Exit Do
+        i = i + 1
+    Loop
+    If i > Len(sObj) Then Exit Function
+    If Mid$(sObj, i, 1) = """" Then
+        i = i + 1
+        Do While i <= Len(sObj)
+            ch = Mid$(sObj, i, 1)
+            If ch = "\" Then
+                i = i + 1
+                sOut = sOut & Mid$(sObj, i, 1)
+            ElseIf ch = """" Then
+                Exit Do
+            Else
+                sOut = sOut & ch
+            End If
+            i = i + 1
+        Loop
+    Else
+        Do While i <= Len(sObj)
+            ch = Mid$(sObj, i, 1)
+            If ch = "," Or ch = "}" Or ch = "]" Then Exit Do
+            sOut = sOut & ch
+            i = i + 1
+        Loop
+    End If
+    JsonValue = Trim(sOut)
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Number out of a JSON scalar. Val() is used so the decimal point is
+' read the same way whatever the machine's regional settings are.
+Private Function JsonNum(ByVal sVal As String) As Double
+On Error GoTo TrapError
+    Dim i As Long, ch As String, s As String
+    For i = 1 To Len(sVal)
+        ch = Mid$(sVal, i, 1)
+        If (ch >= "0" And ch <= "9") Or ch = "." Or ch = "-" Then s = s & ch
+    Next
+    If Len(s) = 0 Then Exit Function
+    JsonNum = Val(s)
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Space, tab, carriage return or line feed
+Private Function JsonIsWhite(ByVal ch As String) As Boolean
+    JsonIsWhite = (ch = " " Or ch = Chr(9) Or ch = Chr(13) Or ch = Chr(10))
+End Function
+
+' Two decimal rounding
+Private Function JsonR2(ByVal d As Double) As Double
+    If d >= 0 Then
+        JsonR2 = Int((d * 100) + 0.5) / 100
+    Else
+        JsonR2 = -Int(((-d) * 100) + 0.5) / 100
+    End If
+End Function
+
+' Number written for SQL, always with a dot whatever the locale is
+Private Function JsonSqlNum(ByVal d As Double) As String
+    JsonSqlNum = Trim(Str(JsonR2(d)))
+End Function
+

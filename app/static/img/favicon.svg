@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SDS">
+  <defs>
+    <linearGradient id="g" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0a9a2a"/>
+      <stop offset="100%" stop-color="#008000"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#g)"/>
+  <path d="M14 20h36v5c0 .8-.7 1.5-1.5 1.5h-33C14.7 26.5 14 25.8 14 25v-5z" fill="#fff"/>
+  <path d="M17 20v-2.2M24 20v-2.2M31 20v-2.2M38 20v-2.2M45 20v-2.2" stroke="#0a7a22" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="18" y="29" width="28" height="20" rx="2" fill="#fff"/>
+  <rect x="22" y="32" width="8" height="8" rx="1" fill="#0a7a22"/>
+  <rect x="34" y="32" width="8" height="8" rx="1" fill="#0a7a22"/>
+  <rect x="28" y="42" width="8" height="7" rx="1" fill="#0a7a22"/>
+  <text x="32" y="58" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="7" font-weight="700" fill="#fff" letter-spacing="1">SDS</text>
+</svg>

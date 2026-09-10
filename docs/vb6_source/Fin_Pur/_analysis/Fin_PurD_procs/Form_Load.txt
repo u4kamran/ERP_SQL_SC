@@ -1,0 +1,138 @@
+Private Sub Form_Load(): Call FormDisplaySetting(Me)
+
+On Error GoTo TrapError
+
+    '
+
+'    If Mid(Trim(cUPwordStr), 1, 1) = 0 Then
+
+'        CmdItem.Enabled = False
+
+'    End If
+
+    
+
+    TxtExpDate.Value = nDate
+
+    
+
+    If Mid(Trim(cUPwordStr), 22, 1) = 0 Then
+
+       CmdItem.Enabled = False
+
+    End If
+
+  
+
+    
+
+    Caption = cName
+
+    TxtID.MaxLength = cFinSeg1 + cFinSeg2 + cFinSeg3 + cFinSeg4
+
+'    cFoundFlag = False
+
+   If lEdit = True Then
+
+        With Fin_PurM.VGrid
+
+            mEditRowID = .Row
+
+            .Col = 1
+
+            TxtID.Text = Trim(.Text)
+
+            .Col = 2
+
+            TxtTitle.Caption = "" & Trim(.Text)
+
+            .Col = 3
+
+            TxtQty.Text = .Text
+
+            .Col = 4
+
+            TxtRate.Text = .Text
+
+            .Col = 5
+
+            TxtAmount.Caption = .Text
+
+            
+
+            .Col = 6
+
+            TxtStaxRate.Text = .Text
+
+            .Col = 7
+
+            TxtStaxAmount.Text = .Text
+
+            
+
+            .Col = 8
+
+            txtDiscPer.Text = .Text
+
+            .Col = 9
+
+            txtDiscAmt.Text = .Text
+
+            
+
+            .Col = 10
+
+            TxtOffInvDiscPer.Text = .Text
+
+            
+
+            .Col = 11
+
+            txtOffInvDiscAmt.Text = .Text
+
+            
+
+            
+
+            .Col = 12
+
+            LblIncludedAmount = .Text
+
+            .Col = 13
+
+            TxtsRemarks.Text = .Text
+
+            
+
+            .Col = 14
+
+'            TxtExpDate.Value = CDate(.Text)
+
+            TxtExpDate.Value = Format(CDate(.Text), "dd/MM/yyyy")
+
+            
+
+            Call TxtID_Validate(False)
+
+            Call txtDiscAmt_Validate(False)
+
+            Call TxtStaxAmount_Validate(False)
+
+            Call txtOffInvDiscAmt_Validate(False)
+
+        End With
+
+    Else
+
+        mEditRowID = 0
+
+   End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

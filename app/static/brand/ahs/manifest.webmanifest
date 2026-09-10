@@ -1,0 +1,13 @@
+{
+  "name": "Al Haram Steel Lab",
+  "short_name": "AL HARAM",
+  "description": "One Stop Shop For Steel",
+  "start_url": "/login",
+  "display": "standalone",
+  "background_color": "#051e3e",
+  "theme_color": "#072c5c",
+  "icons": [
+    { "src": "/static/img/brand/ahs-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/img/brand/ahs-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

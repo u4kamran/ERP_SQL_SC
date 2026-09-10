@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block title %}Purchase Receipt - {{ app_name }}{% endblock %}
+{% block extra_css %}
+<link href="/static/css/fin_pur.css?v=20260808" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="pur-form" id="pur-app">
+    <div class="pur-titlebar">
+        <span><i class="bi bi-receipt me-2"></i>Purchase Receipt — Fin_PurM.frm</span>
+        <span class="d-flex align-items-center gap-2">
+            <a class="btn btn-sm btn-light" href="/admin/purchase-automation" title="AI Purchase Automation">Automation</a>
+            <span id="status-label" class="badge bg-warning text-dark">Ready</span>
+        </span>
+    </div>
+
+    <div class="pur-banner" id="Line2">Purchase Receipt</div>
+    <div id="alert-area"></div>
+
+    <div class="row g-2 mb-2 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label" for="TxtDocID">GRN ID :</label>
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="TxtDocID" maxlength="10" autocomplete="off">
+                <button class="btn btn-outline-primary" type="button" id="btn-load-doc" title="Load">Load</button>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="TxtDocDAte">Date</label>
+            <input type="date" class="form-control" id="TxtDocDAte">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="TxtGPID">Ref # :</label>
+            <input type="text" class="form-control" id="TxtGPID" maxlength="8">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="TxtTime">Time :</label>
+            <input type="text" class="form-control" id="TxtTime" maxlength="7">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label" for="CboPayment">Terms</label>
+            <select class="form-select" id="CboPayment">
+                <option value="0">Terms: Credit</option>
+                <option value="1">Terms: Cash Reg.</option>
+                <option value="2">Terms: Cash Un-Reg.</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Registration</label>
+            <div class="pur-title-box pur-reg" id="LblRegistration"></div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-2 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label" for="TxtID">Supplier ID :</label>
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="TxtID" autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" id="btn-search-supplier" title="Search">...</button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Supplier</label>
+            <div class="pur-title-box" id="TxtTitle">—</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="TxtRemarks">Remarks :</label>
+            <input type="text" class="form-control" id="TxtRemarks" maxlength="100">
+        </div>
+    </div>
+
+    <div class="pur-grid-wrap">
+        <table class="table table-sm pur-grid" id="VGrid">
+            <thead>
+                <tr>
+                    <th>Sr. #</th>
+                    <th>Item ID</th>
+                    <th>Item Title</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>S-Tax %</th>
+                    <th>S-Tax Amt</th>
+                    <th>Disc %</th>
+                    <th>Disc Amt</th>
+                    <th>DOI %</th>
+                    <th>DOI Amt</th>
+                    <th>Included Amt</th>
+                    <th>Remarks</th>
+                    <th>ExpDate</th>
+                    <th style="min-width:120px">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="VGrid-body"></tbody>
+        </table>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-lg-4">
+            <div class="pur-totals">
+                <div class="d-flex justify-content-between mb-1"><span>Discount :</span><span class="tot-val" style="width:120px" id="LblDiscount">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>Charges :</span><span class="tot-val" style="width:120px" id="LblCharges">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>Diff :</span><span class="tot-val" style="width:120px" id="LblDiff">0.00</span></div>
+                <div class="d-flex justify-content-between"><span>Qty :</span><span class="tot-val" style="width:120px" id="mQty">0.00</span></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="pur-btnbar d-flex flex-wrap gap-1 mb-2">
+                <button type="button" class="btn btn-primary btn-sm" id="CmdAddTrans" disabled>Add Trans.</button>
+                <button type="button" class="btn btn-success btn-sm" id="CmdSave" disabled>Save</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="CmdClear">Clear</button>
+                <button type="button" class="btn btn-danger btn-sm" id="CmdDelete" disabled>Delete</button>
+                <button type="button" class="btn btn-dark btn-sm" id="CmdClose">Close</button>
+            </div>
+            <div class="pur-btnbar d-flex flex-wrap gap-1 mb-2">
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdShowAddr" disabled>Show Address</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdDiscount" disabled>Discount</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="CmdShowItem">Show Item</button>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="cmdPurOrder">Pur Order</button>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="CmdPasteJson">Paste JSON</button>
+            </div>
+            <div class="pur-btnbar d-flex flex-wrap gap-1 pur-sa-only d-none" id="sa-buttons">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="Command1">Check</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="cmdUploadFile">Upload</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="cmdDownload">Download</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="cmdAssignCo">Assign Co</button>
+                <input type="text" class="form-control form-control-sm" id="txtCoID" style="width:90px" placeholder="Co ID">
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="pur-totals">
+                <div class="d-flex justify-content-between mb-1"><span>Gross Amt :</span><span class="tot-val" style="width:140px" id="mAmount">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>Discount :</span><span class="tot-val" style="width:140px" id="LDiscount">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>S-Tax Excl. Amt :</span><span class="tot-val" style="width:140px" id="LStaxExclAmt">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>S-Tax Receivable :</span><span class="tot-val" style="width:140px" id="mSalesTax">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>Included :</span><span class="tot-val" style="width:140px" id="mTAmount">0.00</span></div>
+                <div class="d-flex justify-content-between mb-1"><span>OFF Inv Disc:</span><span class="tot-val" style="width:140px" id="LblOffInvDisc">0.00</span></div>
+                <div class="d-flex justify-content-between"><span>Net Amount :</span><span class="tot-val" style="width:140px" id="mNetAmount">0.00</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden H* charge buckets (Fin_PurM) -->
+    <input type="hidden" id="HDiscount" value="0">
+    <input type="hidden" id="HClaim" value="0">
+    <input type="hidden" id="HOtherDed" value="0">
+    <input type="hidden" id="HLoading" value="0">
+    <input type="hidden" id="HCarriage" value="0">
+    <input type="hidden" id="HOtherCharges" value="0">
+    <input type="hidden" id="serial_no" value="">
+    <input type="hidden" id="found_flag" value="0">
+</div>
+
+<!-- Address frame (cash) -->
+<div class="modal fade pur-modal" id="addrModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Address</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="pur-field-row"><label>Desc</label><input class="form-control" id="TxtDesc"></div>
+                <div class="pur-field-row"><label>Address</label><input class="form-control" id="TxtAddress"></div>
+                <div class="pur-field-row"><label>S-Tax ID</label><input class="form-control" id="TxtStaxID"></div>
+                <div class="pur-field-row"><label>City ID</label><input class="form-control" id="TxtCityID"></div>
+                <div class="pur-field-row"><label>City</label><input class="form-control" id="TxtCityTitle" readonly></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fin_PurDed discount/charges -->
+<div class="modal fade pur-modal" id="dedModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Discount / Charges — Fin_PurDed</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label">Discount</label>
+                        <input type="number" step="0.01" class="form-control" id="TxtDiscount">
+                        <label class="form-label mt-1">Claim</label>
+                        <input type="number" step="0.01" class="form-control" id="TxtClaim">
+                        <label class="form-label mt-1">Other Ded</label>
+                        <input type="number" step="0.01" class="form-control" id="TxtOtherDed">
+                        <div class="mt-2">Total Ded: <strong id="LblTotalDed">0.00</strong></div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Carriage</label>
+                        <input type="number" step="0.01" class="form-control" id="TxtCarriage">
+                        <label class="form-label mt-1">Loading</label>
+                        <input type="number" step="0.01" class="form-control" id="TxtLoading">
+                        <label class="form-label mt-1">Other Charges</label>
+                        <input type="number" step="0.01" class="form-control" id="TxtOtherCharges">
+                        <div class="mt-2">Total Charges: <strong id="LblTotalCharges">0.00</strong></div>
+                    </div>
+                </div>
+                <p class="small text-muted mt-2 mb-0">VB6 maps Carriage↔HLoading and Loading↔HCarriage (preserved).</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="ded-clear">Clear</button>
+                <button type="button" class="btn btn-success" id="ded-save">Save</button>
+                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fin_PurD line entry -->
+<div class="modal fade pur-modal" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Purchase Line — Fin_PurD</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <div class="pur-title-box mb-1" id="d_LblMainTitle">Main Title</div>
+                    <div class="pur-title-box" id="d_LblSubTitle">SubTitle</div>
+                </div>
+                <div class="pur-detail-grid">
+                    <div>
+                        <div class="pur-field-row"><label>Item ID :</label>
+                            <div class="input-group input-group-sm">
+                                <input class="form-control" id="d_TxtID">
+                                <button class="btn btn-outline-secondary" type="button" id="d_btn_item_search">...</button>
+                            </div>
+                        </div>
+                        <div class="pur-field-row"><label>Quantity :</label><input class="form-control" id="d_TxtQty" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>TP Rate :</label><input class="form-control" id="d_TxtRate" type="number" step="0.0001"></div>
+                        <div class="pur-field-row"><label>M.R.P :</label><input class="form-control" id="d_txtMRP" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Disc% On :</label><input class="form-control" id="d_txtDiscPer" type="number" step="0.01" disabled></div>
+                        <div class="pur-field-row"><label>Disc% Off :</label><input class="form-control" id="d_TxtOffInvDiscPer" type="number" step="0.01" disabled></div>
+                        <div class="pur-field-row"><label>S-Tax % :</label><input class="form-control" id="d_TxtStaxRate" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Remarks :</label><input class="form-control" id="d_TxtsRemarks" maxlength="10"></div>
+                        <div class="pur-field-row"><label>Net Cost :</label><input class="form-control" id="d_txtNetCost" disabled></div>
+                    </div>
+                    <div>
+                        <div class="pur-field-row"><label>Barcode :</label><input class="form-control" id="d_txtBarcode"></div>
+                        <div class="pur-field-row"><label>WS Barcode :</label><input class="form-control" id="d_txtBarcodeWS"></div>
+                        <div class="pur-field-row"><label>Manual :</label><input class="form-control" id="d_Text1"></div>
+                        <div class="pur-field-row"><label>Unit :</label><input class="form-control" id="d_txtUnit"></div>
+                        <div class="pur-field-row"><label>Pack Qty :</label><input class="form-control" id="d_txtPQty" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Pack Rate :</label><input class="form-control" id="d_TxtPRate" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Co ID :</label><input class="form-control" id="d_txtCoID"></div>
+                        <div class="pur-field-row"><label>Exp Date :</label><input class="form-control" id="d_TxtExpDate" type="date"></div>
+                        <div class="pur-title-box mt-1" id="d_lblCoTitle">Item Title</div>
+                    </div>
+                    <div>
+                        <div class="pur-field-row"><label>UOM :</label><div class="pur-title-box w-100" id="d_TxtUomTitle">—</div></div>
+                        <div class="pur-field-row"><label>G Amt :</label><div class="pur-title-box w-100 pur-num" id="d_TxtAmount">0.00</div></div>
+                        <div class="pur-field-row"><label>TO + On InvDisc :</label><input class="form-control" id="d_txtDiscAmt" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Excluded Amount :</label><div class="pur-title-box w-100 pur-num" id="d_lblExcludAmt">0.00</div></div>
+                        <div class="pur-field-row"><label>Sales Tax Amount :</label><input class="form-control" id="d_TxtStaxAmount" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Included Amount :</label><div class="pur-title-box w-100 pur-num" id="d_LblOffInvIncludedAmt">0.00</div></div>
+                        <div class="pur-field-row"><label>Off InvDisc :</label><input class="form-control" id="d_txtOffInvDiscAmt" type="number" step="0.01"></div>
+                        <div class="pur-field-row"><label>Net Amount :</label><div class="pur-title-box w-100 pur-num" id="d_LblIncludedAmount">0.00</div></div>
+                        <div class="d-flex gap-3 mt-2">
+                            <div>Sale: <strong id="d_lblSale">0.00</strong></div>
+                            <div>Stock: <strong id="d_lblStock">0</strong></div>
+                        </div>
+                        <div class="pur-title-box mt-2" id="d_TxtTitle">Item Title</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer flex-wrap gap-1">
+                <button type="button" class="btn btn-outline-primary" id="d_cmdImportExcel" title="Import purchase detail rows from Excel Sheet 2">Import From Excel</button>
+                <button type="button" class="btn btn-outline-primary" id="d_cmdEditInExcel" title="Update Qty/Rate in Excel Sheet 1 for current Manual ID">Edit in Excel</button>
+                <button type="button" class="btn btn-outline-warning" id="d_cmdClearQty" title="Clear Qty column (Sheet 1, Col C) in selected Excel file">Clear Qty</button>
+                <input type="file" id="d_excelFile" accept=".xlsx,.xls" class="d-none">
+                <button type="button" class="btn btn-success" id="d_CmdSave">Save</button>
+                <button type="button" class="btn btn-secondary" id="d_CmdClear">Clear</button>
+                <button type="button" class="btn btn-outline-dark" id="d_CmdItem">Item</button>
+                <button type="button" class="btn btn-outline-dark" id="d_CmdBalance">Balance</button>
+                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lookup modal -->
+<div class="modal fade pur-modal" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="search-title">Search</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-2" id="search-query" placeholder="Type to search...">
+                <div class="table-responsive" style="max-height:360px">
+                    <table class="table table-sm table-hover">
+                        <thead><tr><th>ID</th><th>Title</th><th>Extra</th></tr></thead>
+                        <tbody id="search-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Paste JSON → fill grid (items resolved by Manual ID) -->
+<div class="modal fade pur-modal" id="jsonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Paste JSON — Fill Grid by Manual ID</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small mb-2">
+                    Each item is looked up by <strong>Manual ID</strong> through the same item validation
+                    used by Add Trans. Lines are only added to the grid — nothing is posted until you press
+                    <strong>Save</strong>.
+                </p>
+                <div class="alert alert-warning py-2 small d-none" id="json-need-supplier">
+                    Enter a <strong>Supplier ID</strong> on the form first — purchase lines belong to a document.
+                </div>
+                <textarea class="form-control form-control-sm font-monospace" id="json-input" rows="10"
+                          placeholder='{"items":[{"manual_id":"47","description":"Lance Pipe SS","qty":3,"rate":1000,"amount":3000}]}'></textarea>
+                <div class="mt-2 small" id="json-report"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="json-fill">Fill Grid</button>
+                <button type="button" class="btn btn-secondary" id="json-clear">Clear</button>
+                <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/fin_pur.js?v=20260813enter"></script>
+{% endblock %}

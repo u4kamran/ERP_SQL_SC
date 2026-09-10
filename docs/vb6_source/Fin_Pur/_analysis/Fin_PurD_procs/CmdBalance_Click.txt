@@ -1,0 +1,20 @@
+Private Sub CmdBalance_Click()
+
+On Error GoTo TrapError
+
+
+
+    BalanceInv.Show vbModal, Me
+
+    
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

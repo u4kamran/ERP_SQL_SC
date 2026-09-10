@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.repositories.sales_dashboard_repository import SalesDashboardRepository
 from app.schemas.sales_dashboard import (
+    CumulativeSalesResponse,
+    CumulativeSalesRow,
     DailySalesPoint,
     DailySalesTrend,
     DayWiseSalesResponse,
@@ -19,7 +22,12 @@ from app.schemas.sales_dashboard import (
     TopInvoiceRow,
     TopInvoicesResponse,
 )
-from app.utils.business_day import align_previous_trend_dates, count_business_days, shift_business_period
+from app.utils.business_day import (
+    align_previous_trend_dates,
+    business_hours_note,
+    count_business_days,
+    shift_business_period,
+)
 
 def _build_period(
     repo: SalesDashboardRepository,
@@ -100,12 +108,100 @@ class SalesDashboardService:
         rows = SalesDashboardRepository(self.db).get_day_wise_sales(
             params.start_date, params.end_date
         )
-        from app.config.settings import settings
-        note = (
-            f"Business day: {settings.business_day_start_hour:02d}:00"
-            f" → next day {settings.business_day_end_hour:02d}:00"
-        )
+        note = business_hours_note()
         return DayWiseSalesResponse(
             items=[DayWiseSalesRow(**row) for row in rows],
             business_hours_note=note,
         )
+
+    def get_cumulative_sales(self, params: SalesDashboardRequest) -> CumulativeSalesResponse:
+        repo = SalesDashboardRepository(self.db)
+        try:
+            rows = repo.get_cumulative_sales(params.start_date, params.end_date)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        note = business_hours_note()
+        return CumulativeSalesResponse(
+            start_date=params.start_date,
+            end_date=params.end_date,
+            items=[CumulativeSalesRow(**row) for row in rows],
+            business_hours_note=note,
+        )
+
+    def build_cumulative_sales_pdf(self, params: SalesDashboardRequest) -> tuple[bytes, str]:
+        from app.reports.cumulative_sales_pdf import build_cumulative_sales_pdf
+
+        report = self.get_cumulative_sales(params)
+        period_label = (
+            f"{params.start_date.strftime('%d %b %Y %H:%M')} -> "
+            f"{params.end_date.strftime('%d %b %Y %H:%M')}"
+        )
+        pdf_bytes = build_cumulative_sales_pdf(
+            report.items,
+            period_label=period_label,
+            business_hours_note=report.business_hours_note,
+        )
+        filename = (
+            f"cumulative-sales-"
+            f"{params.start_date.strftime('%Y%m%d')}-"
+            f"{params.end_date.strftime('%Y%m%d')}.pdf"
+        )
+        return pdf_bytes, filename
+
+    def build_day_wise_pdf(self, params: SalesDashboardRequest) -> tuple[bytes, str]:
+        from app.reports.day_wise_sales_pdf import build_day_wise_sales_pdf
+
+        report = self.get_day_wise_sales(params)
+        period_label = (
+            f"{params.start_date.strftime('%d %b %Y %H:%M')} -> "
+            f"{params.end_date.strftime('%d %b %Y %H:%M')}"
+        )
+        pdf_bytes = build_day_wise_sales_pdf(
+            report.items,
+            period_label=period_label,
+            business_hours_note=report.business_hours_note,
+        )
+        filename = (
+            f"day-wise-sales-"
+            f"{params.start_date.strftime('%Y%m%d')}-"
+            f"{params.end_date.strftime('%Y%m%d')}.pdf"
+        )
+        return pdf_bytes, filename
+
+    def build_full_dashboard_pdf(
+        self, params: SalesDashboardRequest, *, include_cumulative: bool = False
+    ) -> tuple[bytes, str]:
+        from app.config.settings import settings
+        from app.reports.sales_dashboard_full_pdf import build_full_sales_dashboard_pdf
+        from app.utils.business_day import shift_business_period
+
+        summary = self.get_summary(params)
+        top_invoices = self.get_top_invoices(params, limit=10)
+        day_wise = self.get_day_wise_sales(params)
+        cumulative = self.get_cumulative_sales(params) if include_cumulative else None
+
+        prev_start, prev_end = shift_business_period(params.start_date, params.end_date, -1)
+        period_label = (
+            f"Current: {params.start_date.strftime('%d %b %Y %H:%M')} -> "
+            f"{params.end_date.strftime('%d %b %Y %H:%M')}"
+        )
+        compare_label = (
+            f"Compared with: {prev_start.strftime('%d %b %Y %H:%M')} -> "
+            f"{prev_end.strftime('%d %b %Y %H:%M')}"
+        )
+        pdf_bytes = build_full_sales_dashboard_pdf(
+            summary,
+            top_invoices,
+            day_wise,
+            cumulative,
+            period_label=period_label,
+            compare_label=compare_label,
+            app_name=settings.app_name,
+        )
+        filename = (
+            f"sales-dashboard-"
+            f"{params.start_date.strftime('%Y%m%d')}-"
+            f"{params.end_date.strftime('%Y%m%d')}.pdf"
+        )
+        return pdf_bytes, filename

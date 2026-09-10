@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser, require_any_permission
+from app.api.deps import CurrentUser, require_any_permission, require_report_delivery
 from app.config.settings import settings
 from app.database.business_session import get_business_db
 from app.reports.gl_ledger_credit_summary_pdf import render_gl_ledger_credit_summary_pdf
@@ -23,10 +23,16 @@ from app.services.gl_ledger_report_service import GlLedgerReportService
 
 router = APIRouter()
 
-_VIEW_PERMS = require_any_permission(
-    "reports.gl_ledger.view",
-    "inventory.fin_item.view",
-    "auth.admin.full",
+_LEGACY = ("inventory.fin_item.view", "auth.admin.full")
+_CREDIT_VIEW = (
+    "reports.gl_credit_summary.view",
+    *_LEGACY,
+)
+_VIEW_PERMS = require_any_permission(*_CREDIT_VIEW)
+_EMAIL_PERMS = require_report_delivery(
+    *_CREDIT_VIEW,
+    action_permissions=("reports.gl_credit_summary.email",),
+    denied_detail="You do not have permission to email this report.",
 )
 
 
@@ -103,7 +109,7 @@ def generate_pdf(
 @router.post("/email", response_model=GlLedgerEmailResponse)
 def email_pdf(
     params: GlLedgerEmailRequest,
-    current_user: CurrentUser = Depends(_VIEW_PERMS),
+    current_user: CurrentUser = Depends(_EMAIL_PERMS),
     db: Session = Depends(get_business_db),
 ):
     try:
@@ -154,7 +160,7 @@ def email_pdf(
 
 
 @router.get("/email/status", response_model=GlLedgerEmailStatus)
-def email_status(_user: CurrentUser = Depends(_VIEW_PERMS)):
+def email_status(_user: CurrentUser = Depends(_EMAIL_PERMS)):
     service = EmailService()
     from_email = settings.smtp_from_email.strip() or settings.smtp_user.strip()
     return GlLedgerEmailStatus(

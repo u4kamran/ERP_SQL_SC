@@ -1,0 +1,18 @@
+Private Sub TxtPRate_LostFocus()
+
+On Error GoTo TrapError
+
+    TxtStaxRate.SetFocus
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+

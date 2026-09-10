@@ -41,17 +41,21 @@ SKIP_DIR_NAMES = {
     ".cursor",
 }
 
+# Site identity stays in each folder: .env, databases, logos.
+SKIP_REL_PATHS = {
+    Path("deploy/cloudflared/config.yml"),
+    Path("cloudflared/config.yml"),
+}
+
+SKIP_REL_PREFIXES = (
+    "cloudflared/bin",
+    "static/img",  # logos are per site (SDS vs AHSL)
+)
+
 SKIP_FILE_NAMES = {
     ".env",
     "app_pass.txt",
 }
-
-# Per-site tunnel credentials — never overwrite ARP config from ERP.
-SKIP_REL_PATHS = {
-    Path("deploy/cloudflared/config.yml"),
-}
-
-SKIP_REL_PREFIXES = ("cloudflared/bin",)
 
 
 def _should_skip_dir(name: str) -> bool:

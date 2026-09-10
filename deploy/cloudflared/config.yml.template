@@ -7,4 +7,9 @@ credentials-file: {{CREDENTIALS_FILE}}
 ingress:
   - hostname: {{HOSTNAME}}
     service: http://127.0.0.1:{{PORT}}
+    originRequest:
+      connectTimeout: 10s
+      keepAliveTimeout: 30s
+      keepAliveConnections: 8
+      disableChunkedEncoding: true
   - service: http_status:404

@@ -98,7 +98,7 @@ class WhatsAppService:
             payload["document"]["caption"] = caption[:1024]
 
         try:
-            with httpx.Client(timeout=60.0) as client:
+            with httpx.Client(timeout=12.0) as client:
                 response = client.post(
                     self._api_url("messages"),
                     headers=self._headers(),
@@ -137,12 +137,15 @@ class WhatsAppService:
             "text": {"preview_url": True, "body": message[:4096]},
         }
 
-        with httpx.Client(timeout=60.0) as client:
-            response = client.post(
-                self._api_url("messages"),
-                headers=self._headers(),
-                json=payload,
-            )
+        try:
+            with httpx.Client(timeout=8.0) as client:
+                response = client.post(
+                    self._api_url("messages"),
+                    headers=self._headers(),
+                    json=payload,
+                )
+        except httpx.HTTPError as exc:
+            raise WhatsAppDeliveryError(f"Could not reach WhatsApp API: {exc}") from exc
 
         data = response.json()
         if response.status_code >= 400:
@@ -163,7 +166,7 @@ class WhatsAppService:
         version = settings.whatsapp_api_version.strip() or "v21.0"
         meta_url = f"https://graph.facebook.com/{version}/{media_id}"
         headers = {"Authorization": f"Bearer {settings.whatsapp_api_token.strip()}"}
-        with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
             meta = client.get(meta_url, headers=headers)
             if meta.status_code >= 400:
                 raise WhatsAppDeliveryError("Could not resolve WhatsApp media.")

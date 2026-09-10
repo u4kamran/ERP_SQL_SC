@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Stock Balance Date to Date - {{ app_name }}{% endblock %}
+{% block extra_css %}
+<link href="/static/css/gl_ledger_report.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="vbc-form gl-report-form">
+    <div class="vbc-title d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-boxes me-2"></i>Stock Balance Date to Date</span>
+        <span class="badge bg-warning text-dark">Print Inventory</span>
+    </div>
+
+    <div id="alert-area"></div>
+
+    <div class="report-banner mb-3">
+        <h4 class="mb-0">Stock Balance Date to Date</h4>
+        <p class="small text-muted mb-0 mt-1">
+            Qty = VB6 <strong>RptStD2D</strong>. Check <strong>Print Amount</strong> for
+            <strong>RptStD2DAmtBrand</strong> (Opening/Period/Closing Qty &amp; Amt).
+        </p>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-md-6">
+            <label class="form-label">Starting ID :</label>
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control" id="start_item_id" placeholder="e.g. 1000010001">
+                <button class="btn btn-outline-secondary" type="button" id="btn-search-start" title="Search item">...</button>
+            </div>
+            <div class="id-title" id="start_item_title">Starting ID Title</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Ending ID :</label>
+            <div class="input-group input-group-sm">
+                <input type="number" class="form-control" id="end_item_id" placeholder="e.g. 1000019999">
+                <button class="btn btn-outline-secondary" type="button" id="btn-search-end" title="Search item">...</button>
+            </div>
+            <div class="id-title" id="end_item_title">Ending ID Title</div>
+            <div class="form-text">Matches Starting ID automatically. Change To for a range.</div>
+        </div>
+    </div>
+
+    <fieldset class="vbc-frame mt-3">
+        <legend>Date</legend>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">From :</label>
+                <input type="date" class="form-control form-control-sm" id="date_from">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">To :</label>
+                <input type="date" class="form-control form-control-sm" id="date_to">
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="vbc-frame mt-3">
+        <legend>Options</legend>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="suppress_zero_bal">
+            <label class="form-check-label" for="suppress_zero_bal">Suppress Zero Bal.</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="complete_report">
+            <label class="form-check-label" for="complete_report">Complete Report</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="print_amount">
+            <label class="form-check-label" for="print_amount">Print Amount</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="show_manual_id" checked>
+            <label class="form-check-label" for="show_manual_id">Show Manual ID (Brand)</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="store_ledger">
+            <label class="form-check-label" for="store_ledger">Store Ledger</label>
+        </div>
+        <div class="row g-2 mt-2">
+            <div class="col-md-6">
+                <label class="form-label">Sort by :</label>
+                <select class="form-select form-select-sm" id="sort_by">
+                    <option value="ac_id" selected>Ac ID</option>
+                    <option value="ac_title">Account Title</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Order :</label>
+                <select class="form-select form-select-sm" id="sort_order">
+                    <option value="asc" selected>Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="vbc-frame mt-3" id="email-fieldset">
+        <legend>Email Report</legend>
+        <div id="email-smtp-hint" class="alert alert-warning py-2 small d-none"></div>
+        <div class="row g-2">
+            <div class="col-md-8">
+                <label class="form-label">Send to email :</label>
+                <input type="text" class="form-control form-control-sm" id="email_to"
+                       placeholder="name@example.com (comma for multiple)">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-sm w-100" id="btn-email" type="button">
+                    <i class="bi bi-envelope me-1"></i>Email PDF
+                </button>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Subject (optional) :</label>
+                <input type="text" class="form-control form-control-sm" id="email_subject"
+                       placeholder="Stock Balance Date to Date">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Message (optional) :</label>
+                <input type="text" class="form-control form-control-sm" id="email_message"
+                       placeholder="Note for recipients">
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn btn-primary" id="btn-print"><i class="bi bi-file-earmark-pdf me-1"></i>Print PDF</button>
+        <a class="btn btn-success d-none" id="btn-open-pdf" href="#" target="_blank" download>
+            <i class="bi bi-box-arrow-up-right me-1"></i>Open PDF
+        </a>
+        <button class="btn btn-secondary" id="btn-clear">Clear</button>
+        <a href="/dashboard" class="btn btn-outline-dark ms-auto">Close</a>
+    </div>
+
+    <div class="report-status mt-3" id="report-status"></div>
+</div>
+
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-2" id="search-query" placeholder="Search by item ID, title, or manual ID...">
+                <div class="table-responsive" id="search-results"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/report_delivery_rights.js?v=2"></script>
+<script src="/static/js/stock_balance_d2d.js?v=6"></script>
+{% endblock %}

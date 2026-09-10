@@ -1,0 +1,16 @@
+Private Sub CmdClear_Click()
+
+On Error GoTo TrapError
+
+    Call clearform
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

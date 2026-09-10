@@ -1,0 +1,38 @@
+Private Sub VGrid_KeyUp(Keycode As Integer, Shift As Integer)
+
+On Error GoTo TrapError
+
+   If Keycode = 46 Or Keycode = 110 Then
+
+      Call DeleteRow
+
+      Call UpdateBalance
+
+   End If
+
+   If Keycode = 13 Then
+
+        If VGrid.Row < nCounter Then
+
+          lEdit = True
+
+          Fin_PurD.Show vbModal, Me
+
+          Call UpdateBalance
+
+          CmdAddTrans.SetFocus
+
+        End If
+
+   End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

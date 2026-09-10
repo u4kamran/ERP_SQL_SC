@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.utils.business_day import business_day_label, sql_business_date_expr
+from app.utils.business_day import (
+    business_date_for,
+    business_day_label,
+    cumulative_period_ends,
+    cumulative_period_label,
+    shift_datetime_months,
+    sql_business_date_expr,
+)
 from app.utils.sales_view import sales_doc_date_column
 
 
@@ -123,6 +130,97 @@ class SalesDashboardRepository:
                     "invoice_count": int(row["invoice_count"] or 0),
                 }
             )
+        return result
+
+    @staticmethod
+    def _daily_map(rows: list[dict]) -> dict[str, dict]:
+        return {str(r.get("business_date", ""))[:10]: r for r in rows if r.get("business_date")}
+
+    @staticmethod
+    def _prefix_totals(start_bd: date, end_bd: date, daily_map: dict[str, dict]) -> list[dict]:
+        """Running totals per business day from start_bd through end_bd inclusive."""
+        totals: list[dict] = []
+        rs = rc = rp = 0.0
+        ri = 0
+        bd = start_bd
+        while bd <= end_bd:
+            row = daily_map.get(bd.isoformat(), {})
+            rs += float(row.get("total_sale", 0) or 0)
+            rc += float(row.get("total_cost", 0) or 0)
+            rp += float(row.get("profit", 0) or 0)
+            ri += int(row.get("invoice_count", 0) or 0)
+            totals.append(
+                {
+                    "total_sale": rs,
+                    "total_cost": rc,
+                    "profit": rp,
+                    "invoice_count": ri,
+                }
+            )
+            bd += timedelta(days=1)
+        return totals
+
+    def get_cumulative_sales(
+        self, start_date: datetime, end_date: datetime, max_periods: int = 366
+    ) -> list[dict]:
+        """Cumulative sales using 2 day-wise queries + in-memory running totals."""
+        fixed_start, period_ends = cumulative_period_ends(start_date, end_date)
+        if not period_ends:
+            return []
+
+        if len(period_ends) > max_periods:
+            raise ValueError(
+                f"Date range spans {len(period_ends)} business days; maximum is {max_periods}."
+            )
+
+        prev_fixed_start = shift_datetime_months(fixed_start, -1)
+        start_bd = business_date_for(fixed_start)
+        end_bd = business_date_for(period_ends[-1])
+        prev_start_bd = business_date_for(prev_fixed_start)
+        prev_max_end = shift_datetime_months(period_ends[-1], -1)
+        prev_end_bd = business_date_for(prev_max_end)
+
+        daily_cur = self._daily_map(self.get_day_wise_sales(fixed_start, period_ends[-1]))
+        daily_prev = self._daily_map(self.get_day_wise_sales(prev_fixed_start, prev_max_end))
+        cur_prefix = self._prefix_totals(start_bd, end_bd, daily_cur)
+        prev_prefix = self._prefix_totals(prev_start_bd, prev_end_bd, daily_prev)
+
+        result: list[dict] = []
+        for i, pe in enumerate(period_ends):
+            row_num = i + 1
+            cur_idx = row_num - 1
+            prev_pe = shift_datetime_months(pe, -1)
+            prev_idx = (business_date_for(prev_pe) - prev_start_bd).days
+
+            for period_type, p_start, p_end, prefix, idx in (
+                ("current", fixed_start, pe, cur_prefix, cur_idx),
+                ("last_month", prev_fixed_start, prev_pe, prev_prefix, prev_idx),
+            ):
+                if idx < 0 or idx >= len(prefix):
+                    agg = {"total_sale": 0.0, "total_cost": 0.0, "profit": 0.0, "invoice_count": 0}
+                else:
+                    agg = prefix[idx]
+                total_sale = float(agg["total_sale"])
+                total_cost = float(agg["total_cost"])
+                profit = float(agg["profit"])
+                profit_percent = (profit / total_cost * 100) if total_cost else None
+                total_days = max(row_num, 1)
+                result.append(
+                    {
+                        "row_num": row_num,
+                        "period_type": period_type,
+                        "start_date": p_start,
+                        "end_date": p_end,
+                        "period_label": cumulative_period_label(p_start, p_end),
+                        "total_sale": round(total_sale, 2),
+                        "total_cost": round(total_cost, 2),
+                        "profit": round(profit, 2),
+                        "profit_percent": round(profit_percent, 2) if profit_percent is not None else None,
+                        "invoice_count": int(agg["invoice_count"]),
+                        "total_days": total_days,
+                        "avg_sale_per_day": round(total_sale / total_days, 2),
+                    }
+                )
         return result
 
     def get_top_invoices(self, start_date: datetime, end_date: datetime, limit: int = 10) -> list[dict]:

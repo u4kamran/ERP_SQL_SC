@@ -1,0 +1,96 @@
+'===============================================================================
+' INTEGRATION — Voucher Detail / VoucherM
+' Place a CommandButton named cmdPrintCheque beside Print Voucher / Print.
+' Paste this code into VoucherM.frm (or Fin payment voucher detail form).
+'
+' Designer: Caption = "Print Cheque", place next to existing print button.
+'===============================================================================
+Option Explicit
+
+'--- Add to form declarations if not already present ---
+' Private m_ChequeEngine As clsChequePrinter
+
+'--- Button Click ---
+Private Sub cmdPrintCheque_Click()
+    On Error GoTo ErrHandler
+    Dim frm As frmChequePrint
+    Dim sVoucherNo As String
+    Dim lSerial As Long
+    Dim lDocType As Long
+    Dim nFiscal As Integer
+    Dim audit As clsChequeAudit
+    
+    Set audit = New clsChequeAudit
+    If Not audit.HasPermission(CHQ_PERM_PRINT) And Not audit.HasPermission(CHQ_PERM_PREVIEW) Then
+        MsgBox "You do not have permission to print cheques.", vbExclamation, "Cheque Printing"
+        Exit Sub
+    End If
+    
+    ' Map from current voucher controls — adjust names to your VoucherM fields
+    sVoucherNo = Trim$(TxtID.Text)          ' or TxtDocID / TxtVoucherNo
+    On Error Resume Next
+    lSerial = Val(LblSerial.Caption)        ' if you expose serial
+    lDocType = Val(cDoc_Type)               ' global doc type if used
+    nFiscal = Val(MFiscal)
+    On Error GoTo ErrHandler
+    
+    If Len(sVoucherNo) = 0 Then
+        MsgBox "Please load a voucher before printing a cheque.", vbExclamation, "Cheque Printing"
+        Exit Sub
+    End If
+    
+    ' Optional: require save first
+    ' If bDirty Then
+    '     MsgBox "Please save the voucher before printing the cheque.", vbExclamation
+    '     Exit Sub
+    ' End If
+    
+    Set frm = New frmChequePrint
+    Call frm.InitFromVoucher(sVoucherNo, lSerial, lDocType, nFiscal)
+    frm.Show vbModal, Me
+    Exit Sub
+    
+ErrHandler:
+    MsgBox "Unable to open Cheque Printing:" & vbCrLf & Err.Description, vbCritical, "Cheque Printing"
+End Sub
+
+'===============================================================================
+' Alternative: call engine directly without dialog (silent print)
+'===============================================================================
+Public Sub PrintChequeSilent(ByVal sVoucherNo As String)
+    Dim eng As clsChequePrinter
+    Dim audit As clsChequeAudit
+    Dim bForce As Boolean
+    
+    Set audit = New clsChequeAudit
+    Call audit.EnsurePermission(CHQ_PERM_PRINT)
+    
+    Set eng = New clsChequePrinter
+    If Not eng.PrepareFromVoucher(sVoucherNo) Then
+        MsgBox eng.LastError, vbCritical, "Cheque Printing"
+        Exit Sub
+    End If
+    
+    bForce = False
+    If eng.ChequeData.AlreadyPrinted Then
+        If MsgBox("This cheque has already been printed." & vbCrLf & vbCrLf & "Reprint?", _
+                  vbQuestion + vbYesNo, "Cheque Printing") <> vbYes Then Exit Sub
+        Call audit.EnsurePermission(CHQ_PERM_REPRINT)
+        bForce = True
+    End If
+    
+    If eng.PrintCheque(bForce) Then
+        MsgBox "Cheque printed.", vbInformation, "Cheque Printing"
+    Else
+        MsgBox eng.LastError, vbCritical, "Cheque Printing"
+    End If
+End Sub
+
+'===============================================================================
+' Suggested control placement (VB form designer):
+'
+'   [CmdSave] [CmdClear] [CmdDelete] [cmdPrint] [cmdPrintCheque] [cmdClose]
+'
+' Caption:  Print Cheque
+' Tooltip:  Print bank cheque using configurable layout for this voucher
+'===============================================================================

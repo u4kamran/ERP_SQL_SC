@@ -1,0 +1,108 @@
+Private Function clearform()
+
+On Error GoTo TrapError
+
+   ' Clear Data Fields
+
+   
+
+    With grd(0)
+
+        .Cols = 5
+
+        .TextMatrix(0, 0) = "Pur.#"
+
+        .ColWidth(0) = 1100
+
+        .TextMatrix(0, 1) = "Date"
+
+        .ColWidth(1) = 1300
+
+        .TextMatrix(0, 2) = "Qty"
+
+        .ColWidth(2) = 1100
+
+        .TextMatrix(0, 3) = "Rate"
+
+        .ColWidth(3) = 1100
+
+        .TextMatrix(0, 4) = "Item ID"
+
+        .ColWidth(4) = 1500
+
+        .Clear
+
+    End With
+
+   TxtID.Text = ""
+
+   TxtTitle.Caption = ""
+
+   LblMainTitle.Caption = ""
+
+   LblSubTitle.Caption = ""
+
+   TxtQty.Text = "0"
+
+   TxtRate.Text = "0"
+
+   txtNetCost.Text = "0"
+
+   txtMRP.Text = "0"
+
+   TxtStaxRate = "0"
+
+   txtDiscPer.Text = ""
+
+   txtDiscAmt.Text = "0"
+
+   TxtAmount.Caption = ""
+
+   TxtStaxAmount.Text = ""
+
+   LblIncludedAmount.Caption = ""
+
+   TxtUomTitle.Caption = ""
+
+   TxtsRemarks.Text = ""
+
+   Text1.Text = ""
+
+   txtUnit.Text = ""
+
+   txtPQty.Text = ""
+
+   TxtPRate.Text = ""
+
+   txtBarcode.Text = ""
+
+   txtBarcodeWS.Text = ""
+
+'   TxtID.SetFocus
+
+   txtBarcode.SetFocus
+
+   lblProfitPer.Caption = "%"
+
+   lblExcludAmt = "0"
+
+   TxtOffInvDiscPer = "0"
+
+   LblOffInvIncludedAmt = "0"
+
+   txtOffInvDiscAmt = "0"
+
+   txtCoID = "0"
+
+   lblCoTitle.Caption = ""
+
+   
+
+Exit Function
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Function
+

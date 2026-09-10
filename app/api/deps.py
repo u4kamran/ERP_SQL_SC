@@ -88,6 +88,32 @@ def require_any_permission(*permissions: str):
     return _checker
 
 
+def require_report_delivery(
+    *view_permissions: str,
+    action_permission: str | None = None,
+    action_permissions: tuple[str, ...] | None = None,
+    denied_detail: str,
+):
+    """
+    Require report View (any of view_permissions) AND any delivery action permission.
+    auth.admin.full already bypasses via CurrentUser.has_permission.
+    """
+    actions = tuple(action_permissions or ())
+    if action_permission:
+        actions = actions + (action_permission,)
+    if not actions:
+        raise ValueError("action_permission or action_permissions is required")
+
+    async def _checker(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+        if not any(current_user.has_permission(permission) for permission in view_permissions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
+        if not any(current_user.has_permission(permission) for permission in actions):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=denied_detail)
+        return current_user
+
+    return _checker
+
+
 def require_role(role: str):
     async def _checker(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         if not current_user.has_role(role) and "SUPER_ADMIN" not in current_user.roles:

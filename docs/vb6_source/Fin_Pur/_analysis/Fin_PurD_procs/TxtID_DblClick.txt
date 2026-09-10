@@ -1,0 +1,34 @@
+Private Sub TxtID_DblClick()
+
+On Error GoTo TrapError
+
+  cSQLId = "Item Master"
+
+  cSelFormId = "Fin_PurD"
+
+  frmLookUp.Show vbModal, Me
+
+  
+
+  If Not TxtID.Text = "" Then
+
+    TxtID_Validate (False)
+
+  End If
+
+  
+
+  
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+

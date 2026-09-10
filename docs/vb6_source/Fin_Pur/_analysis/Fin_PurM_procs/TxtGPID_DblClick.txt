@@ -1,0 +1,34 @@
+Private Sub TxtGPID_DblClick()
+
+On Error GoTo TrapError
+
+  If TxtDocID.Enabled = False Then
+
+      MsgBox "Invoice Already opened. To Search Press Clear Button ... ", vbInformation, cSelFormId
+
+      Exit Sub
+
+  End If
+
+  cSQLId = "INVGATEPASS"
+
+  cSelFormIdExt = "PURM"
+
+  'cSelFormIdExt = "GATE PASS"
+
+  Fin_Doc.Show vbModal, Me
+
+  TxtDocID.Enabled = True
+
+  TxtDocID.SetFocus
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

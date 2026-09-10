@@ -1,0 +1,16 @@
+Private Sub TxtQty_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+    TxtAmount.Caption = Format(Val(TxtRate) * Val(TxtQty), "#########.#0")
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

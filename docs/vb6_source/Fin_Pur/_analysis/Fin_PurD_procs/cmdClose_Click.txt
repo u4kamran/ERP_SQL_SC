@@ -1,0 +1,14 @@
+Private Sub cmdClose_Click()
+
+On Error GoTo TrapError
+
+    Unload Me
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

@@ -34,6 +34,8 @@ SQL_FILES = [
     "14_seed_cust_sms_permissions.sql",
     "16_seed_delivery_permissions.sql",
     "19_seed_whatsapp_bot_permissions.sql",
+    "20_seed_fin_pur_permissions.sql",
+    "21_seed_fin_inv_order_permissions.sql",
 ]
 
 SITE_AUTH_DBS = {

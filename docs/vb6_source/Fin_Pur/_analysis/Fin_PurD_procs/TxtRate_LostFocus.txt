@@ -1,0 +1,64 @@
+Private Sub TxtRate_LostFocus()
+
+On Error GoTo TrapError
+
+
+
+'Temp rate block
+
+'    If Val(TxtRate) = 0 And cAudit = 0 Then
+
+'        MsgBox "Invalid:  Please enter Rate ...  ", vbInformation, "Production Receipt"
+
+'        Exit Sub
+
+'    End If
+
+
+
+'    If TxtRate.Text <> 0 Then
+
+'        If lblSale.Caption <> 0 Then
+
+'            Dim RateDiff As Integer
+
+'            RateDiff = Val(lblSale.Caption) - Val(TxtRate.Text)
+
+'            'lblProfitPer.Caption = Format((100 - ((Val(txtrate.text) / Val(lblsale.caption)) * 100)), "########.#0")
+
+'            'lblProfitPer.Caption = CDbl(Format(((RateDiff * 100) / (Val(txtrate.text))), "########.#0"))
+
+'            lblProfitPer.Caption = CDbl(Format(((RateDiff / Val(TxtRate.Text) * 100)), "########.#0"))
+
+'        End If
+
+'    End If
+
+    
+
+
+
+    If Val(TxtQty) = 0 Then
+
+        MsgBox "Invalid:  Please enter Quantity ...  ", vbInformation, "Production Receipt"
+
+        Exit Sub
+
+    End If
+
+    TxtAmount.Caption = Format(Val(TxtRate) * Val(TxtQty), "#########.#0")
+
+    
+
+    Call Calc_Rate
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

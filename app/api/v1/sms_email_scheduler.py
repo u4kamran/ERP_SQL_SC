@@ -17,8 +17,6 @@ router = APIRouter()
 
 _SMS_EMAIL_PERMS = require_any_permission(
     "reports.sms_email.manage",
-    "reports.gl_ledger.view",
-    "inventory.fin_item.view",
     "auth.admin.full",
 )
 

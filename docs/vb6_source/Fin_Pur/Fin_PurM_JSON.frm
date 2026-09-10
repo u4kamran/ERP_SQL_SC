@@ -1,0 +1,4011 @@
+VERSION 5.00
+Object = "{C0A63B80-4B21-11D3-BD95-D426EF2C7949}#1.0#0"; "Vsflex7L.ocx"
+Object = "{86CF1D34-0C5F-11D2-A9FC-0000F8754DA1}#2.0#0"; "MSCOMCT2.OCX"
+Object = "{5E9E78A0-531B-11CF-91F6-C2863C385E30}#1.0#0"; "MSFLXGRD.OCX"
+Object = "{F9043C88-F6F2-101A-A3C9-08002B2F49FB}#1.2#0"; "COMDLG32.OCX"
+Begin VB.Form Fin_PurM_JSON 
+   BackColor       =   &H00C0C0C0&
+   BorderStyle     =   4  'Fixed ToolWindow
+   Caption         =   "Abc Company"
+   ClientHeight    =   7665
+   ClientLeft      =   45
+   ClientTop       =   285
+   ClientWidth     =   9750
+   ControlBox      =   0   'False
+   KeyPreview      =   -1  'True
+   LinkTopic       =   "Form1"
+   LockControls    =   -1  'True
+   MaxButton       =   0   'False
+   MinButton       =   0   'False
+   ScaleHeight     =   7665
+   ScaleWidth      =   9750
+   ShowInTaskbar   =   0   'False
+   StartUpPosition =   1  'CenterOwner
+   Begin VB.CommandButton cmdPurOrder 
+      Caption         =   "Pur O&der"
+      CausesValidation=   0   'False
+      Height          =   375
+      Left            =   4905
+      TabIndex        =   66
+      Top             =   5670
+      Width           =   1125
+   End
+   Begin VB.CommandButton Command1 
+      Caption         =   "&Check"
+      CausesValidation=   0   'False
+      Height          =   375
+      Left            =   3780
+      TabIndex        =   65
+      Top             =   5670
+      Width           =   1125
+   End
+   Begin MSComDlg.CommonDialog CommonDialog1 
+      Left            =   5535
+      Top             =   5130
+      _ExtentX        =   847
+      _ExtentY        =   847
+      _Version        =   393216
+   End
+   Begin VB.CommandButton cmdDownload 
+      Caption         =   "Do&wnload"
+      CausesValidation=   0   'False
+      Height          =   375
+      Left            =   4905
+      TabIndex        =   64
+      Top             =   6075
+      Width           =   1125
+   End
+   Begin VB.CommandButton cmdUploadFile 
+      Caption         =   "&Upload"
+      CausesValidation=   0   'False
+      Height          =   375
+      Left            =   3780
+      TabIndex        =   63
+      Top             =   6075
+      Width           =   1125
+   End
+   Begin VB.CommandButton cmdPrintGrid 
+      Caption         =   "&Print Gird"
+      Enabled         =   0   'False
+      Height          =   375
+      Left            =   4890
+      TabIndex        =   60
+      Top             =   6480
+      Width           =   1170
+   End
+   Begin VSFlex7LCtl.VSFlexGrid grd 
+      Height          =   3780
+      Index           =   0
+      Left            =   330
+      TabIndex        =   10
+      Top             =   1305
+      Visible         =   0   'False
+      Width           =   11955
+      _cx             =   21087
+      _cy             =   6667
+      _ConvInfo       =   1
+      Appearance      =   1
+      BorderStyle     =   1
+      Enabled         =   -1  'True
+      BeginProperty Font {0BE35203-8F91-11CE-9DE3-00AA004BB851} 
+         Name            =   "Calibri"
+         Size            =   12
+         Charset         =   0
+         Weight          =   700
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      MousePointer    =   0
+      BackColor       =   16248808
+      ForeColor       =   0
+      BackColorFixed  =   -2147483633
+      ForeColorFixed  =   -2147483630
+      BackColorSel    =   -2147483635
+      ForeColorSel    =   -2147483634
+      BackColorBkg    =   14333592
+      BackColorAlternate=   14799560
+      GridColor       =   -2147483633
+      GridColorFixed  =   -2147483632
+      TreeColor       =   -2147483632
+      FloodColor      =   192
+      SheetBorder     =   -2147483642
+      FocusRect       =   3
+      HighLight       =   1
+      AllowSelection  =   -1  'True
+      AllowBigSelection=   -1  'True
+      AllowUserResizing=   1
+      SelectionMode   =   0
+      GridLines       =   1
+      GridLinesFixed  =   2
+      GridLineWidth   =   1
+      Rows            =   2
+      Cols            =   3
+      FixedRows       =   1
+      FixedCols       =   0
+      RowHeightMin    =   0
+      RowHeightMax    =   0
+      ColWidthMin     =   0
+      ColWidthMax     =   0
+      ExtendLastCol   =   0   'False
+      FormatString    =   $"Fin_PurM_JSON.frx":0000
+      ScrollTrack     =   0   'False
+      ScrollBars      =   3
+      ScrollTips      =   0   'False
+      MergeCells      =   0
+      MergeCompare    =   0
+      AutoResize      =   -1  'True
+      AutoSizeMode    =   0
+      AutoSearch      =   0
+      AutoSearchDelay =   2
+      MultiTotals     =   -1  'True
+      SubtotalPosition=   1
+      OutlineBar      =   0
+      OutlineCol      =   0
+      Ellipsis        =   0
+      ExplorerBar     =   5
+      PicturesOver    =   0   'False
+      FillStyle       =   0
+      RightToLeft     =   0   'False
+      PictureType     =   0
+      TabBehavior     =   1
+      OwnerDraw       =   0
+      Editable        =   2
+      ShowComboButton =   -1  'True
+      WordWrap        =   -1  'True
+      TextStyle       =   0
+      TextStyleFixed  =   0
+      OleDragMode     =   0
+      OleDropMode     =   0
+      ComboSearch     =   3
+      AutoSizeMouse   =   -1  'True
+      FrozenRows      =   0
+      FrozenCols      =   0
+      AllowUserFreezing=   3
+      BackColorFrozen =   0
+      ForeColorFrozen =   0
+      WallPaperAlignment=   9
+   End
+   Begin VB.CommandButton CmdShowItem 
+      Caption         =   "Show Item"
+      Height          =   375
+      Left            =   3713
+      TabIndex        =   59
+      Top             =   6480
+      Width           =   1170
+   End
+   Begin VB.CommandButton CmdPasteJson 
+      Caption         =   "Paste &JSON"
+      Height          =   375
+      Left            =   105
+      TabIndex        =   67
+      ToolTipText     =   "Fill the grid from invoice JSON on the clipboard"
+      Top             =   6540
+      Width           =   1305
+   End
+   Begin VB.TextBox txtCoID 
+      Height          =   360
+      Left            =   1170
+      MaxLength       =   60
+      TabIndex        =   21
+      Top             =   7245
+      Width           =   1110
+   End
+   Begin VB.CommandButton cmdAssignCo 
+      Caption         =   "Assi&gn Co"
+      Height          =   375
+      Left            =   45
+      TabIndex        =   20
+      Top             =   7245
+      Width           =   1125
+   End
+   Begin VB.Frame FrameAddress 
+      Height          =   1575
+      Left            =   2835
+      TabIndex        =   48
+      Top             =   1605
+      Visible         =   0   'False
+      Width           =   5175
+      Begin VB.TextBox TxtCityID 
+         Height          =   285
+         Left            =   165
+         MaxLength       =   4
+         TabIndex        =   53
+         Top             =   1185
+         Visible         =   0   'False
+         Width           =   780
+      End
+      Begin VB.TextBox TxtAddress 
+         Height          =   315
+         Left            =   165
+         MaxLength       =   100
+         TabIndex        =   52
+         Top             =   525
+         Visible         =   0   'False
+         Width           =   4860
+      End
+      Begin VB.TextBox TxtStaxID 
+         Height          =   285
+         Left            =   165
+         MaxLength       =   20
+         TabIndex        =   51
+         Top             =   870
+         Visible         =   0   'False
+         Width           =   3510
+      End
+      Begin VB.TextBox TxtDesc 
+         Height          =   285
+         Left            =   165
+         MaxLength       =   40
+         TabIndex        =   50
+         Top             =   210
+         Visible         =   0   'False
+         Width           =   4860
+      End
+      Begin VB.TextBox TxtCityTitle 
+         Height          =   285
+         Left            =   975
+         Locked          =   -1  'True
+         MaxLength       =   20
+         TabIndex        =   49
+         Top             =   1185
+         Visible         =   0   'False
+         Width           =   2700
+      End
+   End
+   Begin VB.CommandButton CmdShowAddr 
+      Caption         =   "S&how Address"
+      Height          =   375
+      Left            =   4343
+      TabIndex        =   18
+      Top             =   6855
+      Width           =   1170
+   End
+   Begin VB.CommandButton CmdDiscount 
+      Caption         =   "Discoun&t"
+      Height          =   375
+      Left            =   5513
+      TabIndex        =   19
+      Top             =   6855
+      Width           =   1170
+   End
+   Begin VB.TextBox TxtTime 
+      Height          =   330
+      Left            =   7200
+      MaxLength       =   5
+      TabIndex        =   6
+      Top             =   945
+      Width           =   885
+   End
+   Begin VB.TextBox TxtGPID 
+      Height          =   315
+      Left            =   7200
+      MaxLength       =   6
+      TabIndex        =   4
+      Top             =   615
+      Width           =   885
+   End
+   Begin VB.ComboBox CboPayment 
+      Height          =   315
+      Left            =   8115
+      Style           =   2  'Dropdown List
+      TabIndex        =   7
+      Top             =   615
+      Width           =   1590
+   End
+   Begin VB.TextBox TxtID 
+      Height          =   330
+      Left            =   945
+      TabIndex        =   9
+      Top             =   945
+      Width           =   1485
+   End
+   Begin VB.CommandButton CmdAddTrans 
+      Caption         =   "&Add Trans."
+      Height          =   375
+      Left            =   3038
+      TabIndex        =   13
+      Top             =   6855
+      Width           =   1305
+   End
+   Begin VB.TextBox TxtRemarks 
+      Height          =   315
+      Left            =   885
+      MaxLength       =   60
+      TabIndex        =   12
+      Top             =   5130
+      Width           =   3675
+   End
+   Begin MSFlexGridLib.MSFlexGrid VGrid 
+      Height          =   3780
+      Left            =   105
+      TabIndex        =   22
+      Top             =   1305
+      Width           =   9600
+      _ExtentX        =   16933
+      _ExtentY        =   6668
+      _Version        =   393216
+      BackColor       =   15269631
+   End
+   Begin MSComCtl2.DTPicker TxtDocDAte 
+      Height          =   315
+      Left            =   2490
+      TabIndex        =   2
+      Top             =   615
+      Width           =   1530
+      _ExtentX        =   2699
+      _ExtentY        =   556
+      _Version        =   393216
+      Format          =   133824513
+      CurrentDate     =   36524
+   End
+   Begin VB.TextBox TxtDocID 
+      Height          =   315
+      Left            =   945
+      MaxLength       =   8
+      TabIndex        =   1
+      Top             =   615
+      Width           =   1485
+   End
+   Begin VB.CommandButton CmdDelete 
+      Caption         =   "&Delete"
+      Height          =   375
+      Left            =   4868
+      TabIndex        =   16
+      Top             =   7260
+      Width           =   1125
+   End
+   Begin VB.CommandButton CmdClear 
+      Caption         =   "Clea&r"
+      CausesValidation=   0   'False
+      Height          =   375
+      Left            =   3728
+      TabIndex        =   15
+      Top             =   7260
+      Width           =   1125
+   End
+   Begin VB.CommandButton CmdSave 
+      Caption         =   "&Save"
+      Height          =   375
+      Left            =   2588
+      TabIndex        =   14
+      Top             =   7260
+      Width           =   1125
+   End
+   Begin VB.CommandButton CmdClose 
+      Caption         =   "&Close"
+      Height          =   375
+      Left            =   6008
+      TabIndex        =   17
+      Top             =   7260
+      Width           =   1125
+   End
+   Begin VB.Image Image1 
+      Height          =   2205
+      Left            =   9810
+      Stretch         =   -1  'True
+      Top             =   5220
+      Width           =   2460
+   End
+   Begin VB.Label LblOffInvDisc 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   62
+      Top             =   6795
+      Width           =   1485
+   End
+   Begin VB.Label Label15 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "OFF Inv Disc:"
+      Height          =   195
+      Left            =   6945
+      TabIndex        =   61
+      Top             =   6840
+      Width           =   1200
+   End
+   Begin VB.Label Label1 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "&GRN ID :"
+      Height          =   195
+      Left            =   45
+      TabIndex        =   0
+      Top             =   675
+      Width           =   870
+   End
+   Begin VB.Label Label4 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Su&pplier ID :"
+      Height          =   195
+      Left            =   45
+      TabIndex        =   8
+      Top             =   1020
+      Width           =   870
+   End
+   Begin VB.Label LStaxExclAmt 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   58
+      Top             =   5805
+      Width           =   1485
+   End
+   Begin VB.Label Label10 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "S-Tax Excl. Amt :"
+      Height          =   195
+      Left            =   6930
+      TabIndex        =   57
+      Top             =   5850
+      Width           =   1215
+   End
+   Begin VB.Label LblDiscount 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   885
+      TabIndex        =   56
+      Top             =   5490
+      Width           =   1215
+   End
+   Begin VB.Label Label3 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Discount :"
+      Height          =   195
+      Left            =   6930
+      TabIndex        =   55
+      Top             =   5535
+      Width           =   1215
+   End
+   Begin VB.Label LDiscount 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   54
+      Top             =   5490
+      Width           =   1485
+   End
+   Begin VB.Label Label13 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Net Amount :"
+      Height          =   195
+      Left            =   6930
+      TabIndex        =   47
+      Top             =   7185
+      Width           =   1215
+   End
+   Begin VB.Label Label5 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Included :"
+      Height          =   195
+      Left            =   6930
+      TabIndex        =   46
+      Top             =   6510
+      Width           =   1215
+   End
+   Begin VB.Label Label9 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "S-Tax Receivable :"
+      Height          =   195
+      Left            =   6930
+      TabIndex        =   45
+      Top             =   6180
+      Width           =   1215
+   End
+   Begin VB.Label Label12 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Gross Amt :"
+      Height          =   195
+      Left            =   6930
+      TabIndex        =   44
+      Top             =   5205
+      Width           =   1215
+   End
+   Begin VB.Label Label8 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Discount  :"
+      Height          =   195
+      Left            =   105
+      TabIndex        =   43
+      Top             =   5535
+      Width           =   765
+   End
+   Begin VB.Label Label11 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Charges  :"
+      Height          =   195
+      Left            =   105
+      TabIndex        =   42
+      Top             =   5850
+      Width           =   765
+   End
+   Begin VB.Label LblCharges 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   885
+      TabIndex        =   41
+      Top             =   5820
+      Width           =   1215
+   End
+   Begin VB.Label LblDiff 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   885
+      TabIndex        =   40
+      Top             =   6150
+      Width           =   1215
+   End
+   Begin VB.Label Label14 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Diff :"
+      Height          =   195
+      Left            =   105
+      TabIndex        =   39
+      Top             =   6180
+      Width           =   765
+   End
+   Begin VB.Label HDiscount 
+      Height          =   210
+      Left            =   2295
+      TabIndex        =   38
+      Top             =   5580
+      Visible         =   0   'False
+      Width           =   525
+   End
+   Begin VB.Label HOtherDed 
+      Height          =   210
+      Left            =   2340
+      TabIndex        =   37
+      Top             =   5940
+      Visible         =   0   'False
+      Width           =   525
+   End
+   Begin VB.Label HClaim 
+      Height          =   210
+      Left            =   2385
+      TabIndex        =   36
+      Top             =   6210
+      Visible         =   0   'False
+      Width           =   525
+   End
+   Begin VB.Label HLoading 
+      Height          =   210
+      Left            =   2025
+      TabIndex        =   35
+      Top             =   6705
+      Visible         =   0   'False
+      Width           =   525
+   End
+   Begin VB.Label HCarriage 
+      Height          =   210
+      Left            =   2250
+      TabIndex        =   34
+      Top             =   6480
+      Visible         =   0   'False
+      Width           =   525
+   End
+   Begin VB.Label HOtherCharges 
+      Height          =   210
+      Left            =   3015
+      TabIndex        =   33
+      Top             =   5625
+      Visible         =   0   'False
+      Width           =   525
+   End
+   Begin VB.Label Label6 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Ref # :"
+      Height          =   195
+      Left            =   6615
+      TabIndex        =   3
+      Top             =   675
+      Width           =   525
+   End
+   Begin VB.Label Label7 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "Time :"
+      Height          =   195
+      Left            =   6615
+      TabIndex        =   5
+      Top             =   1020
+      Width           =   525
+   End
+   Begin VB.Label mNetAmount 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   32
+      Top             =   7140
+      Width           =   1485
+   End
+   Begin VB.Label mTAmount 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   31
+      Top             =   6465
+      Width           =   1485
+   End
+   Begin VB.Label mSalesTax 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   30
+      Top             =   6135
+      Width           =   1485
+   End
+   Begin VB.Label LblRegistration 
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   330
+      Left            =   8115
+      TabIndex        =   29
+      Top             =   945
+      Width           =   1590
+   End
+   Begin VB.Label TxtTitle 
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   330
+      Left            =   2490
+      TabIndex        =   28
+      Top             =   945
+      Width           =   3705
+   End
+   Begin VB.Label mQty 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   5880
+      TabIndex        =   27
+      Top             =   5160
+      Width           =   1005
+   End
+   Begin VB.Label mAmount 
+      Alignment       =   1  'Right Justify
+      BackColor       =   &H00E0E0E0&
+      BorderStyle     =   1  'Fixed Single
+      Caption         =   "0.00"
+      BeginProperty Font 
+         Name            =   "MS Sans Serif"
+         Size            =   9.75
+         Charset         =   0
+         Weight          =   400
+         Underline       =   0   'False
+         Italic          =   0   'False
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H00400000&
+      Height          =   285
+      Left            =   8190
+      TabIndex        =   26
+      Top             =   5160
+      Width           =   1485
+   End
+   Begin VB.Label Label2 
+      Alignment       =   1  'Right Justify
+      AutoSize        =   -1  'True
+      BackStyle       =   0  'Transparent
+      Caption         =   "&Remarks :"
+      Height          =   195
+      Left            =   150
+      TabIndex        =   11
+      Top             =   5205
+      Width           =   720
+   End
+   Begin VB.Label Line1 
+      BackColor       =   &H00FFFFFF&
+      ForeColor       =   &H00000000&
+      Height          =   30
+      Left            =   15
+      TabIndex        =   25
+      Top             =   15
+      Width           =   9780
+   End
+   Begin VB.Label Line2 
+      Alignment       =   2  'Center
+      BackColor       =   &H00C98A45&
+      Caption         =   "Purchase Receipt   [ JSON TEST ]"
+      BeginProperty Font 
+         Name            =   "Arial Black"
+         Size            =   15.75
+         Charset         =   0
+         Weight          =   900
+         Underline       =   0   'False
+         Italic          =   -1  'True
+         Strikethrough   =   0   'False
+      EndProperty
+      ForeColor       =   &H8000000E&
+      Height          =   495
+      Left            =   0
+      TabIndex        =   24
+      Top             =   30
+      Width           =   9825
+   End
+   Begin VB.Label Line3 
+      BackColor       =   &H00FFFFFF&
+      ForeColor       =   &H00000000&
+      Height          =   30
+      Left            =   0
+      TabIndex        =   23
+      Top             =   540
+      Width           =   9795
+   End
+End
+Attribute VB_Name = "Fin_PurM_JSON"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Option Explicit
+'Dim max_entries As Integer
+Dim cDoc_Type, cDoc_Abbr, MFiscal, Msys_status, mED_Status, MVCombination, MVnumbering As Integer
+Private MVMode, MBookType As Integer
+Private cFoundFlag As Boolean
+Private T_Qty, T_Amount, TDel_Amount, mDiscount, mCharges As Double
+Private GL_Integ, mOldAccount As Double
+Private SerialCode, NewVoucherNo As Double
+Private TQty, tAMount As Double
+Private DelItemID, MItem_ID As Double
+Private tmpSaleAmt, tmpRemarks, tmpDocNar, TmpTitle, cNarration, mTranRemarks As String
+Private DelQty, DelAmt, tmpQty, tmpAmt, tmpRate, tmpStaxRate, tmpStaxAmt, tmpDiscRate, tmpDiscAmt, tmpDOI_Rate, tmpDOI_Amt, tmpTotalAmt As Double
+Private tmpExpDate As Date
+Private SQLDel, RSMAST, RSMastGL, RsGL, RsDummy, RsDummy1 As New ADODB.Recordset
+Private mOldCustID As Long
+' Sales Tax and Invoice Policy
+Private mCreditSalesLocalId, mCreditSalesImportId, mCashSalesLocalId, mCashSalesImportId As Double
+Private mSalesId, mSalesTaxPayableId, mSalesReturnID, mDiscountID, mClaimId, mOtherDedID As Double
+Private nSTaxAmount, nTAmount As Double
+Private mCarriageId, mLoadingID, mOtherChargesID, mCashSalesID As Double
+Private mSalesImportAmt, mSalesLocalAmt As Double
+Private mRegStaxRate, mUnRegStaxRate As Single
+Private mErr, OldPayment As Integer
+Private blnFirst As Boolean
+Private Declare Function ShellExecute Lib "shell32.dll" Alias "ShellExecuteA" _
+    (ByVal hwnd As Long, ByVal lpOperation As String, ByVal lpFile As String, _
+    ByVal lpParameters As String, ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
+
+'
+Public Function CalDiscount()
+On Error GoTo TrapError
+   mDiscount = Val(HDiscount) + Val(HClaim) + Val(HOtherDed)
+   mCharges = Val(HLoading) + Val(HCarriage) + Val(HOtherCharges)
+   'MKB temp block 21-02-2024
+   LblDiscount.Caption = mDiscount
+   LblCharges.Caption = mCharges
+   LblDiff.Caption = mCharges - mDiscount
+   mNetAmount.Caption = Format(T_Amount - CDbl(LblOffInvDisc) - mDiscount + mCharges, "##,###,##.00")
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+Private Function DeleteRow()
+   
+On Error GoTo TrapError
+   Dim ValCol1 As String
+   Dim ValCol2 As String
+   Dim ValCol3 As String
+   Dim ValCol4 As String
+   Dim ValCol5 As String
+   Dim ValCol6 As String
+   Dim ValCol7 As String
+   Dim ValCol8 As String
+   Dim ValCol9 As String
+   Dim ValCol10 As String
+   Dim ValCol11 As String
+   Dim ValCol12 As String
+   Dim ValCol13 As String
+   Dim ValCol14 As String
+   
+   
+   Dim nCnt As Integer
+   If VGrid.Row = nCounter Then
+      VGrid.Col = 1: VGrid.Text = ""
+      VGrid.Col = 2: VGrid.Text = ""
+      VGrid.Col = 3: VGrid.Text = ""
+      VGrid.Col = 4: VGrid.Text = ""
+      VGrid.Col = 5: VGrid.Text = ""
+      VGrid.Col = 6: VGrid.Text = ""
+      VGrid.Col = 7: VGrid.Text = ""
+      VGrid.Col = 8: VGrid.Text = ""
+      VGrid.Col = 9: VGrid.Text = ""
+      VGrid.Col = 10: VGrid.Text = ""
+      VGrid.Col = 11: VGrid.Text = ""
+      VGrid.Col = 12: VGrid.Text = ""
+      VGrid.Col = 13: VGrid.Text = ""
+      VGrid.Col = 14: VGrid.Text = ""
+      
+      nCounter = nCounter - 1
+      Exit Function
+   End If
+   If VGrid.Row < nCounter Then
+      nCnt = VGrid.Row
+      Do While nCnt <= nCounter
+         VGrid.Row = nCnt + 1
+         VGrid.Col = 1: ValCol1 = VGrid.Text
+         VGrid.Col = 2: ValCol2 = VGrid.Text
+         VGrid.Col = 3: ValCol3 = VGrid.Text
+         VGrid.Col = 4: ValCol4 = VGrid.Text
+         VGrid.Col = 5: ValCol5 = VGrid.Text
+         VGrid.Col = 6: ValCol6 = VGrid.Text
+         VGrid.Col = 7: ValCol7 = VGrid.Text
+         VGrid.Col = 8: ValCol8 = VGrid.Text
+         VGrid.Col = 9: ValCol9 = VGrid.Text
+         VGrid.Col = 10: ValCol10 = VGrid.Text
+         VGrid.Col = 11: ValCol11 = VGrid.Text
+         VGrid.Col = 12: ValCol12 = VGrid.Text
+         VGrid.Col = 13: ValCol13 = VGrid.Text
+         VGrid.Col = 14: ValCol14 = VGrid.Text
+         
+         VGrid.Row = nCnt
+         VGrid.Col = 1: VGrid.Text = ValCol1
+         VGrid.Col = 2: VGrid.Text = ValCol2
+         VGrid.Col = 3: VGrid.Text = ValCol3
+         VGrid.Col = 4: VGrid.Text = ValCol4
+         VGrid.Col = 5: VGrid.Text = ValCol5
+         VGrid.Col = 6: VGrid.Text = ValCol6
+         VGrid.Col = 7: VGrid.Text = ValCol7
+         VGrid.Col = 8: VGrid.Text = ValCol8
+         VGrid.Col = 9: VGrid.Text = ValCol9
+         VGrid.Col = 10: VGrid.Text = ValCol10
+         VGrid.Col = 11: VGrid.Text = ValCol11
+         VGrid.Col = 12: VGrid.Text = ValCol12
+         VGrid.Col = 13: VGrid.Text = ValCol13
+         VGrid.Col = 14: VGrid.Text = ValCol14
+         
+         nCnt = nCnt + 1
+         If VGrid.Row = nCounter Then
+            VGrid.Row = nCnt
+            VGrid.Col = 1: VGrid.Text = ""
+            VGrid.Col = 2: VGrid.Text = ""
+            VGrid.Col = 3: VGrid.Text = ""
+            VGrid.Col = 4: VGrid.Text = ""
+            VGrid.Col = 5: VGrid.Text = ""
+            VGrid.Col = 6: VGrid.Text = ""
+            VGrid.Col = 7: VGrid.Text = ""
+            VGrid.Col = 8: VGrid.Text = ""
+            VGrid.Col = 9: VGrid.Text = ""
+            VGrid.Col = 10: VGrid.Text = ""
+            VGrid.Col = 11: VGrid.Text = ""
+            VGrid.Col = 12: VGrid.Text = ""
+            VGrid.Col = 13: VGrid.Text = ""
+            VGrid.Col = 14: VGrid.Text = ""
+            
+            nCounter = nCounter - 1
+            
+         End If
+      Loop
+   End If
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+Private Sub UpdateBalance()
+On Error GoTo TrapError
+   Dim nCnt As Integer
+   Dim nQty As Double
+   Dim nAmount As Double
+   'Dim nTAmount As Double
+   Dim nSTaxAmount As Double
+   Dim nDiscAmount As Double
+   Dim nDiscOIAmt As Double
+   Dim nOffInvDiscAmt As Double
+   
+   nTAmount = 0
+
+   For nCnt = 1 To max_entries
+      Fin_PurM_JSON.VGrid.Row = nCnt
+      Fin_PurM_JSON.VGrid.Col = 3
+      nQty = nQty + CDbl(Fin_PurM_JSON.VGrid.Text & "0")
+      Fin_PurM_JSON.VGrid.Col = 5
+      nAmount = nAmount + CDbl(Fin_PurM_JSON.VGrid.Text & "0")
+      Fin_PurM_JSON.VGrid.Col = 7
+      nSTaxAmount = nSTaxAmount + CDbl(Fin_PurM_JSON.VGrid.Text & "0")
+      Fin_PurM_JSON.VGrid.Col = 9
+      nDiscAmount = nDiscAmount + CDbl(Fin_PurM_JSON.VGrid.Text & "0")
+      Fin_PurM_JSON.VGrid.Col = 11
+      nOffInvDiscAmt = nOffInvDiscAmt + CDbl(Fin_PurM_JSON.VGrid.Text & "0")
+      
+   Next
+
+      'nTAmount = nAmount - (nDiscAmount + mDiscount) + nSTaxAmount
+      nTAmount = nAmount - (nDiscAmount) + nSTaxAmount
+      T_Amount = nTAmount
+      Fin_PurM_JSON.mQty.Caption = Format(nQty, "##,##0.00")
+      Fin_PurM_JSON.mAmount.Caption = Format(nAmount, "##,##0.00")
+      Fin_PurM_JSON.mSalesTax.Caption = Format(nSTaxAmount, "##,##0.00")
+      Fin_PurM_JSON.LDiscount.Caption = Format(nDiscAmount, "##,##0.00")
+      Fin_PurM_JSON.LStaxExclAmt.Caption = Format((nAmount - nDiscAmount), "##,##0.00")
+      Fin_PurM_JSON.LblOffInvDisc.Caption = Format((nOffInvDiscAmt), "##,##0.00")
+      'Fin_PurM_JSON.mNetAmount.Caption = Format(nTAmount - (nOffInvDiscAmt), "##,##0.00")
+      Fin_PurM_JSON.mNetAmount.Caption = Format(nTAmount - (nOffInvDiscAmt) - mDiscount + mCharges, "##,##0.00")
+      '- mDiscount + mCharges
+      
+      
+      'LblOffInvDisc
+      
+            'sales tax
+
+'      Fin_PurM_JSON.LblDiscount.Caption = Format(nDiscAmount, "##,##0.00")
+      
+      Fin_PurM_JSON.mTAmount.Caption = Format(nTAmount, "##,##0.00")
+    VGrid.Col = 1
+    VGrid.Row = 1
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Function VGridClear()
+On Error GoTo TrapError
+    Dim nCnt As Integer
+    For nCnt = 1 To max_entries
+       VGrid.Row = nCnt
+       VGrid.Col = 1: VGrid.Text = ""
+       VGrid.Col = 2: VGrid.Text = ""
+       VGrid.Col = 3: VGrid.Text = ""
+       VGrid.Col = 4: VGrid.Text = ""
+       VGrid.Col = 5: VGrid.Text = ""
+       VGrid.Col = 6: VGrid.Text = ""
+       VGrid.Col = 7: VGrid.Text = ""
+       VGrid.Col = 8: VGrid.Text = ""
+       VGrid.Col = 9: VGrid.Text = ""
+       VGrid.Col = 10: VGrid.Text = ""
+       VGrid.Col = 11: VGrid.Text = ""
+       VGrid.Col = 12: VGrid.Text = ""
+       VGrid.Col = 13: VGrid.Text = ""
+       VGrid.Col = 14: VGrid.Text = ""
+       
+    Next
+    mAmount.Caption = "0.00"
+    mQty.Caption = "0.00"
+    nCounter = 1
+    VGrid.Col = 1
+    VGrid.Row = 1
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+Private Sub CmdAddTrans_Click()
+On Error GoTo TrapError
+   'If Val(TxtFiscal) = 0 Then
+'temp
+'        MsgBox "Month not selected .... ", vbInformation, cSelFormId
+'        TxtFiscal.SetFocus
+'        Exit Sub
+   'End If
+   If nCounter <= max_entries Then
+      lEdit = False
+      Fin_PurD_JSON.Show vbModal, Me
+      Call UpdateBalance
+'      Call CalDiscount
+      'TxtFiscal.Enabled = False
+      If nCounter > 1 Then
+        TxtDocID.Enabled = False
+        'TxtFiscal.Enabled = False
+        CmdSave.Enabled = True
+        CmdDelete.Enabled = True
+        CmdDiscount.Enabled = True
+      End If
+   Else
+        MsgBox "Limit of Transactions exahausted " & Chr(13) & "Consult default values ...", vbInformation, "Production Receipt"
+        Exit Sub
+   End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub cmdAssignCo_Click()
+On Error GoTo TrapError
+
+Dim Rs As New ADODB.Recordset
+Dim intCoID As Integer
+Dim intDocID As Integer
+Dim blnSQlAuth As Boolean
+Dim dblCost As Double
+ 
+intDocID = Val(TxtDocID.Text)
+intCoID = Val(txtCoID.Text)
+
+
+      SQL = "select * FROM Fin_Pur_d WHERE prod_id = " & intDocID
+      Set Rs = FetchAll(SQL)
+      With Rs
+        If Not (.EOF And .BOF) Then
+            Do While Not .EOF
+'                dblCost = !total_amt / !Qty
+                SQL = ""
+                'SQL = "update fin_item set co_id = " & intCoID & ", cost_rate = " & dblCost & " where item_id = " & !Item_ID
+                SQL = "update fin_item set co_id = " & intCoID & " where item_id = " & !Item_ID
+                blnSQlAuth = UpdateV(SQL)
+                If blnSQlAuth = False Then
+                    MsgBox "Error in Query contact with Administrator."
+                    .Close
+                    Exit Sub
+                End If
+                .MoveNext
+            Loop
+            .Close
+        End If
+      End With
+      MsgBox "Process Completed ... "
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+Private Sub CmdDelete_Click()
+On Error GoTo TrapError
+   '05 Reverse Balance From Inventory
+   If cFoundFlag = True Then
+   
+     If Not Mid(Trim(cUPwordStr), 5, 1) = 1 Then
+         MsgBox "Acess denied contact with administrator.", vbOKOnly + vbInformation, "System message"
+         'Cancel = True
+         Exit Sub
+     End If
+
+     If Not MsgBox("Discarding voucher, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+         Exit Sub
+     End If
+    
+    
+      
+      Screen.MousePointer = vbHourglass
+      SQL = "select * FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+      Set SQLDel = FetchAll(SQL)
+      If Not (SQLDel.EOF And SQLDel.BOF) Then
+            TDel_Amount = 0
+            Do While Not SQLDel.EOF
+                DelItemID = SQLDel!Item_ID
+                tmpQty = SQLDel!Qty
+                tmpAmt = SQLDel!pur_Amt
+                TDel_Amount = TDel_Amount + tmpAmt
+                SQL = "select * FROM fin_item WHERE item_id = " & DelItemID
+                Set RSMAST = FetchAll(SQL)
+                If Not (RSMAST.EOF And RSMAST.BOF) Then
+                     GL_Integ = RSMAST!gl_pur_id
+                     'RSMAST.Edit
+                     RSMAST!Cqty = RSMAST!Cqty - tmpQty
+                     RSMAST!CAMT = RSMAST!CAMT - tmpAmt
+                     RSMAST!Tnot = RSMAST!Tnot - 1
+                     RSMAST!Tnot1 = 0
+                     RSMAST.Update
+                End If
+                RSMAST.Close
+                SQLDel.MoveNext
+            Loop
+        End If
+        '*****************************************************
+        '07 Start Reverse GL From GL Master Table
+        Dim DelDr, DelCr, DelAccountID As Double
+        SQL = "select * FROM gl0003 WHERE Serial_No = " & SerialCode
+        Set RsGL = FetchAll(SQL)
+        If Not (RsGL.EOF And RsGL.BOF) Then
+            RsGL.MoveFirst
+            DelDr = 0
+            DelCr = 0
+            Do While Not RsGL.EOF
+                DelAccountID = RsGL!Ac_id
+                DelDr = RsGL!debit
+                DelCr = RsGL!credit
+                SQL = "select * FROM gl0001 WHERE ac_id = " & DelAccountID
+                Set RSMAST = FetchAll(SQL)
+                If Not (RSMAST.EOF And RSMAST.BOF) Then
+                     'RSMAST.Edit
+                     RSMAST!cbal = RSMAST!cbal - DelDr + DelCr
+                     RSMAST!Tnot = RSMAST!Tnot - 1
+                     RSMAST.Update
+                End If
+                RSMAST.Close
+                RsGL.MoveNext
+            Loop
+            RsGL.Close
+        End If
+         '*****************************************************
+         SQLDel.Close
+         '08 Delete Old Transactions from Detail Inventory Table ?
+         SQL = "DELETE FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+         Con.Execute SQL
+         SQL = "DELETE FROM Fin_Pur_m WHERE prod_id = " & Val(TxtDocID) & " and Serial_No = " & SerialCode
+         Con.Execute SQL
+         SQL = "DELETE FROM fin_ldgr WHERE doc_id = " & Val(TxtDocID) & " and Serial_No = " & SerialCode & " and doc_type_id = " & cDoc_Type
+         Con.Execute SQL
+         'see 14A 2-8-2001 09 Delete Old Transactions GL
+         SQL = "DELETE FROM gl0003 WHERE Serial_No = " & SerialCode & " and book_id = " & cBookID & " and voucher_id = " & Val(TxtDocID)
+         Con.Execute SQL
+         SQL = "DELETE FROM gl0002 WHERE Serial_No = " & SerialCode & " and book_id = " & cBookID & " and voucher_id = " & Val(TxtDocID)
+         Con.Execute SQL
+         Screen.MousePointer = vbDefault
+         MsgBox "Document ID: " & TxtDocID & "  has been deleted... "
+         Call clearform
+  End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub CmdDiscount_Click()
+On Error GoTo TrapError
+    Fin_PurDed_JSON.Show vbModal, Me
+    Call UpdateBalance
+    Call CalDiscount
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub cmdDownload_Click()
+    
+On Error GoTo TrapError
+
+
+    Dim cn As ADODB.Connection
+    Dim Rs As ADODB.Recordset
+    Dim fileData() As Byte
+    Dim fileName As String
+    Dim filePath As String
+    Dim prodId As Integer
+    Dim serialNo As Integer
+    Dim connectionString As String
+    Dim htmlPath As String
+    
+    If TxtDocID.Text = "" Then
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+        Exit Sub
+    End If
+    
+    If Not CDbl(TxtDocID.Text) > 0 Then
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+        Exit Sub
+    End If
+    
+    ' Product ID and Serial Number of the file to download/view
+    prodId = CInt(TxtDocID)
+    ' Replace with the actual product ID
+    serialNo = SerialCode ' Replace with the actual serial number
+    
+    ' Connection string
+'    connectionString = "Provider=SQLOLEDB;Data Source=myServerAddress;Initial Catalog=myDatabase;User ID=myUsername;Password=myPassword;"
+    
+    ' Create ADO objects
+'    Set cn = New ADODB.Connection
+    Set Rs = New ADODB.Recordset
+    
+    
+    Set Cmd = New ADODB.Command
+    
+    ' Open connection
+    Dim ConDoc As New ADODB.Connection
+    Dim strConDocString As String
+    
+    strConDocString = "Provider=SQLOLEDB.1;Persist Security Info=false;" & _
+                    "Server=" & SERVER_NAME & ";" & _
+                    "UID=appsuser;" & _
+                    "PWD=redgreen;" & _
+                    "trusted_connection=no;" & _
+                    "Initial Catalog=" & dduser & "_" & nYear & ";" & _
+                    "Data Source=" & SERVER_IP  'SERVER_NAME
+                    
+
+    ConDoc.connectionString = strConDocString
+    ConDoc.Open
+    
+    
+    ' Open connection
+'    cn.connectionString = connectionString
+'    cn.Open
+    
+    ' Retrieve file data from the database
+    Rs.Open "SELECT pdf_doc FROM fin_pur_m_doc WHERE Prod_ID = " & prodId & " AND Serial_No = " & serialNo, ConDoc, adOpenStatic, adLockOptimistic
+    
+    If Not Rs.EOF Then
+        ' Get file data and file name
+        fileData = Rs.Fields("pdf_doc").Value
+        'fileName = rs.Fields("FileName").Value
+        
+        ' Close recordset
+        Rs.Close
+        
+        ' Save the file to a local path or open it directly for viewing
+        filePath = App.Path & "\download\" & CInt(TxtDocID) & ".pdf" ' Change the path as needed
+'        filePath = App.Path & "\download\" & SerialCode & ".pdf" ' Change the path as needed
+        
+        ' Save the file to disk
+        Open filePath For Binary As #1
+        Put #1, , fileData
+        Close #1
+        
+        
+      ' Create a temporary HTML file to embed the PDF
+'        htmlPath = Environ("TEMP") & "\" & "temp.html"
+        htmlPath = Environ("TEMP") & "\" & SerialCode & ".html"
+        Open htmlPath For Output As #2
+        Print #2, "<html><body>"
+        Print #2, "<embed width='100%' height='100%' type='application/pdf' src='" & filePath & "'></embed>"
+        Print #2, "</body></html>"
+        Close #2
+        
+        ' Open the temporary HTML file in the default browser
+        ShellExecute 0, "open", htmlPath, vbNullString, vbNullString, vbNormalFocus
+        
+        ' Open the saved file for viewing (requires default PDF viewer)
+        'Shell "cmd /c start " & filePath, vbNormalFocus
+    Else
+        MsgBox "File not found.", vbExclamation
+    End If
+    
+    ' Cleanup
+    'cn.Close
+    Set Rs = Nothing
+'    Set ConDoc = Nothing
+    ConDoc.Close
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+
+End Sub
+
+Private Sub cmdPrintGrid_Click()
+On Error GoTo TrapError
+    If Not MsgBox("Print Report, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+        Exit Sub
+    Else
+        Call grd(0).PrintGrid(, , , 0.5, 1)
+    End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+    
+End Sub
+
+Private Sub cmdPurOrder_Click()
+
+Dim RSMAST As New ADODB.Recordset
+Dim cSQL As String
+Dim nCnt As Integer
+Dim nCnt1 As Integer
+
+
+If TxtDocID.Text = "" Or TxtDocID.Text = "0" Then Exit Sub
+
+If TxtID.Text = "" Or TxtID.Text = "0" Then Exit Sub
+
+    For nCnt = 1 To (nCounter - 1)
+      VGrid.Row = nCnt
+      VGrid.Col = 1
+      MItem_ID = Val(Trim(VGrid.Text))
+          SQL = "select * FROM FIN_SUPP_ITEMS WHERE item_id = " & MItem_ID & "  and supplier_id = " & TxtID.Text
+          Set RSMAST = FetchAll(SQL)
+          If (RSMAST.EOF And RSMAST.BOF) Then
+                cSQL = "insert into fin_supp_items (supplier_id, item_id, stock_bal) values(" & TxtID.Text & "," & MItem_ID & ",0" & ")"
+                Call UpdateV(cSQL)
+                nCnt1 = nCnt1 + 1
+          End If
+          RSMAST.Close
+    Next
+          MsgBox nCnt1 & " Items Added successfully.", vbOKOnly, vbModal
+          
+End Sub
+
+Private Sub CmdSave_Click()
+On Error GoTo TrapError
+    
+    
+    'MKB 07 03 2024
+    
+    LblDiscount.Caption = "0"
+    
+    
+
+    If nCounter = 1 Then
+        MsgBox "No transaction to slave ", vbInformation, cSelFormId
+        Exit Sub
+    End If
+   If Val(TxtDocID) = 0 Then
+        cFoundFlag = False
+   End If
+   If Len(Trim(TxtRemarks)) = 0 Then
+        TxtRemarks.Text = "Nil"
+   End If
+   '03 Year Star/End Date
+   If TxtDocDAte.Value < cFiscalStart Or TxtDocDAte.Value > cFiscalEnd Then
+       MsgBox "Document/Voucher Date out of range ...  " & Chr(13) & Chr(13) & "Select between  " & cFiscalStart & "  and  " & cFiscalEnd & "  ", vbCritical, cSelFormId
+       Exit Sub
+   End If
+   ' Check Date mvnumbering 1= yearly, 2 Monthly
+''''   If MVnumbering = 2 Then
+''''        ' Monthly Numbering
+''''        If Val(TxtFiscal) <> DatePart("m", TxtDocDAte) Then
+''''            MsgBox "Selected 'Month' does not match with Document/Voucher 'Date' ...", vbCritical, cSelFormId
+''''            Exit Sub
+''''        End If
+''''   Else
+''''        ' Yearly Numberisng
+''''        If Val(TxtFiscal) <> 0 Then
+''''            MsgBox "Invalid Fiscal: Select 0 for Yearly Document numbering ... ", vbCritical, cSelFormId
+''''            Exit Sub
+''''        End If
+''''   End If
+   mSalesImportAmt = 0
+   mSalesLocalAmt = 0
+   Screen.MousePointer = vbHourglass
+   '05 Reverse Balance From Inventory
+   If cFoundFlag = True Then
+      SQL = "select * FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+      Set SQLDel = FetchAll(SQL)
+      If Not (SQLDel.EOF And SQLDel.BOF) Then
+        TDel_Amount = 0
+        Do While Not SQLDel.EOF
+            DelItemID = SQLDel!Item_ID
+            tmpQty = SQLDel!Qty
+            tmpAmt = SQLDel!pur_Amt
+            TDel_Amount = TDel_Amount + tmpAmt
+            SQL = "select * FROM fin_item WHERE item_id = " & DelItemID
+            Set RSMAST = FetchAll(SQL)
+            If Not (RSMAST.EOF And RSMAST.BOF) Then
+                 GL_Integ = RSMAST!gl_pur_id
+                 'RSMAST.Edit
+                 RSMAST!Cqty = RSMAST!Cqty - tmpQty
+                 RSMAST!CAMT = RSMAST!CAMT - tmpAmt
+                 RSMAST!Tnot = RSMAST!Tnot - 1
+                 RSMAST.Update
+            End If
+            RSMAST.Close
+            SQLDel.MoveNext
+        Loop
+        '*****************************************************
+        '07 Start Reverse GL From GL Master Table
+        Dim DelDr, DelCr, DelAccountID As Double
+        SQL = "select * FROM gl0003 WHERE Serial_No = " & SerialCode
+        Set RsGL = FetchAll(SQL)
+        If Not (RsGL.EOF And RsGL.BOF) Then
+           RsGL.MoveFirst
+           DelDr = 0
+           DelCr = 0
+           Do While Not RsGL.EOF
+               DelAccountID = RsGL!Ac_id
+               DelDr = RsGL!debit
+               DelCr = RsGL!credit
+               SQL = "select * FROM gl0001 WHERE ac_id = " & DelAccountID
+               Set RSMAST = FetchAll(SQL)
+               If Not (RSMAST.EOF And RSMAST.BOF) Then
+                    'RSMAST.Edit
+                    RSMAST!cbal = RSMAST!cbal - DelDr + DelCr
+                    RSMAST!Tnot = RSMAST!Tnot - 1
+                    RSMAST.Update
+               End If
+               RSMAST.Close
+               RsGL.MoveNext
+           Loop
+           RsGL.Close
+        End If
+        '*****************************************************
+        'End Start Reverse GL Contra Entry (Supplier)
+        SQLDel.Close
+      End If
+        '08 Delete Old Transactions Purchase Detail
+        SQL = "DELETE FROM Fin_Pur_d WHERE Serial_No = " & SerialCode
+        Con.Execute SQL
+        'see 14 2/8/2001   09 Delete Old Transactions GL
+   End If ' end cFoundFlag
+   '10 Voucher Master Edit/AddNew
+   SQL = "SELECT * FROM Fin_Pur_m WHERE prod_id = "
+   SQL = SQL & Val(TxtDocID) & " and doc_type_id = " & cDoc_Type
+   SQL = SQL & " and fiscal = " & MFiscal
+   '11
+'   SQL = "SELECT * FROM fin_prod_m WHERE serial_no = " & SerialCode
+   Set Rs = FetchAll(SQL)
+   If Not (Rs.EOF And Rs.BOF) Then
+        cFoundFlag = True
+   Else
+        cFoundFlag = False
+   End If
+   If cFoundFlag = True Then
+        'rs.edit
+        NewVoucherNo = Val(TxtDocID)
+   Else
+        ' Next Heightest Number From Relivent Table (Fin_Prod_M)
+        SQL = "SELECT MAX(prod_id) As [Max_NO] FROM Fin_Pur_M WHERE fiscal = " & MFiscal
+        Set RsDummy = FetchAll(SQL)
+        If Not (RsDummy.EOF And RsDummy.BOF) Then
+            If IsNull(RsDummy![Max_No]) Then
+              NewVoucherNo = 1
+            Else
+              NewVoucherNo = RsDummy![Max_No] + 1
+            End If
+        Else
+            NewVoucherNo = 1
+        End If
+        RsDummy.Close
+        ' Auto Voucher Serial Number
+            SerialCode = 0
+            SerialCode = nSerialNo() 'RsDummy.RecordCount
+        
+'        SQL = "SELECT * from gc0002"
+'        Set RsDummy = FetchAll(SQL)
+'        RsDummy.AddNew
+'
+'        'MsgBox RsDummy!serial_no
+'        'SerialCode = RsDummy("Serial_No")
+'        SerialCode = nSerialNo() 'RsDummy.RecordCount
+'        RsDummy("l_uid") = cLoginID
+'        RsDummy("dt_lasta") = Now
+'
+''        RsDummy("Serial_No") = RsDummy("Serial_No")
+'        RsDummy.Update
+'        RsDummy.Close
+       
+        ' Add in Master Document/Voucher Table
+        Rs.AddNew
+        Rs!serial_no = SerialCode
+        Rs!prod_id = NewVoucherNo
+        Rs!fiscal = MFiscal
+        ' Production Type=1
+        Rs!Doc_Type_ID = cDoc_Type
+    End If
+    Rs!sys_status = 0
+    Rs!sys_use = 0
+    Rs!sys_print = 0
+    Rs!doc_date = TxtDocDAte.Value
+    Rs!supplier_id = Trim(TxtID.Text)
+    Rs!remarks = Trim(TxtRemarks.Text)
+    Rs!payment_type = CboPayment.ListIndex
+    If LblRegistration.Caption = "Registered" Then
+        Rs!stax_type = 0
+    Else
+        Rs!stax_type = 1
+    End If
+    If Len(Trim(TxtGPID)) = 0 Then
+            Rs!gp_id = " "
+    Else
+        Rs!gp_id = TxtGPID
+    End If
+    If Len(Trim(TxtTime)) = 0 Then
+        Rs!gp_time = " "
+    Else
+        Rs!gp_time = TxtTime
+    End If
+   ' RS!gp_id = TxtGPID
+   ' RS!gp_time = TxtTime
+    ' In case of Cash Purchase
+    Rs!Vendor_Title = Trim(TxtDesc)
+    Rs!Address = Trim(TxtAddress)
+    Rs!stax_id = Trim(TxtStaxID)
+    Rs!city_id = Val(TxtCityID)
+    'RS!country_id = 0 '? ? ?
+    Rs!remarks = Trim(TxtRemarks.Text)
+    '
+    ' to be implemented later
+    ' discount / charges
+    If HDiscount = "" Then
+        HDiscount = 0
+    End If
+    
+    'Rs!discount_amt = CDbl(HDiscount.Caption) + CDbl(LDiscount.Caption)
+    'change MKB 07 03 2024
+    Rs!discount_amt = CDbl(HDiscount.Caption) + CDbl(LDiscount.Caption)
+    
+    Rs!claim_amt = IIf(HClaim.Caption = "", 0, Val(HClaim.Caption)) 'CDbl(HClaim.Caption)
+    Rs!other_ded_amt = IIf(HOtherDed.Caption = "", 0, Val(HOtherDed.Caption))
+    Rs!loading_amt = IIf(HLoading.Caption = "", 0, Val(HLoading.Caption)) 'CDbl(HLoading.Caption)
+    Rs!carriage_amt = IIf(HCarriage.Caption = "", 0, Val(HCarriage.Caption)) 'CDbl(HCarriage.Caption)
+    Rs!other_charges_amt = IIf(HOtherCharges.Caption = "", "0", Val(HOtherCharges.Caption)) 'CDbl(HOtherCharges.Caption)
+    '
+    Rs.Update
+    Rs.Close
+    
+    
+'Integration Portion
+'12 Voucher GL voucher M
+   SQL = "SELECT * FROM gl0002 WHERE serial_no = " & SerialCode
+   Set Rs = FetchAll(SQL)
+   If Not (Rs.EOF And Rs.BOF) Then
+        'rs.edit
+   Else
+        Rs.AddNew
+        Rs!Voucher_ID = NewVoucherNo
+        Rs!book_id = cBookID
+        Rs!v_mode = MVMode
+        Rs!fiscal = MFiscal
+        Rs!book_type = MBookType
+        Rs!eby = cUserName
+        Rs!remarks = "Nil"
+        Rs!sys_status = 0
+        Rs!sys_use = 0
+        Rs!sys_print = 0
+   End If
+   Rs!voucher_date = TxtDocDAte.Value
+   Rs!serial_no = SerialCode
+   ' ?
+   Rs!Amount = T_Amount
+   Rs!Tnot = nCounter - 1
+   Rs!edit_by = cUserName
+   Rs.Update
+   Rs.Close
+   '13 Voucher Trans Purchase
+   Dim nCnt As Integer
+   '14 Delete Old Transactions from Finished Ledger
+   SQL = "DELETE FROM fin_ldgr WHERE Serial_No = " & SerialCode
+   Con.Execute SQL
+   ' Delete Old Transactions from General Ledger
+   SQL = "DELETE FROM gl0003 WHERE Serial_No = " & SerialCode
+   Con.Execute SQL
+   '
+'*****************************************************************
+' end new logic from Invoice
+    ' Balance Updation In Master Inventory and Master GL
+    '13 Voucher Trans Sale/Purchase
+    'Dim nCnt As Integer
+    Dim FinLRS As New ADODB.Recordset
+    SQL = "SELECT * FROM fin_ldgr"
+    Set FinLRS = FetchAll(SQL)
+        '
+    SQL = "SELECT * FROM gl0003"
+    Set RsGL = FetchAll(SQL)
+    SQL = "SELECT * FROM fin_pur_d"
+    Set Rs = FetchAll(SQL)
+    
+    Dim lTsale, lTSalesTax, ITDiscount, ITDiscountOI, lNetInvoice As Double
+    
+    T_Amount = 0
+    lTsale = 0
+    lTSalesTax = 0
+    
+    For nCnt = 1 To (nCounter - 1)
+      VGrid.Row = nCnt
+      VGrid.Col = 1
+      MItem_ID = Val(Trim(VGrid.Text))
+      'VGrid.Col = 2
+      'MNaration = VGrid.Text
+      VGrid.Col = 3
+      tmpQty = CDbl(VGrid.Text & "0")
+      VGrid.Col = 4
+      tmpRate = CDbl(VGrid.Text & "0")
+      VGrid.Col = 5
+      tmpSaleAmt = CDbl(VGrid.Text & "0")
+      VGrid.Col = 6
+      tmpStaxRate = CDbl(VGrid.Text & "0")
+      VGrid.Col = 7
+      tmpStaxAmt = CDbl(VGrid.Text & "0")
+'      VGrid.Col = 8
+'      tmpRate = CDbl(VGrid.Text & "0")
+      VGrid.Col = 8
+      tmpDiscRate = CDbl(VGrid.Text & "0")
+      
+      VGrid.Col = 9
+      tmpDiscAmt = CDbl(VGrid.Text & "0")
+      
+      VGrid.Col = 10
+      tmpDOI_Rate = CDbl(VGrid.Text & "0")
+      
+      VGrid.Col = 11
+      tmpDOI_Amt = CDbl(VGrid.Text & "0")
+      
+      
+      VGrid.Col = 12
+      tmpTotalAmt = CDbl(VGrid.Text & "0")
+      
+      VGrid.Col = 13
+      mTranRemarks = Trim(VGrid.Text)
+      
+      VGrid.Col = 14
+      If Trim(VGrid.Text) = "" Then
+        tmpExpDate = Date
+      Else
+        tmpExpDate = Trim(VGrid.Text)
+    End If
+      
+      
+      ' Insert into Invoice Datail Table
+      lTsale = lTsale + tmpSaleAmt
+      lTSalesTax = lTSalesTax + tmpStaxAmt
+      ITDiscount = ITDiscount + tmpDiscAmt
+      ITDiscountOI = ITDiscountOI + tmpDOI_Amt
+      'T_Amount = T_Amount + tmpSaleAmt - ITDiscount
+      T_Amount = (((T_Amount + tmpSaleAmt) - ITDiscount) - ITDiscountOI)
+      
+
+      Rs.AddNew
+      Rs("prod_id") = NewVoucherNo
+      Rs("serial_order") = nCnt
+      Rs("Serial_No") = SerialCode
+      Rs("doc_Date") = TxtDocDAte.Value
+      Rs("item_ID") = MItem_ID
+      Rs("qty") = tmpQty
+      Rs("rate") = tmpRate
+      Rs("PUR_amt") = tmpSaleAmt
+      Rs("stax_rate") = tmpStaxRate
+      Rs("stax_amt") = tmpStaxAmt
+      Rs("disc_Per") = tmpDiscRate
+      Rs("disc_amt") = tmpDiscAmt
+      Rs("disc_Per_oi") = tmpDOI_Rate
+      Rs("disc_amt_oi") = tmpDOI_Amt
+      
+      If Not MItem_ID = 0 Then
+        Rs("exp_date") = Format(CDate(tmpExpDate), "mm-dd-yyyy")
+      End If
+      
+
+      
+      
+      'Rs("total_amt") = tmpSaleAmt + tmpStaxAmt - tmpDiscAmt 'tmpTotalAmt
+      Rs("total_amt") = (((tmpSaleAmt + tmpStaxAmt) - tmpDiscAmt) - tmpDOI_Amt) 'tmpTotalAmt
+      Rs("remarks") = mTranRemarks
+      ' Average Cost
+      'RS("cost_amt") = tmpcostAmt
+      Rs.Update
+
+
+'Add Supplier and Item values in FIN_SUPP_ITEMS
+'**********************************************
+        Dim cSQL As String
+          SQL = "select * FROM FIN_SUPP_ITEMS WHERE item_id = " & MItem_ID & "  and supplier_id = " & TxtID.Text
+          Set RSMAST = FetchAll(SQL)
+          If (RSMAST.EOF And RSMAST.BOF) Then
+                cSQL = "insert into fin_supp_items (supplier_id, item_id, stock_bal) values(" & TxtID.Text & "," & MItem_ID & ",0" & ")"
+                Call UpdateV(cSQL)
+          End If
+          RSMAST.Close
+'**********************************************
+      '*********************
+      '14B Update Balance in Master Inventory * for sale reduce the balance *
+      ' FOR PURCHASE ADD BALANCE
+      SQL = "select * FROM fin_item WHERE item_id = " & MItem_ID
+      Set RSMAST = FetchAll(SQL)
+      If Not (RSMAST.EOF And RSMAST.BOF) Then
+           ' 29-06-2002 at lahore grapho
+           If cSTaxType = 0 Then
+               GL_Integ = RSMAST!gl_pur_id
+           Else
+               GL_Integ = mCreditSalesLocalId
+           End If
+           
+           ' ? DISCUSS AND CHECK OTHER CLIENTS.
+           ' 0 is import , 1 = local, 2 = manufactured = local
+            ' **IMPORTANT** 16-05-2002
+            ''           If RSMAST!item_nature = 0 Then
+            ''                mSalesImportAmt = mSalesImportAmt + tmpSaleAmt
+            ''           Else
+            ''                mSalesLocalAmt = mSalesLocalAmt + tmpSaleAmt
+            ''           End If
+           mSalesLocalAmt = mSalesLocalAmt + tmpSaleAmt
+           'RSMAST.Edit
+           RSMAST!Cqty = RSMAST!Cqty + tmpQty
+           'RSMAST!camt = RSMAST!camt + tmpSaleAmt
+           
+           'RSMAST!CAMT = RSMAST!CAMT + (tmpSaleAmt + tmpStaxAmt - tmpDiscAmt)
+           RSMAST!CAMT = RSMAST!CAMT + (((tmpSaleAmt + tmpStaxAmt) - tmpDiscAmt) - tmpDOI_Amt)
+           
+'           RSMAST!camt = (tmpSaleAmt + tmpStaxAmt - tmpDiscAmt)
+'
+            'Update Cost_rate
+            'RSMAST!cost_Rate = (tmpSaleAmt + tmpStaxAmt - tmpDiscAmt) / tmpQty
+            RSMAST!cost_Rate = (((tmpSaleAmt + tmpStaxAmt) - tmpDiscAmt) - tmpDOI_Amt) / tmpQty
+
+           RSMAST!Tnot = RSMAST!Tnot + 1
+           
+           RSMAST!Tnot1 = 0
+           
+           RSMAST.Update
+      End If
+      RSMAST.Close
+      '*********************
+      ' Update Balance in Master GL
+      ' for staxtype = 1 see entry ???
+'      If cSTaxType = 0 Then ' commented on 11/09/2002 at agd
+         ' if amt =0 the thre sould not be any entry in ledger
+'mark gl 11-01-2004
+'         If tmpSaleAmt <> 0 Then
+'            SQL = "select * FROM gl0001 WHERE ac_id = " & GL_Integ
+'            Set RSMastGL = FETCHALL(SQL)
+'            If RSMastGL.RecordCount > 0 Then
+'                 RSMastGL.Edit
+'                 RSMastGL!cbal = RSMastGL!cbal + tmpSaleAmt
+'                 RSMastGL!Tnot = RSMastGL!Tnot + 1
+'                 RSMastGL.Update
+'            End If
+'            RSMastGL.Close
+'         End If
+'      End If
+'*********************
+      '15 Append in Finished Ledger Table
+      FinLRS.AddNew
+      FinLRS!Item_ID = MItem_ID
+      FinLRS!doc_id = NewVoucherNo
+      FinLRS!doc_date = TxtDocDAte.Value
+      FinLRS!fiscal = MFiscal
+      FinLRS!Doc_Type_ID = cDoc_Type
+      FinLRS!serial_no = SerialCode
+      FinLRS!Qtydr = tmpQty
+      FinLRS!Qtycr = 0
+      ' Rate/Amount Should be Average ?
+      FinLRS!Rate = tmpRate
+      FinLRS!amtdr = tmpSaleAmt
+      FinLRS!amtcr = 0
+      FinLRS!desc = Left(Trim(TxtGPID) & ": " & Trim(TxtTitle), 40)
+      FinLRS.Update
+'*****************************
+      ' Append in General Ledger
+      ' In case cstaxtype = 0 Every sale has transaction Credit Entries
+      ' In Case Purchase every transaction is debited to purchase account
+      If cSTaxType = 0 Then
+         If tmpSaleAmt <> 0 Then
+            RsGL.AddNew
+            RsGL!Voucher_ID = NewVoucherNo
+            RsGL!book_id = cBookID
+            RsGL!vdate = TxtDocDAte.Value
+            RsGL!serial_no = SerialCode
+            RsGL!Serial_order = nCnt
+            RsGL!Ac_id = GL_Integ
+            RsGL!adcn = Trim(TxtGPID)
+            RsGL!Narration = " " & TmpTitle ' ? latter decide what to do/ Item Title
+            RsGL!debit = tmpSaleAmt
+            RsGL!credit = 0
+            RsGL!external_id = 0
+            RsGL!ref_id = 0
+            RsGL.Update
+         End If
+      End If
+    Next
+    Rs.Close
+    FinLRS.Close
+    RsGL.Close
+    ' Append in General Ledger if cStaxType = 1 sumed Entry
+
+    SQL = "SELECT * FROM gl0003"
+    Set RsGL = FetchAll(SQL)
+    ' Calculate Net Amount Debited to Customer
+    ' Calculate Net Amount Credited to Supplier
+    'Change cause FBR
+    'lNetInvoice = lTsale - (CDbl(LDiscount) + mDiscount) + lTSalesTax + mCharges
+    lNetInvoice = lTsale - (CDbl(LDiscount) + CDbl(LblOffInvDisc)) + lTSalesTax + mCharges
+     ' Purchase Account Dr
+    If cSTaxType = 1 Then
+        ' Purchase Import
+        If mSalesImportAmt > 0 Then
+            RsGL.AddNew
+            RsGL!Voucher_ID = NewVoucherNo
+            RsGL!book_id = cBookID
+            RsGL!vdate = TxtDocDAte.Value
+            RsGL!serial_no = SerialCode
+            RsGL!Serial_order = 1
+            RsGL!Ac_id = mCreditSalesImportId
+            RsGL!Narration = TxtTitle
+            RsGL!adcn = Trim(TxtGPID)
+            RsGL!debit = mSalesImportAmt
+            RsGL!credit = 0
+            RsGL!external_id = 0
+            RsGL!ref_id = 0
+            RsGL.Update
+         End If
+         ' purchase local
+        If mSalesLocalAmt > 0 Then
+            RsGL.AddNew
+            RsGL!Voucher_ID = NewVoucherNo
+            RsGL!book_id = cBookID
+            RsGL!vdate = TxtDocDAte.Value
+            RsGL!serial_no = SerialCode
+            RsGL!Serial_order = 2
+            'RsGL!ac_id = mCreditSalesLocalId
+            RsGL!Ac_id = mCreditSalesLocalId
+            RsGL!Narration = TxtTitle
+            RsGL!adcn = Trim(TxtGPID)
+            RsGL!debit = mSalesLocalAmt
+            RsGL!credit = 0
+            RsGL!external_id = 0
+            RsGL!ref_id = 0
+            RsGL.Update
+         End If
+        ' Sales Tax Cr
+        ' Sales Tax Receivable Dr
+        If lTSalesTax > 0 Then
+            RsGL.AddNew
+            RsGL!Voucher_ID = NewVoucherNo
+            RsGL!book_id = cBookID
+            RsGL!vdate = TxtDocDAte.Value
+            RsGL!serial_no = SerialCode
+            RsGL!Serial_order = 3
+            RsGL!Ac_id = mSalesTaxPayableId
+            RsGL!Narration = TxtTitle.Caption
+            RsGL!adcn = Trim(TxtGPID)
+            RsGL!debit = lTSalesTax
+            RsGL!credit = 0
+            RsGL!external_id = 0
+            RsGL!ref_id = 0
+            RsGL.Update
+        End If
+    End If ' cstaxtype = 1
+      ' Debit Entries/expenses
+      If Val(HLoading) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 4
+         RsGL!Ac_id = mCarriageId
+         RsGL!Narration = TxtTitle.Caption
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = CDbl(HLoading)
+         RsGL!credit = 0
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+      '
+      If Val(HCarriage) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 5
+         RsGL!Ac_id = mLoadingID
+         RsGL!Narration = TxtTitle.Caption
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = CDbl(HCarriage)
+         RsGL!credit = 0
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+      '
+      If Val(HOtherCharges) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 6
+         RsGL!Ac_id = mOtherChargesID
+         RsGL!Narration = TxtTitle.Caption
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = CDbl(HOtherCharges)
+         RsGL!credit = 0
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+    ' Customer Account Dr/Supplier Account Cr
+    If lNetInvoice <> 0 Then
+      RsGL.AddNew
+      RsGL!Voucher_ID = NewVoucherNo
+      RsGL!book_id = cBookID
+      RsGL!vdate = TxtDocDAte.Value
+      RsGL!serial_no = SerialCode
+      RsGL!Serial_order = 7
+      RsGL!Ac_id = Val(TxtID)
+      RsGL!Narration = "GRN No. " & str(NewVoucherNo)
+      RsGL!adcn = Trim(TxtGPID)
+      RsGL!debit = 0
+      RsGL!credit = lNetInvoice
+      RsGL!external_id = 0
+      RsGL!ref_id = 0
+      RsGL.Update
+    End If
+      ' Sales Account Cr
+    '    If mCharges > 0 Then
+    
+    
+    ' Discount Accounts Dr On Invoice
+    
+    If (mDiscount + CDbl(LDiscount)) > 0 Then
+      ' Credit Entries
+      'If Val(HDiscount) > 0 Then
+      If CDbl(HDiscount + CDbl(LDiscount.Caption)) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 8
+         RsGL!Ac_id = mDiscountID
+         RsGL!Narration = TxtTitle & " On Invoice."
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = 0
+         RsGL!credit = (CDbl(HDiscount) + CDbl(LDiscount.Caption))
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+      
+     ' Discount Accounts Dr OFF Invoice
+    
+      If CDbl(CDbl(LblOffInvDisc.Caption)) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 9
+         RsGL!Ac_id = mDiscountID
+         RsGL!Narration = TxtTitle & " Off Invoice."
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = 0
+         RsGL!credit = CDbl(LblOffInvDisc.Caption)
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+      
+      '
+      If Val(HClaim) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 10
+         RsGL!Ac_id = mClaimId
+         RsGL!Narration = TxtTitle
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = 0
+         RsGL!credit = CDbl(HClaim)
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+      '
+      If Val(HOtherDed) > 0 Then
+         RsGL.AddNew
+         RsGL!Voucher_ID = NewVoucherNo
+         RsGL!book_id = cBookID
+         RsGL!vdate = TxtDocDAte.Value
+         RsGL!serial_no = SerialCode
+         RsGL!Serial_order = 11
+         RsGL!Ac_id = mOtherDedID
+         RsGL!Narration = TxtTitle
+         RsGL!adcn = Trim(TxtGPID)
+         RsGL!debit = 0
+         RsGL!credit = CDbl(HOtherDed)
+         RsGL!external_id = 0
+         RsGL!ref_id = 0
+         RsGL.Update
+      End If
+    End If
+    '17 Integration with GL (Update GL Master Balance)
+    ' In case of Purchase Credit Supplier ID
+'mark gl shifted bellow 11-01-2004
+'    SQL = "select * FROM gl0001 WHERE ac_id = " & Val(txtID)
+'    Set RSMastGL = FETCHALL(SQL)
+'    If RSMastGL.RecordCount > 0 Then
+'        If T_Amount <> 0 Then
+'            RSMastGL.Edit
+'            RSMastGL!cbal = RSMastGL!cbal - T_Amount
+'            RSMastGL!Tnot = RSMastGL!Tnot + 1
+'            RSMastGL.Update
+'        End If
+'    End If
+'    RSMastGL.Close
+    
+' end new logic from invoice
+'******************************************************************
+    '18 Append Debit balance in GL Ledger (Customer transaction)
+    ' Read the newly prepared voucher from gl0003 and update the gl0001 table
+    ' 02-08-2003 new portion added. 11-01-2004 from gl_rm
+    Dim mTotalDebit, mTotalCredit As Double
+    SQL = "select * FROM gl0003 WHERE Serial_No = " & SerialCode
+    Set RsGL = FetchAll(SQL)
+    If Not (RsGL.EOF And RsGL.BOF) Then
+       RsGL.MoveFirst
+       DelDr = 0
+       DelCr = 0
+       Do While Not RsGL.EOF
+           DelAccountID = RsGL!Ac_id
+           DelDr = RsGL!debit
+           DelCr = RsGL!credit
+           mTotalDebit = mTotalDebit + DelDr
+           mTotalCredit = mTotalCredit + DelCr
+           SQL = "select * FROM gl0001 WHERE ac_id = " & DelAccountID
+           Set RSMAST = FetchAll(SQL)
+           If Not (RSMAST.EOF And RSMAST.BOF) Then
+                'RSMAST.Edit
+                RSMAST!cbal = RSMAST!cbal + DelDr - DelCr
+                RSMAST!Tnot = RSMAST!Tnot + 1
+                RSMAST.Update
+           End If
+           RSMAST.Close
+           RsGL.MoveNext
+       Loop
+       RsGL.Close
+       
+       
+       If mTotalDebit <> mTotalCredit Then
+            MsgBox "total debit " & mTotalDebit & "  total credit " & mTotalCredit
+       End If
+       
+       
+    End If
+   Screen.MousePointer = vbDefault
+   
+   Dim HoldProd_id As Double
+   
+   If cFoundFlag = False Then
+        If MFiscal = "0" Then
+            MsgBox "New Document/Voucher Added. No. " & cDoc_Abbr & " " & str(NewVoucherNo), vbInformation, cSelFormId
+        Else
+            MsgBox "New Document/Voucher Added. No. " & cDoc_Abbr & " " & MFiscal & "-" & str(NewVoucherNo), vbInformation, cSelFormId
+        End If
+        
+        HoldProd_id = NewVoucherNo
+   Else
+        If MFiscal = "0" Then
+            MsgBox "Document/Voucher Edited. No. " & cDoc_Abbr & " " & TxtDocID.Text, vbInformation, cSelFormId
+        Else
+            MsgBox "Document/Voucher Edited. No. " & cDoc_Abbr & " " & MFiscal & "-" & TxtDocID.Text, vbInformation, cSelFormId
+        End If
+        HoldProd_id = CDbl(TxtDocID)
+   End If
+   
+   With Cmd
+    .ActiveConnection = Con
+    .CommandText = "DELETE * FROM FIN_PUR_D WHERE ITEM_ID = 0"
+    
+   End With
+      
+   
+   
+   
+   
+   Call VGridClear
+   Call clearform
+   
+   'Add new data
+   If cFoundFlag = False Then
+        If checkDetailData(HoldProd_id) = True Then
+            TxtDocID.Text = HoldProd_id
+            TxtDocID_Validate False
+            Call CmdSave_Click
+            MsgBox "Click the save button again.", vbOKOnly + vbInformation
+        Else
+            
+        End If
+        
+   Else
+        If checkDetailData(HoldProd_id) = True Then
+            TxtDocID.Text = HoldProd_id
+            TxtDocID_Validate False
+            MsgBox "Click the save button again.", vbOKOnly + vbInformation
+            Call CmdSave_Click
+        Else
+            
+        End If
+   End If
+   
+   'end new data
+   
+   
+
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Sub CmdClear_Click()
+On Error GoTo TrapError
+   If nCounter >= 2 Then
+      If Not MsgBox("Clearing voucher, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+            Exit Sub
+      End If
+   End If
+   Call clearform
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub cmdClose_Click()
+On Error GoTo TrapError
+   If nCounter >= 2 Then
+      If Not MsgBox("Discarding voucher, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+            Exit Sub
+      End If
+   End If
+   Unload Me
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub Command2_Click()
+
+End Sub
+
+Private Sub CmdShowAddr_Click()
+On Error GoTo TrapError
+    FrameAddress.Visible = True
+    If CmdShowAddr.Caption = "S&how Address" Then
+        FrameAddress.Visible = True
+        TxtDesc.Visible = True
+        TxtAddress.Visible = True
+        TxtStaxID.Visible = True
+        TxtCityID.Visible = True
+        TxtCityTitle.Visible = True
+        CmdShowAddr.Caption = "&Hide Address"
+    Else
+        FrameAddress.Visible = False
+        TxtDesc.Visible = False
+        TxtAddress.Visible = False
+        TxtStaxID.Visible = False
+        TxtCityID.Visible = False
+        TxtCityTitle.Visible = False
+        CmdShowAddr.Caption = "S&how Address"
+    End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub CmdShowItem_Click()
+On Error GoTo TrapError
+Dim cSQL As String
+Dim Rss As New ADODB.Recordset
+
+If grd(0).Visible = False Then
+    grd(0).Visible = True
+    CmdShowItem.Caption = "Hide Items"
+    cmdPrintGrid.Enabled = True
+    With grd(0)
+        .Cols = 8
+        .TextMatrix(0, 0) = "Supplier"
+        .ColWidth(0) = 1900
+        .TextMatrix(0, 1) = "Manual ID"
+        .ColWidth(1) = 1000
+        .TextMatrix(0, 2) = "Item Title"
+        .ColWidth(2) = 3000
+        .TextMatrix(0, 3) = "TNOT"
+        .ColWidth(3) = 800
+        .TextMatrix(0, 4) = "Stock"
+        .ColWidth(4) = 1000
+        .TextMatrix(0, 5) = "Cost Rate"
+        .ColWidth(5) = 1000
+        .TextMatrix(0, 6) = "Sales Rate"
+        .ColWidth(6) = 1000
+        .TextMatrix(0, 7) = "Item ID"
+        .ColWidth(7) = 0
+        
+    End With
+    
+    cSQL = "select ac_title, manualid, ITEM_TITLE, TNOT, CQTY, COST_RATE, SALES_RATE,item_id from V_FIN_STOCK_SUPPLIER where supplier_id = " & TxtID.Text
+    'grd(0).LoadArray FetchAll("select * from v_fin_stock_supplier where supplier_id = " & TxtID.Text).GetRows
+    With Rss
+        Set Rss = FetchAll(cSQL)
+        If Not Rss.EOF Then
+'        If Not .RecordCount <= 0 Then
+            grd(0).LoadArray Rss.GetRows
+            If Not MsgBox("Print Report, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+                Exit Sub
+            Else
+                Call grd(0).PrintGrid(, , , 0.5, 1)
+            End If
+    
+        End If
+        
+    End With
+Else
+    grd(0).Visible = False
+    CmdShowItem.Caption = "Show Items"
+    cmdPrintGrid.Enabled = False
+End If
+'    Rss.Close
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+Private Sub Command1_Click()
+    Dim conn As ADODB.Connection
+    Dim Cmd As ADODB.Command
+    Dim Rs As ADODB.Recordset
+    Dim startDate As Date
+    Dim endDate As Date
+    Dim strSQL As String
+    
+    ' Connect to the SQL Server database
+'    Set conn = New ADODB.Connection
+'    conn.connectionString = "your_connection_string"
+    'con.Open
+    
+    ' Calculate the start and end dates of the last week
+    startDate = DateAdd("ww", -1, TxtDocDAte.Value)
+    endDate = DateAdd("d", 6, startDate)
+    
+    ' Prepare the SQL query
+    strSQL = "EXEC CalculateWeeklyReorderLevel '" & Format(startDate, "yyyy-mm-dd") & "', '" & Format(endDate, "yyyy-mm-dd") & "'"
+    
+    ' Execute the stored procedure
+    Set Cmd = New ADODB.Command
+    With Cmd
+        .ActiveConnection = Con
+        .CommandText = strSQL
+        .CommandType = adCmdText
+        Set Rs = .Execute
+    End With
+    
+    ' Process the result set
+    Do While Not Rs.EOF
+        Debug.Print Rs.Fields("ITEM_ID").Value, Rs.Fields("TotalWeeklySales").Value, Rs.Fields("ReorderLevel").Value
+        Rs.MoveNext
+    Loop
+    
+    ' Clean up
+    Rs.Close
+    'conn.Close
+    Set Rs = Nothing
+    Set Cmd = Nothing
+    Set conn = Nothing
+End Sub
+
+
+
+
+Private Sub cmdUploadFile_Click()
+'Option Explicit
+On Error GoTo TrapError
+
+    Dim cn As ADODB.Connection
+    Dim Cmd As ADODB.Command
+    Dim Rs As ADODB.Recordset
+'    Dim fileData() As Byte
+    Dim filePath As String
+    Dim fileName As String
+    Dim connectionString As String
+    
+    If TxtDocID.Text = "" Then
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+        Exit Sub
+    End If
+    
+    
+    If Not CDbl(TxtDocID.Text) > 0 Or TxtDocID.Text = "" Then
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+        Exit Sub
+    End If
+    
+'''    ' Path to your PDF file
+'''    filePath = App.Path & "\upload\" & TxtDocID & ".pdf" '"C:\path\to\your\file.pdf"
+'''
+'''    ' Connection string
+'''    'connectionString = "Provider=SQLOLEDB;Data Source=myServerAddress;Initial Catalog=myDatabase;User ID=myUsername;Password=myPassword;"
+'''    If Dir(filePath) = "" Then
+'''        MsgBox "File does not exist.", vbExclamation
+'''        Exit Sub
+'''    End If
+'''
+'''    ' Read file data into a byte array
+'''    Open filePath For Binary As #1
+'''    ReDim fileData(LOF(1) - 1)
+'''    Get #1, , fileData
+'''    Close #1
+'''
+'''    ' Get the file name from the file path
+'''    fileName = Mid(filePath, InStrRev(filePath, "\") + 1)
+    
+    With CommonDialog1
+        .DialogTitle = "Select File to Save"
+        .Filter = "All PDF Files (*.PDF)|*.PDF"
+        .ShowOpen
+    End With
+
+    ' Check if a file was selected
+    If CommonDialog1.fileName <> "" Then
+        ' Read the file contents
+        Dim fileData() As Byte
+        Open CommonDialog1.fileName For Binary As #1
+        ReDim fileData(LOF(1) - 1)
+        Get #1, , fileData
+        Close #1
+    Else
+        Exit Sub
+        
+        ' Save file to the database
+        'SaveFileToDatabase CInt(TxtVoucherID), SerialCode, CommonDialog1.fileName, fileData
+'        SaveFileToDatabase CInt(TxtVoucherID), SerialCode, fileData
+    End If
+    
+    
+    ' Create ADO objects
+    'Set cn = New ADODB.Connection
+    Set Cmd = New ADODB.Command
+    
+    ' Open connection
+    Dim ConDoc As New ADODB.Connection
+    Dim strConDocString As String
+    
+    strConDocString = "Provider=SQLOLEDB.1;Persist Security Info=false;" & _
+                    "Server=" & SERVER_NAME & ";" & _
+                    "UID=appsuser;" & _
+                    "PWD=redgreen;" & _
+                    "trusted_connection=no;" & _
+                    "Initial Catalog=" & dduser & "_" & nYear & ";" & _
+                    "Data Source=" & SERVER_IP  'SERVER_NAME
+                    
+
+    ConDoc.connectionString = strConDocString
+    ConDoc.Open
+
+
+
+    
+    With Cmd
+        .ActiveConnection = ConDoc
+        .CommandText = "delete from fin_pur_m_doc where prod_id = " & CInt(TxtDocID)
+        .CommandType = adCmdText
+        .Execute
+    End With
+    
+    
+    ' Set up command object
+    Set Cmd.ActiveConnection = ConDoc
+    Cmd.CommandText = "INSERT INTO  fin_pur_m_doc (prod_id, serial_no, pdf_doc) VALUES (?, ?, ?)"
+    Cmd.CommandType = adCmdText
+    
+    ' Add parameters to the command
+    'cmd.Parameters.Append cmd.CreateParameter("FileName", adVarChar, adParamInput, Len(fileName), fileName)
+    
+    Cmd.Parameters.Append Cmd.CreateParameter("prod_id", adInteger, adParamInput, , CInt(TxtDocID))
+    Cmd.Parameters.Append Cmd.CreateParameter("serial_no", adInteger, adParamInput, , SerialCode)
+    Cmd.Parameters.Append Cmd.CreateParameter("pdf_doc", adVarBinary, adParamInput, UBound(fileData) + 1, fileData)
+    
+    ' Execute command
+    Cmd.Execute
+    
+    MsgBox "File uploaded successfully.", vbInformation
+    
+    ' Cleanup
+    Set Cmd = Nothing
+    ConDoc.Close
+    'Set Con = Nothing
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+    
+End Sub
+
+
+Private Sub Form_DblClick()
+
+    Dim conn As Object
+    Dim Rs As Object
+    Dim imgByte() As Byte
+    Dim imgData As String
+    Dim ImageID As Double
+
+    ' SQL Server connection string
+    'Dim connStr As String
+    'connStr = "Provider=SQLOLEDB;Data Source=YOUR_SERVER;Initial Catalog=YOUR_DATABASE;User ID=YOUR_USERNAME;Password=YOUR_PASSWORD"
+
+    ' Set ImageID to the ID of the image you want to load
+    ImageID = 12010022
+
+    ' Create ADO Connection object
+    'Set conn = CreateObject("ADODB.Connection")
+    'conn.Open connStr
+
+    ' Create ADO Recordset object
+    Set Rs = CreateObject("ADODB.Recordset")
+    
+    ' Query to fetch the image from the database
+    Rs.Open "SELECT logo FROM cover WHERE ID = " & ImageID, Con
+
+    ' Check if record exists
+    If Not Rs.EOF Then
+        ' Get the image data (binary data)
+        imgByte = Rs.Fields("logo").Value
+        
+        ' Create an image object to load the binary data
+        imgData = "d:\temp_image.jpg" ' Temporary path to store image
+
+        ' Save the binary data to a file
+        Open imgData For Binary Access Write As #1
+        Put #1, , imgByte
+        Close #1
+        
+        ' Load the saved image into the Image control
+        Image1.Picture = LoadPicture(imgData)
+        
+        ' Optionally, delete the temporary image file after displaying it
+        ' Kill imgData
+    Else
+        MsgBox "Image not found."
+    End If
+
+    ' Close the connection and recordset
+    Rs.Close
+'    Con.Close
+
+    ' Clean up objects
+    Set Rs = Nothing
+'    Set conn = Nothing
+
+
+End Sub
+
+'Private Sub Form_KeyPress(KeyAscii As Integer)
+'   If KeyAscii = 13 Then
+'      KeyAscii = 0
+'      SendKeys "{TAB}"
+'   End If
+'End Sub
+Private Sub Form_Load(): Call FormDisplaySetting(Me)
+On Error GoTo TrapError
+    '
+    MFiscal = 0
+    cDoc_Type = 2   'fin_c001 table
+    cDoc_Abbr = "Err."
+    
+    If Not UCase(cLoginName) = "SA" Then
+        cmdAssignCo.Visible = False
+        txtCoID.Visible = False
+        cmdUploadFile.Visible = False
+        cmdDownload.Visible = False
+        Command1.Visible = False
+    End If
+    
+    
+    ' mvmode = 1 = Combine
+    ' Voucher numbering(yearly/monthly) depends upon type of book defined
+    MVMode = 1 ' Combined
+    MBookType = 2  ' JV
+    MVCombination = 0
+    cBookID = 102    'automatic select from fin_c001 doc_book_id
+    SerialCode = 0
+    cSelFormId = "Purchase Receipt"
+    max_entries = 500
+    nCounter = 1
+    Caption = cName
+    cSelFormId = Line2.Caption
+    TxtDocID.MaxLength = 10
+    TxtDocDAte.Value = nDate
+    CmdAddTrans.Enabled = False
+    CmdShowAddr.Enabled = False
+    CmdDiscount.Enabled = False
+   ' Buttone Enable/Disable
+   cFoundFlag = False
+   CmdSave.Enabled = False
+   CmdDelete.Enabled = False
+   Dim nCnt As Integer
+   VGrid.Cols = 15
+   VGrid.Rows = max_entries + 1
+   VGrid.Col = 0: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Sr. #": VGrid.ColWidth(0) = 500
+   VGrid.Col = 1: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Item ID": VGrid.ColWidth(1) = 1300
+   VGrid.Col = 2: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Item Title": VGrid.ColWidth(2) = 4200
+   VGrid.Col = 3: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Qty": VGrid.ColWidth(3) = 1000
+   VGrid.Col = 4: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Rate": VGrid.ColWidth(4) = 1000
+   VGrid.Col = 5: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Amount": VGrid.ColWidth(5) = 1500
+   VGrid.Col = 6: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "S-Tax %": VGrid.ColWidth(6) = 800
+   VGrid.Col = 7: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "S-Tax Amt": VGrid.ColWidth(7) = 1400
+   VGrid.Col = 8: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Disc %": VGrid.ColWidth(8) = 800
+   VGrid.Col = 9: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Disc Amt": VGrid.ColWidth(9) = 1400
+   VGrid.Col = 10: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "DOI %": VGrid.ColWidth(8) = 800
+   VGrid.Col = 11: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "DOI Amt": VGrid.ColWidth(9) = 1400
+   VGrid.Col = 12: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Included Amt": VGrid.ColWidth(10) = 1500
+   VGrid.Col = 13: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Remarks": VGrid.ColWidth(11) = 1500
+   VGrid.Col = 14: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "ExpDate": VGrid.ColWidth(11) = 1500
+   
+   VGrid.Col = 0
+   For nCnt = 1 To max_entries
+      VGrid.Row = nCnt
+      VGrid.CellAlignment = flexAlignCenterBottom
+      VGrid.Text = nCnt
+   Next
+   VGrid.Col = 1
+   VGrid.Row = 1
+   CboPayment.AddItem "Terms: Credit", 0
+   CboPayment.AddItem "Terms: Cash Reg.", 1
+   CboPayment.AddItem "Terms: Cash Un-Reg.", 2
+   CboPayment.ListIndex = 0
+   HDiscount.Caption = ""
+   HClaim.Caption = ""
+   HOtherDed.Caption = ""
+   HLoading.Caption = ""
+   HCarriage.Caption = ""
+   HOtherCharges.Caption = ""
+   '***********************************************************
+   If cSTaxType = 1 Then
+      mErr = 0
+      SQL = "select * from fin_c003 where doc_id = 2"
+      Set RsDummy = FetchAll(SQL)
+      If Not (RsDummy.EOF And RsDummy.BOF) Then
+         ' Import ID
+         If Not IsNull(RsDummy!sp_ac_id) And RsDummy!sp_ac_id <> 0 Then
+             mCreditSalesImportId = RsDummy!sp_ac_id
+         Else
+            mErr = mErr + 1
+         End If
+         ' local ID
+         If Not IsNull(RsDummy!sp_ac_id_local) And RsDummy!sp_ac_id_local <> 0 Then
+             mCreditSalesLocalId = RsDummy!sp_ac_id_local
+         Else
+            mErr = mErr + 1
+         End If
+         ' Cash PUrchase Import
+         If Not IsNull(RsDummy!cash_id) And RsDummy!cash_id <> 0 Then
+             mCashSalesImportId = RsDummy!cash_id
+         Else
+            mErr = mErr + 1
+         End If
+         ' Cash PUrchase Local
+         If Not IsNull(RsDummy!cash_id_local) And RsDummy!cash_id_local <> 0 Then
+             mCashSalesLocalId = RsDummy!cash_id_local
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!stax_id) And RsDummy!stax_id <> 0 Then
+             mSalesTaxPayableId = RsDummy!stax_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!return_id) And RsDummy!return_id <> 0 Then
+             mSalesReturnID = RsDummy!return_id
+         Else
+            mErr = mErr + 1
+         End If
+'         ' mCashSalesID
+'         If Not IsNull(RsDummy!cash_id) And RsDummy!cash_id <> 0 Then
+'             mCashSalesID = RsDummy!cash_id
+'         Else
+'            mErr = mErr + 1
+'         End If
+         '
+         If Not IsNull(RsDummy!discount_id) And RsDummy!discount_id <> 0 Then
+             mDiscountID = RsDummy!discount_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!claim_id) And RsDummy!claim_id <> 0 Then
+             mClaimId = RsDummy!claim_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!otherded_id) And RsDummy!otherded_id <> 0 Then
+             mOtherDedID = RsDummy!otherded_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!carriage_id) And RsDummy!carriage_id <> 0 Then
+             mCarriageId = RsDummy!carriage_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!loading_id) And RsDummy!loading_id <> 0 Then
+             mLoadingID = RsDummy!loading_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!othercharges_id) And RsDummy!othercharges_id <> 0 Then
+             mOtherChargesID = RsDummy!othercharges_id
+         Else
+            mErr = mErr + 1
+         End If
+         ' Sales Tax Rate
+         If Not IsNull(RsDummy!reg_page) Then
+             mRegStaxRate = RsDummy!reg_page
+         Else
+             mRegStaxRate = 0
+         End If
+         If Not IsNull(RsDummy!unreg_page) Then
+             mUnRegStaxRate = RsDummy!unreg_page
+         Else
+             mUnRegStaxRate = 0
+         End If
+         RsDummy.Close
+      End If
+   End If
+   '***********************************************************
+   '''''''''''''''''''''
+   'cDoc_Abbr
+   SQL = "SELECT * FROM fin_c001 WHERE doc_id = " & cDoc_Type
+   Set RsDummy = FetchAll(SQL)
+   If Not (RsDummy.EOF And RsDummy.BOF) Then
+        cDoc_Abbr = RsDummy!doc_abbr
+        If Not IsNull(RsDummy!doc_book_id) Then
+            cBookID = RsDummy!doc_book_id
+            cNarration = RsDummy!doc_nar
+        Else
+            cBookID = 102
+            cNarration = " "
+        End If
+   End If
+   RsDummy.Close
+   ' Book ID
+   SQL = "SELECT * FROM GL0004 WHERE sys_type = 1 and book_id = " & cBookID
+   Set RsDummy = FetchAll(SQL)
+   If Not (RsDummy.EOF And RsDummy.BOF) Then
+        ' Assign Values to Text/Controls
+        'TxtBookTitle.Text = "" & RsDummy!book_title
+        mED_Status = RsDummy!ed_status
+        'MBook_Type = RsDummy!book_type
+        MVnumbering = RsDummy!v_numbering ' Yearly, Monthly
+        ' 1 = Yearly, 2 = Monthly ' mvnumbering
+        ' 1=combine, 2=Seperate
+        ' Verify Book Permission
+        mErr = 0
+        SQL = "SELECT * FROM GC0003 WHERE l_uid = " & cLoginID & " and book_id = " & cBookID
+        Set RsDummy1 = FetchAll(SQL)
+        If RsDummy1.RecordCount = 0 Then
+            'Screen.MousePointer = vbDefault
+            RsDummy1.Close
+            'MsgBox "Access to Book denied, Consult System Administrator for Book Permission ...", vbInformation, cSelFormId
+            mErr = mErr + 1
+        Else
+            RsDummy1.Close
+            
+        End If
+    Else
+        RsDummy.Close
+        Screen.MousePointer = vbDefault
+        MsgBox "Book not found or for Use of Other Modules, please enter another ...", vbInformation, cSelFormId
+        mErr = mErr + 1
+'        TxtBookID.SetFocus
+         Exit Sub
+    End If
+    '****************************************************
+       'cSTaxType = 1 ' 0 = Item to Item Rate , 1 = Flate Rate 15/18
+   If cSTaxType = 1 Then
+      mErr = 0
+   '******************************************************
+      'doc_id = 1 = Invoice (Sales), 2 = Purchase
+      SQL = "select * from fin_c003 where doc_id = 2"
+      Set RsDummy = FetchAll(SQL)
+      If Not (RsDummy.EOF And RsDummy.BOF) Then
+      '
+         If Not IsNull(RsDummy!sp_ac_id) And RsDummy!sp_ac_id <> 0 Then
+             mSalesId = RsDummy!sp_ac_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!stax_id) And RsDummy!stax_id <> 0 Then
+             mSalesTaxPayableId = RsDummy!stax_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!return_id) And RsDummy!return_id <> 0 Then
+             mSalesReturnID = RsDummy!return_id
+         Else
+            mErr = mErr + 1
+         End If
+         ' mCashSalesID
+         If Not IsNull(RsDummy!cash_id) And RsDummy!cash_id <> 0 Then
+             mCashSalesID = RsDummy!cash_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!discount_id) And RsDummy!discount_id <> 0 Then
+             mDiscountID = RsDummy!discount_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!claim_id) And RsDummy!claim_id <> 0 Then
+             mClaimId = RsDummy!claim_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!otherded_id) And RsDummy!otherded_id <> 0 Then
+             mOtherDedID = RsDummy!otherded_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!carriage_id) And RsDummy!carriage_id <> 0 Then
+             mCarriageId = RsDummy!carriage_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!loading_id) And RsDummy!loading_id <> 0 Then
+             mLoadingID = RsDummy!loading_id
+         Else
+            mErr = mErr + 1
+         End If
+         '
+         If Not IsNull(RsDummy!othercharges_id) And RsDummy!othercharges_id <> 0 Then
+             mOtherChargesID = RsDummy!othercharges_id
+         Else
+            mErr = mErr + 1
+         End If
+         ' Sales Tax Rate
+         If Not IsNull(RsDummy!reg_page) Then
+             mRegStaxRate = RsDummy!reg_page
+         Else
+             mRegStaxRate = 0
+         End If
+         If Not IsNull(RsDummy!unreg_page) Then
+             mUnRegStaxRate = RsDummy!unreg_page
+         Else
+             mUnRegStaxRate = 0
+         End If
+         RsDummy.Close
+      '******************************************************
+      End If
+    '****************************************************
+   End If
+    If mED_Status = 1 Then
+        'Screen.MousePointer = vbDefault
+        'MsgBox "Book is temporarily stoped ...", vbCritical, cSelFormId
+        mErr = mErr + 1
+    Else
+'        RsDummy.Close
+    End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub grd_KeyDown(Index As Integer, Keycode As Integer, Shift As Integer)
+On Error GoTo TrapError
+Dim intConfirm   As Integer
+Dim intDeleteRow As Integer
+Dim Rs           As New ADODB.Recordset
+    With grd(0)
+        
+        
+        If Keycode = vbKeyDelete Then
+            intConfirm = MsgBox("Are you sure to delete.", vbQuestion + vbYesNo + vbSystemModal, "System message")
+            If intConfirm = vbNo Then Exit Sub
+            If .Row = 0 Then Exit Sub
+            If .Rows <> 2 Then
+                With Rs
+                    SQL = "delete from fin_supp_items where SUPPLIER_ID = " & TxtID.Text & " and item_id = " & grd(0).TextMatrix(grd(0).Row, 7)
+                    If UpdateV2(SQL) = True Then
+                        MsgBox "Item Successfully deleted."
+                    Else
+                        MsgBox "Item not Successfully deleted. "
+                    End If
+                End With
+            
+                 intDeleteRow = .Row
+                .RemoveItem .Row
+                .Row = intDeleteRow - 1
+                '
+
+
+            Else
+            
+            End If
+            
+        End If
+    End With
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+    
+End Sub
+
+
+Private Sub TxtCityID_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+ SQL = "SELECT * FROM City WHERE City_id = " & Val(TxtCityID)
+   Set RsDummy1 = FetchAll(SQL)
+   If Not (RsDummy1.EOF And RsDummy1.BOF) Then
+     ' Assign Values to Text/Controls
+     TxtCityTitle.Text = "" & IIf(IsNull(RsDummy1!City_Title), "not found", RsDummy1!City_Title)
+    Else
+        RsDummy1.Close
+        MsgBox "City ID not found...", vbInformation, "Address: City ID"
+        Cancel = True
+        Exit Sub
+    End If
+    RsDummy1.Close
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub txtCoID_DblClick()
+  cSQLId = "COID"
+  cSelFormId = "COID_FIN_PUR"
+  frmLookUp.Show vbModal, Me
+End Sub
+
+
+Private Sub TxtGPID_DblClick()
+On Error GoTo TrapError
+  If TxtDocID.Enabled = False Then
+      MsgBox "Invoice Already opened. To Search Press Clear Button ... ", vbInformation, cSelFormId
+      Exit Sub
+  End If
+  cSQLId = "INVGATEPASS"
+  cSelFormIdExt = "PURM"
+  'cSelFormIdExt = "GATE PASS"
+  Fin_Doc.Show vbModal, Me
+  TxtDocID.Enabled = True
+  TxtDocID.SetFocus
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub Txtid_GotFocus()
+   
+   CmdDelete.Enabled = False
+   CmdSave.Enabled = False
+   cFoundFlag = False
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+Private Function clearform()
+On Error GoTo TrapError
+' Clear Data Fields
+   
+    Call VGridClear
+    If UCase(CmdShowItem.Caption) = UCase("Hide items") Then
+        Call CmdShowItem_Click
+    End If
+    
+    blnFirst = False
+    TxtDocID.Enabled = True
+    'TxtFiscal.Enabled = True
+    TxtDocID.Text = ""
+    TxtRemarks.Text = ""
+    TxtDocDAte = nDate
+    TxtDocID.Enabled = True
+    TxtID.Enabled = True
+    'TxtFiscal.Enabled = True
+    TxtDocID.SetFocus
+    TxtID.Text = ""
+    TxtTitle.Caption = ""
+    TxtGPID.Text = ""
+    TxtTime.Text = ""
+    CboPayment.ListIndex = 0
+    mAmount.Caption = "0.00"
+    mTAmount.Caption = "0.00"
+    mSalesTax.Caption = "0.00"
+    mNetAmount.Caption = "0.00"
+    LblDiscount.Caption = "0.00"
+    LblCharges.Caption = "0.00"
+    LblDiff.Caption = "0.00"
+    LDiscount.Caption = "0.00"
+    LStaxExclAmt.Caption = "0.00"
+    LblOffInvDisc.Caption = "0.00"
+    '
+    HDiscount.Caption = ""
+    HClaim.Caption = ""
+    HOtherDed.Caption = ""
+    HLoading.Caption = ""
+    HCarriage.Caption = ""
+    HOtherCharges.Caption = ""
+    '
+    CmdShowAddr.Enabled = False
+    CmdDiscount.Enabled = False
+    CmdSave.Enabled = False
+    CmdDelete.Enabled = False
+    CmdAddTrans.Enabled = False
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+Private Sub TxtDocID_KeyPress(KeyAscii As Integer)
+On Error GoTo TrapError
+        If KeyAscii = 27 Then
+               Unload Me
+        End If
+    KeyAscii = CheckNumOrChr(KeyAscii, True, False)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+''        Dim strvalid As String
+''        strvalid = "0123456789"
+''        If KeyAscii = 8 Then
+''            Dim mLen As Integer
+''            mLen = Len(Trim(TxtDocID))
+''            If mLen = 0 Then
+''                TxtDocID.Text = ""
+''            Else
+''                TxtDocID.Text = Left(Trim(TxtDocID), mLen - 1)
+''                SendKeys "{END}"
+''            End If
+''            Exit Sub
+''        End If
+''        If InStr(strvalid, Chr(KeyAscii)) = 0 Then
+''            KeyAscii = 0
+''        End If
+End Sub
+Private Sub TxtDocID_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+'Dim blnFirst As Boolean
+   cFoundFlag = False
+   If Len(Trim(TxtDocID)) = 0 Then
+        Exit Sub
+   End If
+   
+   If mErr > 0 Then
+        MsgBox "Permission to Book is denied, Consult Administrator ... ", vbInformation, cSelFormId
+        Cancel = True
+        Exit Sub
+   End If
+   Screen.MousePointer = vbHourglass
+   '
+   SQL = "SELECT * FROM Fin_Pur_M WHERE prod_id = "
+   SQL = SQL & Val(TxtDocID) & " and doc_type_id = " & cDoc_Type
+   SQL = SQL & " and fiscal = " & MFiscal
+   Set RSMAST = FetchAll(SQL)
+   
+   If Not (RSMAST.EOF And RSMAST.BOF) Then
+        cFoundFlag = True
+                        
+                        
+        TxtID.Enabled = False 'temp block
+        
+        If Mid(Trim(cUPwordStr), 5, 1) = 1 Then
+            'MsgBox "Acess denied contact with administrator.", vbOKOnly + vbInformation, "System message"
+            'Cancel = True
+            TxtID.Enabled = True 'temp block
+        End If
+     
+        
+
+        ' Voucher Master
+        mOldAccount = RSMAST!supplier_id
+        TxtID.Text = RSMAST!supplier_id
+        Msys_status = RSMAST!sys_status
+        TxtDocDAte.Value = RSMAST!doc_date
+        Msys_status = RSMAST!sys_status
+        TxtRemarks.Text = "" & RSMAST!remarks
+        SerialCode = RSMAST!serial_no
+        TxtGPID.Text = "" & RSMAST!gp_id
+        TxtTime.Text = "" & RSMAST!gp_time
+        '
+        If RSMAST!stax_type = 0 Then
+            LblRegistration.Caption = "Registered"
+        Else
+            LblRegistration.Caption = "UN-Registered"
+        End If
+        
+'        Call TxtID_Validate(False)
+        
+        CboPayment.ListIndex = RSMAST!payment_type
+        If CboPayment.ListIndex = 0 Then
+            OldPayment = 0
+        Else
+            OldPayment = 1
+        End If
+
+        HDiscount.Caption = RSMAST!discount_amt
+        HClaim.Caption = RSMAST!claim_amt
+        HOtherDed.Caption = RSMAST!other_ded_amt
+        HLoading.Caption = RSMAST!loading_amt
+        HCarriage.Caption = RSMAST!carriage_amt
+        HOtherCharges.Caption = RSMAST!other_charges_amt
+        LblDiscount.Caption = Val(HDiscount) + Val(HClaim) + Val(HOtherDed)
+        LblCharges.Caption = Val(HCarriage) + Val(HLoading) + Val(HOtherCharges)
+        'RSMAST.Close
+        If Msys_status = 1 Then
+            Screen.MousePointer = vbDefault
+            RSMAST.Close
+            MsgBox "Document/Voucher is posted, please re-enter ...", vbCritical, cSelFormId
+            Cancel = True
+            Exit Sub
+        End If
+        '********************************************************
+        ' Address
+        SQL = "SELECT * FROM gl0006 WHERE vendor_id = " & Val(TxtID)
+        Set Rs = FetchAll(SQL)
+        If Not (Rs.EOF And Rs.BOF) Then
+            TxtTitle.Caption = "" & Rs!Vendor_Title
+            If CboPayment.ListIndex = 0 Then
+                 TxtDesc.Text = "" & Rs!Vendor_Title
+                 TxtAddress.Text = "" & Rs!Address
+                 TxtStaxID.Text = "" & Rs!stax_id
+                 TxtCityID.Text = Rs!city_id
+            Else
+                TxtDesc.Text = "" & RSMAST!Vendor_Title
+                TxtAddress.Text = "" & RSMAST!Address
+                TxtStaxID.Text = "" & RSMAST!stax_id
+                TxtCityID.Text = RSMAST!city_id
+            End If
+            ' ******************************** 15-11-2002
+            If Rs!tag_1 = 1 Then
+                  'LblRegistration.Caption = "Registered"
+                  'If cSTaxType = 1 Then
+                  If cSTaxType = 1 Then
+                     cSalesTaxRate = mRegStaxRate
+                  End If
+            Else
+                  If Rs!tag_1 = 0 Then ' ?
+                     'LblRegistration.Caption = "Un-Registered"
+                     If cSTaxType = 1 Then
+                        cSalesTaxRate = mUnRegStaxRate
+                     End If
+                  Else
+                     LblRegistration.Caption = "Other"
+                     If cSTaxType = 1 Then
+                        cSalesTaxRate = 0
+                     End If
+                  End If
+            End If
+            ' ********************************
+            Rs.Close
+                ' Add recordset for city title
+                SQL = "SELECT * FROM City WHERE City_id = " & Val(TxtCityID)
+                Set RsDummy1 = FetchAll(SQL)
+                If Not (RsDummy1.EOF And RsDummy1.BOF) Then
+                  ' Assign Values to Text/Controls
+                  TxtCityTitle.Text = "" & IIf(IsNull(RsDummy1!City_Title), "not found", RsDummy1!City_Title)
+                 Else
+                     RsDummy1.Close
+                     TxtCityTitle.Text = "ID not found..."
+                 End If
+                 RsDummy1.Close
+        Else
+            RSMAST.Close
+            Screen.MousePointer = vbDefault
+            MsgBox "Supplier ID Not Found ..... ", vbInformation, cSelFormId
+            Exit Sub
+        End If
+        RSMAST.Close
+        '********************************************************
+        ' Disable Book Portion
+        TxtDocID.Enabled = False
+        ' Voucher Trans
+        
+        
+        SQL = "SELECT * FROM Fin_Pur_d WHERE Serial_No = " & SerialCode & " order by serial_order"
+        
+        If blnFirst = True Then
+'                Rs.Close
+                Exit Sub
+           End If
+        Set Rs = FetchAll(SQL)
+        If Not (Rs.EOF And Rs.BOF) Then
+           Dim nCnt As Integer
+
+           nCnt = 1
+           Do While Not Rs.EOF
+                 VGrid.Row = nCnt
+                 VGrid.Col = 1
+                 VGrid.CellAlignment = 1
+                 VGrid.Text = Rs("item_id")
+                 MItem_ID = Rs("item_id")
+                 VGrid.Col = 2
+                 SQL = "select * from FIN_ITEM where item_id=" & MItem_ID
+                 Set RsDummy = FetchAll(SQL)
+                 If Not (RsDummy.EOF And RsDummy.BOF) Then
+                     VGrid.Text = " " & RsDummy("item_title") & " --- " & RsDummy("manualid")
+                 Else
+                     VGrid.Text = "Item ID not found ...."
+                 End If
+                 RsDummy.Close
+                 VGrid.Col = 3
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("qty"), "#########.00")
+                 VGrid.Col = 4
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("rate"), "#########.00")
+                 VGrid.Col = 5
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("PUR_amt"), "#########.00")
+                 VGrid.Col = 6
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("STAX_RATE"), "#########.00")
+                 VGrid.Col = 7
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("STAX_AMT"), "#########.00")
+                 '
+                 VGrid.Col = 8
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("DISC_PER"), "#########.00")
+                 VGrid.Col = 9
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("DISC_AMT"), "#########.00")
+                 
+                 
+                 VGrid.Col = 10
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("DISC_PER_OI"), "#########.00")
+                 VGrid.Col = 11
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("DISC_AMT_OI"), "#########.00")
+                 
+                 VGrid.Col = 12
+                 VGrid.CellAlignment = 6
+                 VGrid.Text = Format(Rs("TOTAL_AMT"), "#########.00")
+                 VGrid.Col = 13
+                 VGrid.CellAlignment = 1
+                 VGrid.Text = "" & Rs("remarks")
+                 
+                 VGrid.Col = 14
+                 VGrid.CellAlignment = 1
+                 VGrid.Text = "" & Format(Rs("exp_date"), "dd/mm/yyyy")
+
+                 nCnt = nCnt + 1
+               Rs.MoveNext
+           Loop
+           Rs.Close
+           nCounter = nCnt
+           Call UpdateBalance
+           Call CalDiscount
+         Else
+            Rs.Close
+
+        End If
+        '*************************************************
+   Else
+        RSMAST.Close
+        Screen.MousePointer = vbDefault
+        MsgBox "Document/Voucher not found, please re-enter ...", vbInformation, cSelFormId
+        Cancel = True
+        Exit Sub
+  End If
+  blnFirst = True
+  
+  
+  
+  If HDiscount > 0 And HDiscount > CDbl(LDiscount) Then
+  'If HDiscount > 0 And HDiscount > CDbl(LDiscount) Then
+        LblDiscount.Caption = (CDbl(HDiscount) - CDbl(LDiscount)) + CDbl(HClaim) + CDbl(HOtherDed)
+        HDiscount = CDbl(HDiscount) - CDbl(LDiscount)
+        mDiscount = HDiscount
+  ElseIf HDiscount < CDbl(LDiscount) Then
+        LblDiscount.Caption = (CDbl(LDiscount) - CDbl(HDiscount)) + CDbl(HClaim) + CDbl(HOtherDed)
+        HDiscount = CDbl(LDiscount) - CDbl(HDiscount)
+        mDiscount = HDiscount
+  ElseIf HDiscount = CDbl(LDiscount) Then
+        LblDiscount.Caption = (CDbl(LDiscount) - CDbl(HDiscount)) + CDbl(HClaim) + CDbl(HOtherDed)
+        HDiscount = CDbl(LDiscount) - CDbl(HDiscount)
+        mDiscount = 0
+  End If
+  
+  
+  
+  
+    'MKB 07 03 2024
+    LblDiscount.Caption = "0"
+    HDiscount = "0"
+
+    Call UpdateBalance
+    Call CalDiscount
+
+
+  Screen.MousePointer = vbDefault
+  'TxtFiscal.Enabled = False
+  CmdSave.Enabled = True
+  CmdDelete.Enabled = True
+  CmdShowAddr.Enabled = True
+  CmdDiscount.Enabled = True
+  CmdAddTrans.Enabled = True
+  '************ Supplier **************
+  If Val(TxtID) = 0 Then
+        CmdAddTrans.Enabled = False
+        Exit Sub
+  Else
+        CmdAddTrans.Enabled = True
+  End If
+    Screen.MousePointer = vbHourglass
+        SQL = "SELECT * FROM gl0006 WHERE Vendor_id = " & Val(TxtID)
+        Set Rs = FetchAll(SQL)
+  If Not (Rs.EOF And Rs.BOF) Then
+       TxtTitle.Caption = "" & Rs!Vendor_Title
+'    Screen.MousePointer = vbDefault
+  End If
+    Screen.MousePointer = vbDefault
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub Form_KeyUp(Keycode As Integer, Shift As Integer)
+On Error GoTo TrapError
+    Call EnterKeyEnable(Keycode)
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+''''Private Sub TxtFiscal_KeyPress(KeyAscii As Integer)
+''''        If KeyAscii = 27 Then
+''''               Unload Me
+''''        End If
+''''        Dim strvalid As String
+''''        strvalid = "0123456789"
+''''        If KeyAscii = 8 Then
+''''            Dim mLen As Integer
+''''            mLen = Len(Trim(TxtFiscal))
+''''            If mLen = 0 Then
+''''                TxtFiscal.Text = ""
+''''            Else
+''''                TxtFiscal.Text = Left(Trim(TxtFiscal), mLen - 1)
+''''                SendKeys "{END}"
+''''            End If
+''''            Exit Sub
+''''        End If
+''''        If InStr(strvalid, Chr(KeyAscii)) = 0 Then
+''''            KeyAscii = 0
+''''        End If
+''''End Sub
+
+''''Private Sub TxtFiscal_Validate(Cancel As Boolean)
+''''    If Val(TxtFiscal) = 0 Then
+''''        MFiscal = 0
+''''        TxtMonth.Caption = Text_Month(MFiscal)
+''''        Exit Sub
+''''    End If
+'''''    cFinVmode 0=Yearly, 1=Monthly
+''''     If cFinVMode = 1 And Val(TxtFiscal) > 0 Then
+''''        MsgBox "Invalid Month, only '0' or 'Blank' is allowed  ...", vbInformation, cSelFormId
+''''        TxtFiscal.SetFocus
+''''        Cancel = True
+''''        Exit Sub
+''''    End If
+''''    If Val(TxtFiscal) > 12 Then
+''''        MsgBox "Invalid Month, please select 1 - 12 ...", vbInformation, cSelFormId
+''''        TxtFiscal.SetFocus
+''''        Cancel = True
+''''        Exit Sub
+''''    End If
+''''    MFiscal = Val(TxtFiscal)
+''''    TxtMonth.Caption = Text_Month(MFiscal)
+''''    If Val(TxtFiscal) <> 0 Then
+''''        TxtDocDAte.Month = Val(MFiscal)
+''''    End If
+''''
+''''End Sub
+
+Private Sub TxtID_DblClick()
+On Error GoTo TrapError
+  cSQLId = "VENDID"
+  cSelFormId = "Fin_PurM"
+  frmLookUp.Show vbModal, Me
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub TxtID_KeyDown(Keycode As Integer, Shift As Integer)
+On Error GoTo errhandler
+    If Keycode = 113 Then
+        Call TxtID_DblClick
+    End If
+Exit Sub
+errhandler:
+    MsgBox Err.Description, vbInformation, cSelFormId
+    Err.Clear
+End Sub
+
+Private Sub TxtID_Validate(Cancel As Boolean)
+On Error GoTo TrapError
+   If Val(TxtID) = 0 Then
+        CmdAddTrans.Enabled = False
+        TxtID.SetFocus
+        Exit Sub
+   Else
+        CmdAddTrans.Enabled = True
+        CmdShowAddr.Enabled = True
+        CmdDiscount.Enabled = True
+   End If
+   Screen.MousePointer = vbHourglass
+   SQL = "SELECT * FROM gl0006 WHERE Vendor_id = " & Val(TxtID)
+   Set Rs = FetchAll(SQL)
+   If Not (Rs.EOF And Rs.BOF) Then
+      TxtTitle.Caption = "" & Rs!Vendor_Title
+      TxtDesc.Text = "" & Rs!Vendor_Title
+      TxtAddress.Text = "" & Rs!Address
+      TxtStaxID.Text = "" & Rs!stax_id
+      TxtCityID.Text = Rs!city_id
+      If Rs!tag_1 = 0 Then
+            LblRegistration.Caption = "Registered"
+            If cSTaxType = 1 Then
+               cSalesTaxRate = mRegStaxRate
+            End If
+      Else
+            If Rs!tag_1 = 1 Then
+               LblRegistration.Caption = "Un-Registered"
+               If cSTaxType = 1 Then
+                  cSalesTaxRate = mUnRegStaxRate
+               End If
+            Else
+               LblRegistration.Caption = "Other"
+               If cSTaxType = 1 Then
+                  cSalesTaxRate = 0
+               End If
+            End If
+
+'            LblRegistration.Caption = "Un-Registered"
+'            If cSTaxType = 1 Then
+'               cSalesTaxRate = mUnRegStaxRate
+'            End If
+      End If
+      ' *****************************
+        If Len(TxtTitle.Caption) = 0 Then
+            MsgBox "Invalid Supplier ID.", vbCritical
+            CmdAddTrans.Enabled = False
+            CmdShowAddr.Enabled = False
+            CmdDiscount.Enabled = False
+            TxtID.SetFocus
+            Rs.Close
+            Screen.MousePointer = vbDefault
+        End If
+      ' *****************************
+       ' Add recordset for city title
+        SQL = "SELECT * FROM City WHERE City_id = " & Val(TxtCityID)
+        Set RsDummy1 = FetchAll(SQL)
+        If Not (RsDummy1.EOF And RsDummy1.BOF) Then
+          ' Assign Values to Text/Controls
+          TxtCityTitle.Text = "" & IIf(IsNull(RsDummy1!City_Title), "not found", RsDummy1!City_Title)
+         Else
+             RsDummy1.Close
+             TxtCityTitle.Text = "ID not found..."
+         End If
+         RsDummy1.Close
+    Else
+        Screen.MousePointer = vbNormal
+        Rs.Close
+        MsgBox "Supplier ID not found... ", vbInformation, "Purchase Receipt: Supplier ID"
+        Cancel = True
+        Exit Sub
+    End If
+    Rs.Close
+    Screen.MousePointer = vbDefault
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+Private Sub vGrid_DblClick()
+On Error GoTo TrapError
+    If VGrid.Row < nCounter Then
+       lEdit = True
+       Fin_PurD_JSON.Show vbModal, Me
+       Call UpdateBalance
+       CmdAddTrans.SetFocus
+    End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+
+Private Sub VGrid_KeyUp(Keycode As Integer, Shift As Integer)
+On Error GoTo TrapError
+   If Keycode = 46 Or Keycode = 110 Then
+      Call DeleteRow
+      Call UpdateBalance
+   End If
+   If Keycode = 13 Then
+        If VGrid.Row < nCounter Then
+          lEdit = True
+          Fin_PurD_JSON.Show vbModal, Me
+          Call UpdateBalance
+          CmdAddTrans.SetFocus
+        End If
+   End If
+Exit Sub
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+'*********************************************************************
+' Paste JSON
+' Copy the invoice JSON, then press this button. Each item is matched
+' on manual id, the amount is recalculated as Qty x Rate, and the row
+' is written to VGrid in the same columns Fin_PurD_JSON.CmdSave_Click uses.
+' Nothing is posted to the document until CmdSave is pressed.
+'*********************************************************************
+Private Sub CmdPasteJson_Click()
+On Error GoTo TrapError
+    Dim sJson       As String
+    Dim sItems      As String
+    Dim colItems    As Collection
+    Dim vItem       As Variant
+    Dim sObj        As String
+    Dim sLabel      As String
+    Dim sSkipped    As String
+    Dim nAdded      As Integer
+    Dim nSkipped    As Integer
+    Dim mManualID   As Double
+    Dim mItemID     As Double
+    Dim mQty        As Double
+    Dim mRate       As Double
+    Dim mAmount     As Double
+    Dim mDiscAmt    As Double
+    Dim mDiscPer    As Double
+    Dim mStaxRate   As Double
+    Dim mStaxAmt    As Double
+    Dim mTotalAmt   As Double
+    Dim mTitle      As String
+    Dim mCoID       As String
+    Dim RsMan       As ADODB.Recordset
+    Dim RsItm       As ADODB.Recordset
+    Dim CmdUpd      As ADODB.Command
+    Dim cSQL        As String
+
+    If Val(TxtID) = 0 Then
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+        TxtID.SetFocus
+        Exit Sub
+    End If
+
+    sJson = Trim(Clipboard.GetText)
+    If Len(sJson) = 0 Then
+        MsgBox "No JSON on the clipboard. Copy the invoice JSON first ...", vbInformation, cSelFormId
+        Exit Sub
+    End If
+
+    sItems = JsonArray(sJson, "items")
+    If Len(sItems) = 0 Then sItems = JsonArray(sJson, "lines")
+    If Len(sItems) = 0 Then
+        MsgBox "JSON has no 'items' list ...", vbInformation, cSelFormId
+        Exit Sub
+    End If
+
+    Set colItems = JsonObjects(sItems)
+    If colItems.Count = 0 Then
+        MsgBox "JSON has no item rows ...", vbInformation, cSelFormId
+        Exit Sub
+    End If
+
+    Screen.MousePointer = vbHourglass
+    For Each vItem In colItems
+        sObj = CStr(vItem)
+        sLabel = JsonValue(sObj, "description")
+        If Len(sLabel) = 0 Then sLabel = JsonValue(sObj, "item_title")
+
+        If nCounter > max_entries Then
+            Screen.MousePointer = vbDefault
+            MsgBox "Limit of Transactions exahausted " & Chr(13) & "Consult default values ...", vbInformation, cSelFormId
+            Exit For
+        End If
+
+        mManualID = JsonNum(JsonValue(sObj, "manual_id"))
+        If mManualID = 0 Then mManualID = JsonNum(JsonValue(sObj, "manualid"))
+        If mManualID = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Manual ID missing."
+            GoTo NextItem
+        End If
+
+        cSQL = "select * from v_fin_item where manualid = " & JsonSqlNum(mManualID)
+        Set RsMan = FetchAll(cSQL)
+        If RsMan.EOF And RsMan.BOF Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Manual ID " & JsonSqlNum(mManualID) & " not found."
+            RsMan.Close
+            GoTo NextItem
+        End If
+        mItemID = Val("" & RsMan!Item_ID)
+        RsMan.Close
+
+        cSQL = "select * from FIN_ITEM where item_id=" & JsonSqlNum(mItemID)
+        Set RsItm = FetchAll(cSQL)
+        If RsItm.EOF And RsItm.BOF Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Item ID not found, please re-enter ... "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        If Val("" & RsItm!ed_status) = 1 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Item ID is Disabled, Consultant Administrator .... "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        mCoID = Trim("" & RsItm!co_id)
+        If Len(mCoID) = 0 Or Val(mCoID) = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Invalid:  Please enter Company ID ...  "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        If JsonGridHasItem(mItemID) Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Duplicate: Item ID Already Exists .... "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        mQty = JsonNum(JsonValue(sObj, "qty"))
+        If mQty = 0 Then mQty = JsonNum(JsonValue(sObj, "quantity"))
+        If mQty = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : Invalid:  Please enter Quantity ...  "
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        ' Rate first, then Qty x Rate. A printed amount is only used to
+        ' derive a missing rate, never as the line amount itself.
+        mRate = JsonNum(JsonValue(sObj, "rate"))
+        mAmount = JsonNum(JsonValue(sObj, "amount"))
+        If mRate = 0 And mAmount <> 0 Then mRate = mAmount / mQty
+        If mRate = 0 Then mRate = Val("" & RsItm!Cqty1)
+        If mRate = 0 Then
+            nSkipped = nSkipped + 1
+            sSkipped = sSkipped & Chr(13) & sLabel & " : No Rate and no Amount to work it out."
+            RsItm.Close
+            GoTo NextItem
+        End If
+
+        mTitle = "" & RsItm!Item_Title & " --- " & "" & RsItm!manualid
+        mStaxRate = Val("" & RsItm!STAX_REG)
+        mDiscAmt = JsonR2(JsonNum(JsonValue(sObj, "discount")))
+        ' S-Tax Amt comes from "tax", or "gst" / "sales_tax" / "stax_amt"
+        mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "tax")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "gst")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "sales_tax")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "stax_amt")))
+        If mStaxAmt = 0 Then mStaxAmt = JsonR2(JsonNum(JsonValue(sObj, "gst_amount")))
+        mAmount = JsonR2(mRate * mQty)
+        If mAmount <> 0 Then mDiscPer = JsonR2((mDiscAmt / mAmount) * 100)
+        mTotalAmt = JsonR2(((mAmount + mStaxAmt) - mDiscAmt))
+
+        ' Same FIN_ITEM update Fin_PurD does when a line is saved by hand
+        Set CmdUpd = New ADODB.Command
+        With CmdUpd
+            .ActiveConnection = Con
+            .CommandText = "update fin_item set disc_p1 = " & JsonSqlNum(Val("" & RsItm!disc_p1)) & _
+                           " , STAX_REG = " & JsonSqlNum(mStaxRate) & _
+                           " , oamt1 = " & JsonSqlNum(mStaxAmt / mQty) & _
+                           " , camt1 = " & JsonSqlNum((mAmount - mDiscAmt) / mQty) & _
+                           " , cqty1 = " & JsonSqlNum(mRate) & _
+                           " , co_id = " & Trim(mCoID) & _
+                           " where item_ID = " & JsonSqlNum(mItemID)
+            .CommandType = adCmdText
+            .Execute
+        End With
+        Set CmdUpd = Nothing
+        RsItm.Close
+
+        With VGrid
+            .Row = nCounter
+            .CellAlignment = 1
+            .Col = 1
+            .Text = " " & Format(mItemID, "0")
+            .Col = 2
+            .Text = " " & Trim(mTitle)
+            .Col = 3
+            .CellAlignment = 6
+            .Text = Format(mQty, "#########.#0")
+            .Col = 4
+            .CellAlignment = 6
+            .Text = Format(mRate, "#########.#0")
+            .Col = 5
+            .CellAlignment = 6
+            .Text = Format(mAmount, "#########.#0")
+            'Stax %
+            .Col = 6
+            .CellAlignment = 6
+            .Text = Format(mStaxRate, "#########.#0")
+            'Stax amount
+            .Col = 7
+            .CellAlignment = 6
+            .Text = Format(mStaxAmt, "#########.#0")
+            'Discount
+            .Col = 8
+            .CellAlignment = 6
+            .Text = Format(mDiscPer, "#########.#0")
+            'Discount amount
+            .Col = 9
+            .CellAlignment = 6
+            .Text = Format(mDiscAmt, "#########.#0")
+            'Discount OFF Invoice
+            .Col = 10
+            .CellAlignment = 6
+            .Text = Format(0, "#########.#0")
+            .Col = 11
+            .CellAlignment = 6
+            .Text = Format(0, "#########.#0")
+            'Included amount
+            .Col = 12
+            .CellAlignment = 6
+            .Text = Format(mTotalAmt, "#########.#0")
+            ' Remarks
+            .Col = 13
+            .CellAlignment = 1
+            .Text = JsonValue(sObj, "remarks")
+            ' Expiry Date
+            .Col = 14
+            .CellAlignment = 1
+            .Text = Format(TxtDocDAte.Value, "dd/MM/yyyy")
+        End With
+
+        nCounter = nCounter + 1
+        nAdded = nAdded + 1
+        mDiscPer = 0
+NextItem:
+    Next
+
+    Screen.MousePointer = vbDefault
+    Call UpdateBalance
+    If nCounter > 1 Then
+        TxtDocID.Enabled = False
+        CmdSave.Enabled = True
+        CmdDelete.Enabled = True
+        CmdDiscount.Enabled = True
+    End If
+
+    If nSkipped > 0 Then
+        MsgBox nAdded & " Items Added successfully." & Chr(13) & Chr(13) & _
+               "Skipped " & nSkipped & " :" & sSkipped, vbInformation, cSelFormId
+    Else
+        MsgBox nAdded & " Items Added successfully.", vbOKOnly, cSelFormId
+    End If
+Exit Sub
+TrapError:
+    Screen.MousePointer = vbDefault
+    Call ShowError(lngError, Me.Caption)
+End Sub
+
+' True when the item is already sitting in the grid (same check Fin_PurD makes)
+Private Function JsonGridHasItem(ByVal mID As Double) As Boolean
+On Error GoTo TrapError
+    Dim iCounter As Integer
+    With VGrid
+        iCounter = 0
+        Do While iCounter + 1 <> .Rows
+            .Row = iCounter + 1
+            .Col = 1
+            If Val(.Text) = mID Then
+                JsonGridHasItem = True
+                Exit Function
+            End If
+            iCounter = iCounter + 1
+        Loop
+    End With
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Text between the brackets of  "name" : [ ... ]  , "" when not present
+Private Function JsonArray(ByVal sJson As String, ByVal sName As String) As String
+On Error GoTo TrapError
+    Dim nPos As Long, nStart As Long, nDepth As Long, i As Long
+    Dim ch As String, bInStr As Boolean
+    nPos = InStr(1, sJson, """" & sName & """", vbTextCompare)
+    If nPos = 0 Then Exit Function
+    nStart = InStr(nPos, sJson, "[")
+    If nStart = 0 Then Exit Function
+    nDepth = 0
+    bInStr = False
+    For i = nStart To Len(sJson)
+        ch = Mid$(sJson, i, 1)
+        If bInStr Then
+            If ch = "\" Then
+                i = i + 1
+            ElseIf ch = """" Then
+                bInStr = False
+            End If
+        Else
+            If ch = """" Then
+                bInStr = True
+            ElseIf ch = "[" Then
+                nDepth = nDepth + 1
+            ElseIf ch = "]" Then
+                nDepth = nDepth - 1
+                If nDepth = 0 Then
+                    JsonArray = Mid$(sJson, nStart + 1, i - nStart - 1)
+                    Exit Function
+                End If
+            End If
+        End If
+    Next
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Splits an array body into its top level { } objects
+Private Function JsonObjects(ByVal sArray As String) As Collection
+On Error GoTo TrapError
+    Dim col As New Collection
+    Dim i As Long, nDepth As Long, nStart As Long
+    Dim ch As String, bInStr As Boolean
+    nDepth = 0
+    nStart = 0
+    bInStr = False
+    For i = 1 To Len(sArray)
+        ch = Mid$(sArray, i, 1)
+        If bInStr Then
+            If ch = "\" Then
+                i = i + 1
+            ElseIf ch = """" Then
+                bInStr = False
+            End If
+        Else
+            If ch = """" Then
+                bInStr = True
+            ElseIf ch = "{" Then
+                If nDepth = 0 Then nStart = i
+                nDepth = nDepth + 1
+            ElseIf ch = "}" Then
+                nDepth = nDepth - 1
+                If nDepth = 0 And nStart > 0 Then
+                    col.Add Mid$(sArray, nStart, i - nStart + 1)
+                    nStart = 0
+                End If
+            End If
+        End If
+    Next
+    Set JsonObjects = col
+Exit Function
+TrapError:
+    Set JsonObjects = New Collection
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Scalar value of a key inside one object, "" when not present
+Private Function JsonValue(ByVal sObj As String, ByVal sKey As String) As String
+On Error GoTo TrapError
+    Dim nPos As Long, i As Long
+    Dim ch As String, sOut As String
+    nPos = InStr(1, sObj, """" & sKey & """", vbTextCompare)
+    If nPos = 0 Then Exit Function
+    i = nPos + Len(sKey) + 2
+    Do While i <= Len(sObj)
+        ch = Mid$(sObj, i, 1)
+        If ch = ":" Then
+            i = i + 1
+            Exit Do
+        ElseIf Not JsonIsWhite(ch) Then
+            Exit Function
+        End If
+        i = i + 1
+    Loop
+    Do While i <= Len(sObj)
+        If Not JsonIsWhite(Mid$(sObj, i, 1)) Then Exit Do
+        i = i + 1
+    Loop
+    If i > Len(sObj) Then Exit Function
+    If Mid$(sObj, i, 1) = """" Then
+        i = i + 1
+        Do While i <= Len(sObj)
+            ch = Mid$(sObj, i, 1)
+            If ch = "\" Then
+                i = i + 1
+                sOut = sOut & Mid$(sObj, i, 1)
+            ElseIf ch = """" Then
+                Exit Do
+            Else
+                sOut = sOut & ch
+            End If
+            i = i + 1
+        Loop
+    Else
+        Do While i <= Len(sObj)
+            ch = Mid$(sObj, i, 1)
+            If ch = "," Or ch = "}" Or ch = "]" Then Exit Do
+            sOut = sOut & ch
+            i = i + 1
+        Loop
+    End If
+    JsonValue = Trim(sOut)
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Number out of a JSON scalar. Val() is used so the decimal point is
+' read the same way whatever the machine's regional settings are.
+Private Function JsonNum(ByVal sVal As String) As Double
+On Error GoTo TrapError
+    Dim i As Long, ch As String, s As String
+    For i = 1 To Len(sVal)
+        ch = Mid$(sVal, i, 1)
+        If (ch >= "0" And ch <= "9") Or ch = "." Or ch = "-" Then s = s & ch
+    Next
+    If Len(s) = 0 Then Exit Function
+    JsonNum = Val(s)
+Exit Function
+TrapError:
+    Call ShowError(lngError, Me.Caption)
+End Function
+
+' Space, tab, carriage return or line feed
+Private Function JsonIsWhite(ByVal ch As String) As Boolean
+    JsonIsWhite = (ch = " " Or ch = Chr(9) Or ch = Chr(13) Or ch = Chr(10))
+End Function
+
+' Two decimal rounding
+Private Function JsonR2(ByVal d As Double) As Double
+    If d >= 0 Then
+        JsonR2 = Int((d * 100) + 0.5) / 100
+    Else
+        JsonR2 = -Int(((-d) * 100) + 0.5) / 100
+    End If
+End Function
+
+' Number written for SQL, always with a dot whatever the locale is
+Private Function JsonSqlNum(ByVal d As Double) As String
+    JsonSqlNum = Trim(Str(JsonR2(d)))
+End Function
+

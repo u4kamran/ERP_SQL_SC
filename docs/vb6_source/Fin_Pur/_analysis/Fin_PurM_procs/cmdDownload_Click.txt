@@ -1,0 +1,226 @@
+Private Sub cmdDownload_Click()
+
+    
+
+On Error GoTo TrapError
+
+
+
+
+
+    Dim cn As ADODB.Connection
+
+    Dim Rs As ADODB.Recordset
+
+    Dim fileData() As Byte
+
+    Dim fileName As String
+
+    Dim filePath As String
+
+    Dim prodId As Integer
+
+    Dim serialNo As Integer
+
+    Dim connectionString As String
+
+    Dim htmlPath As String
+
+    
+
+    If TxtDocID.Text = "" Then
+
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+
+        Exit Sub
+
+    End If
+
+    
+
+    If Not CDbl(TxtDocID.Text) > 0 Then
+
+        MsgBox "You must have a purchase Document.", vbOKOnly + vbInformation
+
+        Exit Sub
+
+    End If
+
+    
+
+    ' Product ID and Serial Number of the file to download/view
+
+    prodId = CInt(TxtDocID)
+
+    ' Replace with the actual product ID
+
+    serialNo = SerialCode ' Replace with the actual serial number
+
+    
+
+    ' Connection string
+
+'    connectionString = "Provider=SQLOLEDB;Data Source=myServerAddress;Initial Catalog=myDatabase;User ID=myUsername;Password=myPassword;"
+
+    
+
+    ' Create ADO objects
+
+'    Set cn = New ADODB.Connection
+
+    Set Rs = New ADODB.Recordset
+
+    
+
+    
+
+    Set Cmd = New ADODB.Command
+
+    
+
+    ' Open connection
+
+    Dim ConDoc As New ADODB.Connection
+
+    Dim strConDocString As String
+
+    
+
+    strConDocString = "Provider=SQLOLEDB.1;Persist Security Info=false;" & _
+
+                    "Server=" & SERVER_NAME & ";" & _
+
+                    "UID=appsuser;" & _
+
+                    "PWD=redgreen;" & _
+
+                    "trusted_connection=no;" & _
+
+                    "Initial Catalog=" & dduser & "_" & nYear & ";" & _
+
+                    "Data Source=" & SERVER_IP  'SERVER_NAME
+
+                    
+
+
+
+    ConDoc.connectionString = strConDocString
+
+    ConDoc.Open
+
+    
+
+    
+
+    ' Open connection
+
+'    cn.connectionString = connectionString
+
+'    cn.Open
+
+    
+
+    ' Retrieve file data from the database
+
+    Rs.Open "SELECT pdf_doc FROM fin_pur_m_doc WHERE Prod_ID = " & prodId & " AND Serial_No = " & serialNo, ConDoc, adOpenStatic, adLockOptimistic
+
+    
+
+    If Not Rs.EOF Then
+
+        ' Get file data and file name
+
+        fileData = Rs.Fields("pdf_doc").Value
+
+        'fileName = rs.Fields("FileName").Value
+
+        
+
+        ' Close recordset
+
+        Rs.Close
+
+        
+
+        ' Save the file to a local path or open it directly for viewing
+
+        filePath = App.Path & "\download\" & CInt(TxtDocID) & ".pdf" ' Change the path as needed
+
+'        filePath = App.Path & "\download\" & SerialCode & ".pdf" ' Change the path as needed
+
+        
+
+        ' Save the file to disk
+
+        Open filePath For Binary As #1
+
+        Put #1, , fileData
+
+        Close #1
+
+        
+
+        
+
+      ' Create a temporary HTML file to embed the PDF
+
+'        htmlPath = Environ("TEMP") & "\" & "temp.html"
+
+        htmlPath = Environ("TEMP") & "\" & SerialCode & ".html"
+
+        Open htmlPath For Output As #2
+
+        Print #2, "<html><body>"
+
+        Print #2, "<embed width='100%' height='100%' type='application/pdf' src='" & filePath & "'></embed>"
+
+        Print #2, "</body></html>"
+
+        Close #2
+
+        
+
+        ' Open the temporary HTML file in the default browser
+
+        ShellExecute 0, "open", htmlPath, vbNullString, vbNullString, vbNormalFocus
+
+        
+
+        ' Open the saved file for viewing (requires default PDF viewer)
+
+        'Shell "cmd /c start " & filePath, vbNormalFocus
+
+    Else
+
+        MsgBox "File not found.", vbExclamation
+
+    End If
+
+    
+
+    ' Cleanup
+
+    'cn.Close
+
+    Set Rs = Nothing
+
+'    Set ConDoc = Nothing
+
+    ConDoc.Close
+
+
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+
+
+End Sub
+
+
+

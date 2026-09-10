@@ -23,6 +23,10 @@ class GuestPriceLookupResponse(BaseModel):
 class GuestPriceSearchMatch(GuestPriceLookupResponse):
     score: float = 0.0
     match_reason: str = ""
+    stock_qty: Optional[float] = None
+    in_stock: bool = True
+    stock_label: str = "in_stock"
+    suggested_qty: Optional[float] = None
 
 
 class GuestPriceSearchResponse(BaseModel):
@@ -31,3 +35,5 @@ class GuestPriceSearchResponse(BaseModel):
     match_type: Literal["exact", "single", "multiple", "none"]
     items: list[GuestPriceSearchMatch] = Field(default_factory=list)
     message: str = ""
+    suggested_qty: Optional[float] = None
+    empty_hint: Optional[str] = None

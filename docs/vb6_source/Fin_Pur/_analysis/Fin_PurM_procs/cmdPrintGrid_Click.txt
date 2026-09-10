@@ -1,0 +1,26 @@
+Private Sub cmdPrintGrid_Click()
+
+On Error GoTo TrapError
+
+    If Not MsgBox("Print Report, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+
+        Exit Sub
+
+    Else
+
+        Call grd(0).PrintGrid(, , , 0.5, 1)
+
+    End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+    
+
+End Sub
+
+
+

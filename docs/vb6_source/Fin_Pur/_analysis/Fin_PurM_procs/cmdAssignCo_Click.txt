@@ -1,0 +1,80 @@
+Private Sub cmdAssignCo_Click()
+
+On Error GoTo TrapError
+
+
+
+Dim Rs As New ADODB.Recordset
+
+Dim intCoID As Integer
+
+Dim intDocID As Integer
+
+Dim blnSQlAuth As Boolean
+
+Dim dblCost As Double
+
+ 
+
+intDocID = Val(TxtDocID.Text)
+
+intCoID = Val(txtCoID.Text)
+
+
+
+
+
+      SQL = "select * FROM Fin_Pur_d WHERE prod_id = " & intDocID
+
+      Set Rs = FetchAll(SQL)
+
+      With Rs
+
+        If Not (.EOF And .BOF) Then
+
+            Do While Not .EOF
+
+'                dblCost = !total_amt / !Qty
+
+                SQL = ""
+
+                'SQL = "update fin_item set co_id = " & intCoID & ", cost_rate = " & dblCost & " where item_id = " & !Item_ID
+
+                SQL = "update fin_item set co_id = " & intCoID & " where item_id = " & !Item_ID
+
+                blnSQlAuth = UpdateV(SQL)
+
+                If blnSQlAuth = False Then
+
+                    MsgBox "Error in Query contact with Administrator."
+
+                    .Close
+
+                    Exit Sub
+
+                End If
+
+                .MoveNext
+
+            Loop
+
+            .Close
+
+        End If
+
+      End With
+
+      MsgBox "Process Completed ... "
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+End Sub
+
+
+

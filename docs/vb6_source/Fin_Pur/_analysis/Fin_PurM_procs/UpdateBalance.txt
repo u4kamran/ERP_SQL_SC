@@ -1,0 +1,110 @@
+Private Sub UpdateBalance()
+
+On Error GoTo TrapError
+
+   Dim nCnt As Integer
+
+   Dim nQty As Double
+
+   Dim nAmount As Double
+
+   'Dim nTAmount As Double
+
+   Dim nSTaxAmount As Double
+
+   Dim nDiscAmount As Double
+
+   Dim nDiscOIAmt As Double
+
+   Dim nOffInvDiscAmt As Double
+
+   
+
+   nTAmount = 0
+
+
+
+   For nCnt = 1 To max_entries
+
+      Fin_PurM.VGrid.Row = nCnt
+
+      Fin_PurM.VGrid.Col = 3
+
+      nQty = nQty + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      Fin_PurM.VGrid.Col = 5
+
+      nAmount = nAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      Fin_PurM.VGrid.Col = 7
+
+      nSTaxAmount = nSTaxAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      Fin_PurM.VGrid.Col = 9
+
+      nDiscAmount = nDiscAmount + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      Fin_PurM.VGrid.Col = 11
+
+      nOffInvDiscAmt = nOffInvDiscAmt + CDbl(Fin_PurM.VGrid.Text & "0")
+
+      
+
+   Next
+
+
+
+      'nTAmount = nAmount - (nDiscAmount + mDiscount) + nSTaxAmount
+
+      nTAmount = nAmount - (nDiscAmount) + nSTaxAmount
+
+      T_Amount = nTAmount
+
+      Fin_PurM.mQty.Caption = Format(nQty, "##,##0.00")
+
+      Fin_PurM.mAmount.Caption = Format(nAmount, "##,##0.00")
+
+      Fin_PurM.mSalesTax.Caption = Format(nSTaxAmount, "##,##0.00")
+
+      Fin_PurM.LDiscount.Caption = Format(nDiscAmount, "##,##0.00")
+
+      Fin_PurM.LStaxExclAmt.Caption = Format((nAmount - nDiscAmount), "##,##0.00")
+
+      Fin_PurM.LblOffInvDisc.Caption = Format((nOffInvDiscAmt), "##,##0.00")
+
+      'Fin_PurM.mNetAmount.Caption = Format(nTAmount - (nOffInvDiscAmt), "##,##0.00")
+
+      Fin_PurM.mNetAmount.Caption = Format(nTAmount - (nOffInvDiscAmt) - mDiscount + mCharges, "##,##0.00")
+
+      '- mDiscount + mCharges
+
+      
+
+      
+
+      'LblOffInvDisc
+
+      
+
+            'sales tax
+
+
+
+'      Fin_PurM.LblDiscount.Caption = Format(nDiscAmount, "##,##0.00")
+
+      
+
+      Fin_PurM.mTAmount.Caption = Format(nTAmount, "##,##0.00")
+
+    VGrid.Col = 1
+
+    VGrid.Row = 1
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

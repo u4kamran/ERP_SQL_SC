@@ -1,0 +1,20 @@
+Private Sub CmdDiscount_Click()
+
+On Error GoTo TrapError
+
+    Fin_PurDed.Show vbModal, Me
+
+    Call UpdateBalance
+
+    Call CalDiscount
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

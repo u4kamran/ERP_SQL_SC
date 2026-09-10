@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}User Menu Rights - {{ app_name }}{% endblock %}
+{% block page_title %}User Menu Rights{% endblock %}
+
+{% block extra_css %}
+<link href="/static/css/user_menu_rights.css?v=1" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="umr-page">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <p class="text-muted mb-1">
+                System Administration → select a user, check the menus they may use.
+                Unchecked menus are completely hidden.
+            </p>
+            <div class="small text-muted">
+                Saving requires <code>auth.roles.manage</code>. Users must log in again after changes.
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-umr-refresh">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-umr-cancel">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-umr-save" disabled>
+                <i class="bi bi-save me-1"></i> Save
+            </button>
+        </div>
+    </div>
+
+    <div id="umr-alert"></div>
+
+    <div class="card card-stat mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-6">
+                    <label class="form-label fw-semibold" for="umr-user-search">User</label>
+                    <input type="search" class="form-control mb-2" id="umr-user-search"
+                           placeholder="Search username or name…">
+                    <select class="form-select" id="umr-user-select" size="8">
+                        <option value="">Loading users…</option>
+                    </select>
+                </div>
+                <div class="col-lg-6">
+                    <div class="umr-selected card bg-light border-0 h-100">
+                        <div class="card-body">
+                            <div class="fw-semibold" id="umr-selected-name">No user selected</div>
+                            <div class="small text-muted" id="umr-selected-meta">Choose a user to load menu rights.</div>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-umr-check-all" disabled>Check All</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-umr-uncheck-all" disabled>Uncheck All</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-stat">
+        <div class="card-header bg-white fw-semibold">Application menus</div>
+        <div class="card-body" id="umr-menu-tree">
+            <div class="text-muted">Select a user to load menu rights.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/user_menu_rights.js?v=1"></script>
+{% endblock %}

@@ -1,0 +1,114 @@
+Private Sub Form_KeyUp(Keycode As Integer, Shift As Integer)
+
+On Error GoTo TrapError
+
+    Call EnterKeyEnable(Keycode)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+''''Private Sub TxtFiscal_KeyPress(KeyAscii As Integer)
+
+''''        If KeyAscii = 27 Then
+
+''''               Unload Me
+
+''''        End If
+
+''''        Dim strvalid As String
+
+''''        strvalid = "0123456789"
+
+''''        If KeyAscii = 8 Then
+
+''''            Dim mLen As Integer
+
+''''            mLen = Len(Trim(TxtFiscal))
+
+''''            If mLen = 0 Then
+
+''''                TxtFiscal.Text = ""
+
+''''            Else
+
+''''                TxtFiscal.Text = Left(Trim(TxtFiscal), mLen - 1)
+
+''''                SendKeys "{END}"
+
+''''            End If
+
+''''            Exit Sub
+
+''''        End If
+
+''''        If InStr(strvalid, Chr(KeyAscii)) = 0 Then
+
+''''            KeyAscii = 0
+
+''''        End If
+
+''''End Sub
+
+
+
+''''Private Sub TxtFiscal_Validate(Cancel As Boolean)
+
+''''    If Val(TxtFiscal) = 0 Then
+
+''''        MFiscal = 0
+
+''''        TxtMonth.Caption = Text_Month(MFiscal)
+
+''''        Exit Sub
+
+''''    End If
+
+'''''    cFinVmode 0=Yearly, 1=Monthly
+
+''''     If cFinVMode = 1 And Val(TxtFiscal) > 0 Then
+
+''''        MsgBox "Invalid Month, only '0' or 'Blank' is allowed  ...", vbInformation, cSelFormId
+
+''''        TxtFiscal.SetFocus
+
+''''        Cancel = True
+
+''''        Exit Sub
+
+''''    End If
+
+''''    If Val(TxtFiscal) > 12 Then
+
+''''        MsgBox "Invalid Month, please select 1 - 12 ...", vbInformation, cSelFormId
+
+''''        TxtFiscal.SetFocus
+
+''''        Cancel = True
+
+''''        Exit Sub
+
+''''    End If
+
+''''    MFiscal = Val(TxtFiscal)
+
+''''    TxtMonth.Caption = Text_Month(MFiscal)
+
+''''    If Val(TxtFiscal) <> 0 Then
+
+''''        TxtDocDAte.Month = Val(MFiscal)
+
+''''    End If
+
+''''
+
+''''End Sub
+
+
+

@@ -18,6 +18,21 @@ def dash_gl(value: int | str) -> str:
     return f"{code[:SEG1]}-{code[SEG1:SEG1 + SEG2]}-{code[SEG1 + SEG2:SEG1 + SEG2 + SEG3]}"
 
 
+# Inventory item codes (VB6 Stock Balance / Fin_Item) — typically 10 digits as 100-001-0001
+ITEM_SEG1 = 3
+ITEM_SEG2 = 3
+ITEM_SEG3 = 4
+
+
+def dash_item(value: int | float | str) -> str:
+    """Format FIN_ITEM.ITEM_ID as 100-001-0001 (3-3-4)."""
+    digits = "".join(ch for ch in str(int(float(value))) if ch.isdigit())
+    code = digits.zfill(ITEM_SEG1 + ITEM_SEG2 + ITEM_SEG3)
+    a = ITEM_SEG1
+    b = ITEM_SEG1 + ITEM_SEG2
+    return f"{code[:a]}-{code[a:b]}-{code[b:b + ITEM_SEG3]}"
+
+
 def format_voucher_no(voucher_id: int | None, fiscal: int | None) -> str:
     if voucher_id is None:
         return ""

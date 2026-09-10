@@ -15,8 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function canManage() {
     return Auth.hasPermission('reports.sms_email.manage')
-        || Auth.hasPermission('reports.gl_ledger.view')
-        || Auth.hasPermission('inventory.fin_item.view')
         || Auth.hasPermission('auth.admin.full');
 }
 

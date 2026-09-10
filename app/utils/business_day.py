@@ -1,4 +1,4 @@
-"""Business day boundaries for sales reports (default: 08:00 → next day 05:00)."""
+"""Business day boundaries for sales reports (configurable via Default Setup)."""
 
 from __future__ import annotations
 
@@ -6,36 +6,54 @@ import calendar
 from datetime import date, datetime, time, timedelta
 from typing import Tuple
 
-from app.config.settings import settings
+from app.services.default_setup_store import BusinessDayConfig, get_business_day_config
+
+
+def _cfg() -> BusinessDayConfig:
+    return get_business_day_config()
 
 
 def business_day_start_hour() -> int:
-    return settings.business_day_start_hour
+    return _cfg().start_hour
 
 
 def business_day_end_hour() -> int:
-    return settings.business_day_end_hour
+    return _cfg().end_hour
+
+
+def business_day_start_minute() -> int:
+    return _cfg().start_minute
+
+
+def business_day_end_minute() -> int:
+    return _cfg().end_minute
+
+
+def _time_before_business_start(dt: datetime) -> bool:
+    return dt.time() < _cfg().start_time
 
 
 def business_date_for(dt: datetime) -> date:
     """
     Map a timestamp to its business day label.
 
-    Business day D = D 08:00 → (D+1) 05:00.
-    Any time before 08:00 belongs to the previous calendar date's business day.
+    Business day D = D @ start → (D+1) @ end.
+    Any time before start belongs to the previous calendar date's business day.
     """
-    if dt.hour < business_day_start_hour():
+    if _time_before_business_start(dt):
         return dt.date() - timedelta(days=1)
     return dt.date()
 
 
 def business_day_start(d: date) -> datetime:
-    return datetime.combine(d, time(business_day_start_hour(), 0, 0))
+    cfg = _cfg()
+    return datetime.combine(d, time(cfg.start_hour, cfg.start_minute, 0))
 
 
 def business_day_end(d: date) -> datetime:
-    """Inclusive end of business day D (next morning at end hour)."""
-    return datetime.combine(d + timedelta(days=1), time(business_day_end_hour(), 0, 0))
+    """Inclusive end of business day D (next morning at end time)."""
+    cfg = _cfg()
+    return datetime.combine(d + timedelta(days=1), time(cfg.end_hour, cfg.end_minute, 0))
 
 
 def current_business_day_start(now: datetime | None = None) -> datetime:
@@ -50,19 +68,21 @@ def count_business_days(start: datetime, end: datetime) -> int:
 
 
 def business_day_label(d: date) -> str:
+    cfg = _cfg()
     end = d + timedelta(days=1)
     return (
-        f"{d.strftime('%d %b %Y')} {business_day_start_hour():02d}:00"
-        f" → {end.strftime('%d %b')} {business_day_end_hour():02d}:00"
+        f"{d.strftime('%d %b %Y')} {cfg.start_time_str}"
+        f" → {end.strftime('%d %b')} {cfg.end_time_str}"
     )
 
 
 def sql_business_date_expr(column: str = "DOC_DATE_T") -> str:
     """SQL Server expression for business day date (SQL 2008 compatible)."""
-    start_h = business_day_start_hour()
+    cfg = _cfg()
+    start_mins = cfg.start_hour * 60 + cfg.start_minute
     return f"""
         CASE
-            WHEN DATEPART(hour, {column}) < {start_h}
+            WHEN (DATEPART(hour, {column}) * 60 + DATEPART(minute, {column})) < {start_mins}
             THEN DATEADD(day, -1, CAST({column} AS DATE))
             ELSE CAST({column} AS DATE)
         END
@@ -81,7 +101,8 @@ def shift_date_months(d: date, months: int) -> date:
     return date(year, month, day)
 
 
-def _shift_datetime_months(value: datetime, months: int) -> datetime:
+def shift_datetime_months(value: datetime, months: int) -> datetime:
+    """Shift a datetime by calendar months (clamps day to month length)."""
     month_index = value.month - 1 + months
     year = value.year + month_index // 12
     month = month_index % 12 + 1
@@ -89,13 +110,17 @@ def _shift_datetime_months(value: datetime, months: int) -> datetime:
     return value.replace(year=year, month=month, day=day)
 
 
+def _shift_datetime_months(value: datetime, months: int) -> datetime:
+    return shift_datetime_months(value, months)
+
+
 def is_business_day_close(end: datetime) -> bool:
-    """True when end time is before 08:00 (05:00 close of prior business day)."""
-    return end.hour < business_day_start_hour()
+    """True when end time is before configured business-day start (closed day)."""
+    return _time_before_business_start(end)
 
 
 def is_full_calendar_month_period(start_bd: date, end_bd: date, end: datetime) -> bool:
-    """Full business month: starts 1st 08:00 and ends 05:00 morning after last day."""
+    """Full business month: starts 1st at start time and ends morning after last day."""
     if start_bd.day != 1 or start_bd.month != end_bd.month or start_bd.year != end_bd.year:
         return False
     if not is_business_day_close(end):
@@ -104,10 +129,10 @@ def is_full_calendar_month_period(start_bd: date, end_bd: date, end: datetime) -
 
 
 def is_month_end_partial(end_bd: date, end: datetime) -> bool:
-    """On last calendar day of month but before 05:00 close (partial day)."""
+    """On last calendar day of month but before close (partial day)."""
     if end_bd != last_calendar_day(end_bd.year, end_bd.month):
         return False
-    return end.hour >= business_day_start_hour() and not is_business_day_close(end)
+    return not _time_before_business_start(end) and not is_business_day_close(end)
 
 
 def shift_business_period(
@@ -165,7 +190,8 @@ def date_range_for_preset(preset: str, now: datetime | None = None) -> Tuple[dat
     """Date ranges using business-day boundaries."""
     now = now or datetime.now()
     preset = (preset or "this-month").strip().lower()
-    start_h = business_day_start_hour()
+    cfg = _cfg()
+    start_t = time(cfg.start_hour, cfg.start_minute, 0)
 
     if preset == "today":
         bd = business_date_for(now)
@@ -196,16 +222,53 @@ def date_range_for_preset(preset: str, now: datetime | None = None) -> Tuple[dat
         return business_day_start(start_bd), now
 
     # this-month (default)
-    start = datetime(now.year, now.month, 1, start_h, 0, 0)
+    start = datetime.combine(date(now.year, now.month, 1), start_t)
     if now < start:
-        # Before 08:00 on the 1st — month has not started yet; include previous month from its 1st.
         if now.month == 1:
-            start = datetime(now.year - 1, 12, 1, start_h, 0, 0)
+            start = datetime.combine(date(now.year - 1, 12, 1), start_t)
         else:
-            start = datetime(now.year, now.month - 1, 1, start_h, 0, 0)
+            start = datetime.combine(date(now.year, now.month - 1, 1), start_t)
     return start, now
 
 
 def default_report_range(now: datetime | None = None) -> Tuple[datetime, datetime]:
     """Default range for API when no dates passed: this month, business hours."""
     return date_range_for_preset("this-month", now)
+
+
+def cumulative_period_label(start: datetime, end: datetime) -> str:
+    """Label for cumulative sales row: fixed start -> varying end (matches SSMS report)."""
+    cfg = _cfg()
+    return (
+        f"{start.strftime('%d %b %Y')} {cfg.start_time_str}"
+        f" -> {end.strftime('%d %b %Y')} {cfg.end_time_str}"
+    )
+
+
+def cumulative_period_ends(
+    start_date: datetime, end_date: datetime
+) -> Tuple[datetime, list[datetime]]:
+    """
+    Build cumulative period end timestamps.
+
+    Fixed start = business_day_start(business_date_for(start_date)).
+    Each row ends at business_day_end(bd) for bd from start_bd through end_bd inclusive.
+    Returns (fixed_start, [end1, end2, ...]) or (fixed_start, []) when invalid/empty.
+    """
+    if end_date < start_date:
+        return business_day_start(business_date_for(start_date)), []
+
+    start_bd = business_date_for(start_date)
+    end_bd = business_date_for(end_date)
+    fixed_start = business_day_start(start_bd)
+
+    ends: list[datetime] = []
+    bd = start_bd
+    while bd <= end_bd:
+        ends.append(business_day_end(bd))
+        bd += timedelta(days=1)
+    return fixed_start, ends
+
+
+def business_hours_note() -> str:
+    return _cfg().hours_note()

@@ -1,0 +1,26 @@
+Private Sub TxtStaxRate_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+'    If Val(TxtStaxRate) = 0 Then
+
+'        TxtStaxAmount.Enabled = True
+
+'    Else
+
+'        TxtStaxAmount.Enabled = False
+
+'    End If
+
+'    Call Calc_Rate
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

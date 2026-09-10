@@ -1,0 +1,28 @@
+Public Function CalDiscount()
+
+On Error GoTo TrapError
+
+   mDiscount = Val(HDiscount) + Val(HClaim) + Val(HOtherDed)
+
+   mCharges = Val(HLoading) + Val(HCarriage) + Val(HOtherCharges)
+
+   'MKB temp block 21-02-2024
+
+   LblDiscount.Caption = mDiscount
+
+   LblCharges.Caption = mCharges
+
+   LblDiff.Caption = mCharges - mDiscount
+
+   mNetAmount.Caption = Format(T_Amount - CDbl(LblOffInvDisc) - mDiscount + mCharges, "##,###,##.00")
+
+Exit Function
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Function
+
+
+

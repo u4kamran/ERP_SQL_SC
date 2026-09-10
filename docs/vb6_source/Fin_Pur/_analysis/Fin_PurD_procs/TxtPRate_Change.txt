@@ -1,0 +1,18 @@
+Private Sub TxtPRate_Change()
+
+On Error GoTo TrapError
+
+    If (txtUnit.Text) = "" Or (TxtPRate.Text) = "" Then Exit Sub
+
+    TxtRate.Text = Format(CDbl(TxtPRate.Text) / CDbl(txtUnit.Text), "#########.#000")
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

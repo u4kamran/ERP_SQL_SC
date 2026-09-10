@@ -1,0 +1,28 @@
+Private Sub vGrid_DblClick()
+
+On Error GoTo TrapError
+
+    If VGrid.Row < nCounter Then
+
+       lEdit = True
+
+       Fin_PurD.Show vbModal, Me
+
+       Call UpdateBalance
+
+       CmdAddTrans.SetFocus
+
+    End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+

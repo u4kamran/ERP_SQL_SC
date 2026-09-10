@@ -1,0 +1,26 @@
+Private Sub cmdClose_Click()
+
+On Error GoTo TrapError
+
+   If nCounter >= 2 Then
+
+      If Not MsgBox("Discarding voucher, Are you sure ?", vbInformation + vbYesNo, cSelFormId) = vbYes Then
+
+            Exit Sub
+
+      End If
+
+   End If
+
+   Unload Me
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

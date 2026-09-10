@@ -1,0 +1,128 @@
+Private Sub Form_DblClick()
+
+
+
+    Dim conn As Object
+
+    Dim Rs As Object
+
+    Dim imgByte() As Byte
+
+    Dim imgData As String
+
+    Dim ImageID As Double
+
+
+
+    ' SQL Server connection string
+
+    'Dim connStr As String
+
+    'connStr = "Provider=SQLOLEDB;Data Source=YOUR_SERVER;Initial Catalog=YOUR_DATABASE;User ID=YOUR_USERNAME;Password=YOUR_PASSWORD"
+
+
+
+    ' Set ImageID to the ID of the image you want to load
+
+    ImageID = 12010022
+
+
+
+    ' Create ADO Connection object
+
+    'Set conn = CreateObject("ADODB.Connection")
+
+    'conn.Open connStr
+
+
+
+    ' Create ADO Recordset object
+
+    Set Rs = CreateObject("ADODB.Recordset")
+
+    
+
+    ' Query to fetch the image from the database
+
+    Rs.Open "SELECT logo FROM cover WHERE ID = " & ImageID, Con
+
+
+
+    ' Check if record exists
+
+    If Not Rs.EOF Then
+
+        ' Get the image data (binary data)
+
+        imgByte = Rs.Fields("logo").Value
+
+        
+
+        ' Create an image object to load the binary data
+
+        imgData = "d:\temp_image.jpg" ' Temporary path to store image
+
+
+
+        ' Save the binary data to a file
+
+        Open imgData For Binary Access Write As #1
+
+        Put #1, , imgByte
+
+        Close #1
+
+        
+
+        ' Load the saved image into the Image control
+
+        Image1.Picture = LoadPicture(imgData)
+
+        
+
+        ' Optionally, delete the temporary image file after displaying it
+
+        ' Kill imgData
+
+    Else
+
+        MsgBox "Image not found."
+
+    End If
+
+
+
+    ' Close the connection and recordset
+
+    Rs.Close
+
+'    Con.Close
+
+
+
+    ' Clean up objects
+
+    Set Rs = Nothing
+
+'    Set conn = Nothing
+
+
+
+
+
+End Sub
+
+
+
+'Private Sub Form_KeyPress(KeyAscii As Integer)
+
+'   If KeyAscii = 13 Then
+
+'      KeyAscii = 0
+
+'      SendKeys "{TAB}"
+
+'   End If
+
+'End Sub
+

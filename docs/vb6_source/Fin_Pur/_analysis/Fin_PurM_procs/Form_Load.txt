@@ -1,0 +1,634 @@
+Private Sub Form_Load(): Call FormDisplaySetting(Me)
+
+On Error GoTo TrapError
+
+    '
+
+    MFiscal = 0
+
+    cDoc_Type = 2   'fin_c001 table
+
+    cDoc_Abbr = "Err."
+
+    
+
+    If Not UCase(cLoginName) = "SA" Then
+
+        cmdAssignCo.Visible = False
+
+        txtCoID.Visible = False
+
+        cmdUploadFile.Visible = False
+
+        cmdDownload.Visible = False
+
+        Command1.Visible = False
+
+    End If
+
+    
+
+    
+
+    ' mvmode = 1 = Combine
+
+    ' Voucher numbering(yearly/monthly) depends upon type of book defined
+
+    MVMode = 1 ' Combined
+
+    MBookType = 2  ' JV
+
+    MVCombination = 0
+
+    cBookID = 102    'automatic select from fin_c001 doc_book_id
+
+    SerialCode = 0
+
+    cSelFormId = "Purchase Receipt"
+
+    max_entries = 500
+
+    nCounter = 1
+
+    Caption = cName
+
+    cSelFormId = Line2.Caption
+
+    TxtDocID.MaxLength = 10
+
+    TxtDocDAte.Value = nDate
+
+    CmdAddTrans.Enabled = False
+
+    CmdShowAddr.Enabled = False
+
+    CmdDiscount.Enabled = False
+
+   ' Buttone Enable/Disable
+
+   cFoundFlag = False
+
+   CmdSave.Enabled = False
+
+   CmdDelete.Enabled = False
+
+   Dim nCnt As Integer
+
+   VGrid.Cols = 15
+
+   VGrid.Rows = max_entries + 1
+
+   VGrid.Col = 0: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Sr. #": VGrid.ColWidth(0) = 500
+
+   VGrid.Col = 1: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Item ID": VGrid.ColWidth(1) = 1300
+
+   VGrid.Col = 2: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Item Title": VGrid.ColWidth(2) = 4200
+
+   VGrid.Col = 3: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Qty": VGrid.ColWidth(3) = 1000
+
+   VGrid.Col = 4: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Rate": VGrid.ColWidth(4) = 1000
+
+   VGrid.Col = 5: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Amount": VGrid.ColWidth(5) = 1500
+
+   VGrid.Col = 6: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "S-Tax %": VGrid.ColWidth(6) = 800
+
+   VGrid.Col = 7: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "S-Tax Amt": VGrid.ColWidth(7) = 1400
+
+   VGrid.Col = 8: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Disc %": VGrid.ColWidth(8) = 800
+
+   VGrid.Col = 9: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Disc Amt": VGrid.ColWidth(9) = 1400
+
+   VGrid.Col = 10: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "DOI %": VGrid.ColWidth(8) = 800
+
+   VGrid.Col = 11: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "DOI Amt": VGrid.ColWidth(9) = 1400
+
+   VGrid.Col = 12: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Included Amt": VGrid.ColWidth(10) = 1500
+
+   VGrid.Col = 13: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "Remarks": VGrid.ColWidth(11) = 1500
+
+   VGrid.Col = 14: VGrid.Row = 0: VGrid.CellAlignment = flexAlignCenterCenter: VGrid.Text = "ExpDate": VGrid.ColWidth(11) = 1500
+
+   
+
+   VGrid.Col = 0
+
+   For nCnt = 1 To max_entries
+
+      VGrid.Row = nCnt
+
+      VGrid.CellAlignment = flexAlignCenterBottom
+
+      VGrid.Text = nCnt
+
+   Next
+
+   VGrid.Col = 1
+
+   VGrid.Row = 1
+
+   CboPayment.AddItem "Terms: Credit", 0
+
+   CboPayment.AddItem "Terms: Cash Reg.", 1
+
+   CboPayment.AddItem "Terms: Cash Un-Reg.", 2
+
+   CboPayment.ListIndex = 0
+
+   HDiscount.Caption = ""
+
+   HClaim.Caption = ""
+
+   HOtherDed.Caption = ""
+
+   HLoading.Caption = ""
+
+   HCarriage.Caption = ""
+
+   HOtherCharges.Caption = ""
+
+   '***********************************************************
+
+   If cSTaxType = 1 Then
+
+      mErr = 0
+
+      SQL = "select * from fin_c003 where doc_id = 2"
+
+      Set RsDummy = FetchAll(SQL)
+
+      If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+         ' Import ID
+
+         If Not IsNull(RsDummy!sp_ac_id) And RsDummy!sp_ac_id <> 0 Then
+
+             mCreditSalesImportId = RsDummy!sp_ac_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         ' local ID
+
+         If Not IsNull(RsDummy!sp_ac_id_local) And RsDummy!sp_ac_id_local <> 0 Then
+
+             mCreditSalesLocalId = RsDummy!sp_ac_id_local
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         ' Cash PUrchase Import
+
+         If Not IsNull(RsDummy!cash_id) And RsDummy!cash_id <> 0 Then
+
+             mCashSalesImportId = RsDummy!cash_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         ' Cash PUrchase Local
+
+         If Not IsNull(RsDummy!cash_id_local) And RsDummy!cash_id_local <> 0 Then
+
+             mCashSalesLocalId = RsDummy!cash_id_local
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!stax_id) And RsDummy!stax_id <> 0 Then
+
+             mSalesTaxPayableId = RsDummy!stax_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!return_id) And RsDummy!return_id <> 0 Then
+
+             mSalesReturnID = RsDummy!return_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+'         ' mCashSalesID
+
+'         If Not IsNull(RsDummy!cash_id) And RsDummy!cash_id <> 0 Then
+
+'             mCashSalesID = RsDummy!cash_id
+
+'         Else
+
+'            mErr = mErr + 1
+
+'         End If
+
+         '
+
+         If Not IsNull(RsDummy!discount_id) And RsDummy!discount_id <> 0 Then
+
+             mDiscountID = RsDummy!discount_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!claim_id) And RsDummy!claim_id <> 0 Then
+
+             mClaimId = RsDummy!claim_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!otherded_id) And RsDummy!otherded_id <> 0 Then
+
+             mOtherDedID = RsDummy!otherded_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!carriage_id) And RsDummy!carriage_id <> 0 Then
+
+             mCarriageId = RsDummy!carriage_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!loading_id) And RsDummy!loading_id <> 0 Then
+
+             mLoadingID = RsDummy!loading_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!othercharges_id) And RsDummy!othercharges_id <> 0 Then
+
+             mOtherChargesID = RsDummy!othercharges_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         ' Sales Tax Rate
+
+         If Not IsNull(RsDummy!reg_page) Then
+
+             mRegStaxRate = RsDummy!reg_page
+
+         Else
+
+             mRegStaxRate = 0
+
+         End If
+
+         If Not IsNull(RsDummy!unreg_page) Then
+
+             mUnRegStaxRate = RsDummy!unreg_page
+
+         Else
+
+             mUnRegStaxRate = 0
+
+         End If
+
+         RsDummy.Close
+
+      End If
+
+   End If
+
+   '***********************************************************
+
+   '''''''''''''''''''''
+
+   'cDoc_Abbr
+
+   SQL = "SELECT * FROM fin_c001 WHERE doc_id = " & cDoc_Type
+
+   Set RsDummy = FetchAll(SQL)
+
+   If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+        cDoc_Abbr = RsDummy!doc_abbr
+
+        If Not IsNull(RsDummy!doc_book_id) Then
+
+            cBookID = RsDummy!doc_book_id
+
+            cNarration = RsDummy!doc_nar
+
+        Else
+
+            cBookID = 102
+
+            cNarration = " "
+
+        End If
+
+   End If
+
+   RsDummy.Close
+
+   ' Book ID
+
+   SQL = "SELECT * FROM GL0004 WHERE sys_type = 1 and book_id = " & cBookID
+
+   Set RsDummy = FetchAll(SQL)
+
+   If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+        ' Assign Values to Text/Controls
+
+        'TxtBookTitle.Text = "" & RsDummy!book_title
+
+        mED_Status = RsDummy!ed_status
+
+        'MBook_Type = RsDummy!book_type
+
+        MVnumbering = RsDummy!v_numbering ' Yearly, Monthly
+
+        ' 1 = Yearly, 2 = Monthly ' mvnumbering
+
+        ' 1=combine, 2=Seperate
+
+        ' Verify Book Permission
+
+        mErr = 0
+
+        SQL = "SELECT * FROM GC0003 WHERE l_uid = " & cLoginID & " and book_id = " & cBookID
+
+        Set RsDummy1 = FetchAll(SQL)
+
+        If RsDummy1.RecordCount = 0 Then
+
+            'Screen.MousePointer = vbDefault
+
+            RsDummy1.Close
+
+            'MsgBox "Access to Book denied, Consult System Administrator for Book Permission ...", vbInformation, cSelFormId
+
+            mErr = mErr + 1
+
+        Else
+
+            RsDummy1.Close
+
+            
+
+        End If
+
+    Else
+
+        RsDummy.Close
+
+        Screen.MousePointer = vbDefault
+
+        MsgBox "Book not found or for Use of Other Modules, please enter another ...", vbInformation, cSelFormId
+
+        mErr = mErr + 1
+
+'        TxtBookID.SetFocus
+
+         Exit Sub
+
+    End If
+
+    '****************************************************
+
+       'cSTaxType = 1 ' 0 = Item to Item Rate , 1 = Flate Rate 15/18
+
+   If cSTaxType = 1 Then
+
+      mErr = 0
+
+   '******************************************************
+
+      'doc_id = 1 = Invoice (Sales), 2 = Purchase
+
+      SQL = "select * from fin_c003 where doc_id = 2"
+
+      Set RsDummy = FetchAll(SQL)
+
+      If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+      '
+
+         If Not IsNull(RsDummy!sp_ac_id) And RsDummy!sp_ac_id <> 0 Then
+
+             mSalesId = RsDummy!sp_ac_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!stax_id) And RsDummy!stax_id <> 0 Then
+
+             mSalesTaxPayableId = RsDummy!stax_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!return_id) And RsDummy!return_id <> 0 Then
+
+             mSalesReturnID = RsDummy!return_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         ' mCashSalesID
+
+         If Not IsNull(RsDummy!cash_id) And RsDummy!cash_id <> 0 Then
+
+             mCashSalesID = RsDummy!cash_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!discount_id) And RsDummy!discount_id <> 0 Then
+
+             mDiscountID = RsDummy!discount_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!claim_id) And RsDummy!claim_id <> 0 Then
+
+             mClaimId = RsDummy!claim_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!otherded_id) And RsDummy!otherded_id <> 0 Then
+
+             mOtherDedID = RsDummy!otherded_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!carriage_id) And RsDummy!carriage_id <> 0 Then
+
+             mCarriageId = RsDummy!carriage_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!loading_id) And RsDummy!loading_id <> 0 Then
+
+             mLoadingID = RsDummy!loading_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         '
+
+         If Not IsNull(RsDummy!othercharges_id) And RsDummy!othercharges_id <> 0 Then
+
+             mOtherChargesID = RsDummy!othercharges_id
+
+         Else
+
+            mErr = mErr + 1
+
+         End If
+
+         ' Sales Tax Rate
+
+         If Not IsNull(RsDummy!reg_page) Then
+
+             mRegStaxRate = RsDummy!reg_page
+
+         Else
+
+             mRegStaxRate = 0
+
+         End If
+
+         If Not IsNull(RsDummy!unreg_page) Then
+
+             mUnRegStaxRate = RsDummy!unreg_page
+
+         Else
+
+             mUnRegStaxRate = 0
+
+         End If
+
+         RsDummy.Close
+
+      '******************************************************
+
+      End If
+
+    '****************************************************
+
+   End If
+
+    If mED_Status = 1 Then
+
+        'Screen.MousePointer = vbDefault
+
+        'MsgBox "Book is temporarily stoped ...", vbCritical, cSelFormId
+
+        mErr = mErr + 1
+
+    Else
+
+'        RsDummy.Close
+
+    End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

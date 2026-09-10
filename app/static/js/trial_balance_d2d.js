@@ -13,7 +13,7 @@ let lastPdfBlob = null;
 let whatsappConfigured = false;
 
 function canViewGlLedger() {
-    return Auth.hasPermission('reports.gl_ledger.view') ||
+    return Auth.hasPermission('reports.trial_balance_d2d.view') ||
         Auth.hasPermission('inventory.fin_item.view') ||
         Auth.hasPermission('auth.admin.full');
 }
@@ -35,10 +35,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     whatsappSearchModal = new bootstrap.Modal(document.getElementById('whatsappSearchModal'));
     setDefaultDates();
     setDefaultAccounts();
-    await loadUserEmail();
-    await loadEmailStatus();
-    await loadWhatsAppStatus();
-    loadSavedWhatsAppPhone();
+    const canEmail = ReportDeliveryRights.applyEmailGate({
+        allowed: ReportDeliveryRights.canEmailTrial(),
+    });
+    const canWhatsApp = ReportDeliveryRights.applyWhatsAppGate({
+        allowed: ReportDeliveryRights.canWhatsAppTrial(),
+    });
+    if (canEmail) {
+        await loadUserEmail();
+        await loadEmailStatus();
+    }
+    if (canWhatsApp) {
+        await loadWhatsAppStatus();
+        loadSavedWhatsAppPhone();
+    }
     bindEvents();
     AccountRangeSync.bind(validateAccount);
     wireSearchModalFocus('searchModal', 'search-query');
@@ -175,6 +185,9 @@ async function loadWhatsAppStatus() {
 }
 
 function updateShareReadyState() {
+    if (typeof ReportDeliveryRights !== 'undefined' && !ReportDeliveryRights.canWhatsAppTrial()) {
+        return;
+    }
     const ready = Boolean(lastMobileShareUrl && lastPayload);
     const hint = document.getElementById('wa-not-ready');
     if (hint) hint.classList.toggle('d-none', ready);

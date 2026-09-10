@@ -1,0 +1,16 @@
+Private Sub TxtStaxAmount_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+    Call Calc_Rate
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

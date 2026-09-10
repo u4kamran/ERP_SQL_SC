@@ -1,0 +1,14 @@
+Private Sub Form_KeyPress(KeyAscii As Integer)
+
+On Error GoTo TrapError
+
+    Call EnterKeyEnable(KeyAscii)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+

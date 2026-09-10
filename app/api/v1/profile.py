@@ -10,6 +10,7 @@ from app.models.user import UserPreference
 from app.repositories.user_repository import UserRepository
 from app.schemas import MessageResponse, PreferenceUpdate, ProfileResponse, ProfileUpdate, UserUpdate
 from app.services.user_service import UserService
+from app.services.user_menu_rights_service import get_session_menu_info
 from app.utils.auth_flags import is_super_admin
 
 router = APIRouter()
@@ -29,6 +30,7 @@ def get_profile(
         UserPreference.IsDeleted == False,  # noqa: E712
     )
     prefs = {p.PreferenceKey: p.PreferenceValue for p in db.execute(prefs_stmt).scalars()}
+    menu_info = get_session_menu_info(db, user.UserId)
 
     return ProfileResponse(
         user_id=user.UserId,
@@ -42,6 +44,9 @@ def get_profile(
         permissions=permissions,
         is_super_admin=is_super_admin(roles, permissions),
         preferences=prefs,
+        menu_access_enforced=menu_info.enforced,
+        allowed_menu_paths=menu_info.allowed_paths,
+        allowed_menu_codes=menu_info.allowed_menu_codes,
     )
 
 

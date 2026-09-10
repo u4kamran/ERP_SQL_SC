@@ -36,7 +36,7 @@ class WhatsAppBotConfig(BaseModel):
         "6 My order status"
     )
     store_phone: str = ""
-    store_address: str = "Shafique Departmental Store"
+    store_address: str = ""
     store_hours: str = "Daily 8:00 AM – 10:00 PM"
     human_handoff_message: str = (
         "A staff member will contact you shortly. "
@@ -100,9 +100,13 @@ class ChatQuickReply(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=120)
     payload: str = Field(..., min_length=1, max_length=200)
-    style: Literal["chip", "item", "action"] = "chip"
-    subtitle: str = Field("", max_length=80)
+    style: Literal["chip", "item", "action", "cart"] = "chip"
+    subtitle: str = Field("", max_length=120)
     meta: str = Field("", max_length=40)
+    qty: float | None = None
+    line_index: int | None = None
+    unit_price: float | None = None
+    manual_id: int | None = None
 
 
 class OfflineChatResponse(BaseModel):
@@ -110,6 +114,15 @@ class OfflineChatResponse(BaseModel):
     reply: str
     quick_replies: list[ChatQuickReply] = Field(default_factory=list)
     phone_verified: bool = False
+    input_placeholder: str = ""
+    input_hint: str = ""
+    shop_category_id: int | None = None
+    shop_category_title: str = ""
+    shop_view: str = ""
+    cart_count: int = 0
+    cart_total: float = 0.0
+    stay_in_shop: bool = False
+    added_manual_id: int | None = None
 
 
 class MobileOtpSendRequest(BaseModel):
@@ -124,6 +137,7 @@ class MobileOtpSendRequest(BaseModel):
 class MobileOtpVerifyRequest(BaseModel):
     phone: str = Field(..., min_length=7, max_length=30)
     code: str = Field(..., min_length=4, max_length=10)
+    request_id: str | None = Field(None, max_length=64)
 
     @field_validator("phone", "code", mode="before")
     @classmethod
@@ -132,13 +146,20 @@ class MobileOtpVerifyRequest(BaseModel):
 
 
 class MobileOtpResponse(BaseModel):
+    otp_required: bool = True
     ok: bool = True
     phone: str = ""
     message: str = ""
     expires_in: int | None = None
     sent_via: str | None = None
     verified: bool = False
+    request_id: str | None = None
     dev_code: str | None = None
+
+
+class VoiceTranscribeResponse(BaseModel):
+    text: str
+    message: str = ""
 
 
 class StaffReplyRequest(BaseModel):

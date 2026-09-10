@@ -1,0 +1,26 @@
+Private Sub LblItem_Click()
+
+On Error GoTo TrapError
+
+  'cSQLId = "ITEMID"
+
+  cSelFormId = "Fin_PurD"
+
+  Fin_Auto.Show vbModal, Me
+
+  TxtID.SetFocus
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+
+
+

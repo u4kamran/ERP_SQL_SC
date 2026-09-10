@@ -9,6 +9,7 @@ from jose import JWTError
 from sqlalchemy.orm import Session
 
 from app.config.settings import settings
+from app.logging.logger import logger
 from app.models.session import RefreshToken, UserSession
 from app.models.user import PasswordResetToken, User
 from app.repositories.audit_repository import AuditRepository
@@ -135,6 +136,21 @@ class AuthService:
             user_agent=ua_string,
         )
         self.db.commit()
+
+        try:
+            from app.services.login_notify_service import notify_successful_login
+
+            notify_successful_login(
+                username=username,
+                full_name=user.full_name,
+                user_email=user.Email or "",
+                ip=ip or "",
+                browser=ua_info.get("browser") or "",
+                device=ua_info.get("device") or "",
+                os=ua_info.get("os") or "",
+            )
+        except Exception:
+            logger.exception("Login notify could not start for %s", username)
 
         return TokenResponse(
             access_token=access_token,

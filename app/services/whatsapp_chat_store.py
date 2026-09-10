@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from app.schemas.whatsapp_bot import WhatsAppBotConfig
+from app.config.settings import settings
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _DATA_DIR = _PROJECT_ROOT / "data"
@@ -30,7 +31,9 @@ def _ensure_data_dir() -> None:
 
 
 def _default_config() -> dict[str, Any]:
-    return WhatsAppBotConfig().model_dump()
+    data = WhatsAppBotConfig().model_dump()
+    data["store_address"] = (settings.company_name or settings.app_name or "").strip()
+    return data
 
 
 def _ensure_order_status_menu(text: str) -> str:

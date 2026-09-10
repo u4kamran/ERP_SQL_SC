@@ -12,7 +12,7 @@ from app.services.delivery_service import DeliveryService
 
 
 class DeliveryInvoiceScheduler:
-    def __init__(self, interval_seconds: int = 30):
+    def __init__(self, interval_seconds: int = 120):
         self.interval_seconds = max(interval_seconds, 10)
         self._task: asyncio.Task | None = None
         self._stopping = asyncio.Event()
@@ -61,8 +61,8 @@ class DeliveryInvoiceScheduler:
         db = BusinessSessionLocal()
         try:
             result = DeliveryService(db).sync(
-                lookback_hours=24,
-                limit=500,
+                lookback_hours=6,
+                limit=80,
                 actor_username="SYSTEM",
             )
             return result.created

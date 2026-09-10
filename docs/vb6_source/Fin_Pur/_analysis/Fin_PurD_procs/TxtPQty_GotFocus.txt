@@ -1,0 +1,24 @@
+Private Sub TxtPQty_GotFocus()
+
+On Error GoTo TrapError
+
+    If txtUnit.Text = "0" Or txtUnit.Text = "" Then
+
+        TxtQty.SetFocus
+
+        Exit Sub
+
+    End If
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+

@@ -1,0 +1,25 @@
+---
+description: Keep ERP (Shafique) and ARP (Al Haram) as separate sites
+alwaysApply: true
+---
+
+# Two separate sites — do not mix identity
+
+These are **two independent projects**. Features may be the same. Branding, `.env`, logos, users, and databases must never be mixed.
+
+| | Shafique Departmental Store | Al Haram Steel Lab |
+|---|---|---|
+| URL | https://erp.ahsteellab.com | https://arp.ahsteellab.com |
+| Folder | `D:\CursorProject\ahsteellab-nsds2626` | `D:\CursorProject\ahsteellab-arp` |
+| Auth DB | `NSDS2626_AUTH` | `NAHSL2627_AUTH` |
+| Business DB | `nsds2626` | `nahsl2627` |
+
+## Rules
+
+- **Main workspace is Shafique (ERP).** Implement programming features here first.
+- When the user asks to update both, copy **code/features only** to ARP. Never copy ERP `.env`, `data/`, logos, or databases onto ARP.
+- ARP identity comes from ARP `.env`: `APP_NAME`, `COMPANY_NAME`, `BRAND_*`, `SITE_CODE=arp`.
+- Do not hardcode "Shafique" or "Al Haram" in templates. Use `{{ app_name }}`, `{{ company_name }}`, `{{ brand_logo_url }}`.
+- `SYNC-CODE-TO-ARP.bat` skips `.env`, `data/`, and `app/static/img`.
+- Seed ARP permissions against `NAHSL2627_AUTH` only (`--site arp`). Never point ARP at `nsds2626`.
+- Login alerts, SMTP from-name, chatbot store address, and PO letterhead must follow each site's own company settings.

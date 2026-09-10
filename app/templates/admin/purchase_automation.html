@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Purchase Automation - {{ app_name }}{% endblock %}
+{% block extra_css %}
+<link href="/static/css/purchase_automation.css?v=20260808" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="pa-app" id="pa-app">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+            <h4 class="mb-0"><i class="bi bi-robot me-2"></i>Purchase Automation</h4>
+            <p class="text-muted small mb-0">Upload → 13-stage analysis (OCR never trusted) → Confirm low-confidence → Save Purchase</p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" href="/admin/fin-pur">Open Purchase Receipt</a>
+    </div>
+
+    <div id="pa-alert"></div>
+
+    <div class="pa-step" id="step-upload">
+        <h5>1. Upload Supplier Invoice</h5>
+        <div class="pa-drop" id="drop-zone">
+            <p class="mb-2"><i class="bi bi-cloud-upload fs-3"></i></p>
+            <p class="mb-1">Drop PDF / Image here, or click to browse</p>
+            <p class="small text-muted mb-0">PDF, JPG, PNG, WebP · max 15 MB</p>
+            <input type="file" id="invoice-file" class="d-none"
+                   accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp">
+        </div>
+        <div class="mt-3 d-none" id="file-meta">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <strong id="file-name"></strong>
+                <span class="text-muted small" id="file-size"></span>
+                <img id="img-preview" class="pa-preview d-none" alt="Invoice preview">
+                <embed id="pdf-preview" class="d-none" type="application/pdf" width="280" height="180">
+            </div>
+        </div>
+        <div class="mt-3">
+            <label class="form-label fw-semibold" for="fetch-instructions">
+                Fetch instructions <span class="text-muted fw-normal">(saved for future Process runs)</span>
+            </label>
+            <textarea class="form-control form-control-sm" id="fetch-instructions" rows="8"
+                      placeholder="Built-in rules always apply. Add supplier-specific notes here."></textarea>
+            <div class="form-text">
+                Built-in: <strong>Handwritten Manual ID first</strong> · Qty×Rate then tax/discount ·
+                <strong>items-only grid</strong> · printed totals never trusted.
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-save-instructions">
+                    <i class="bi bi-floppy me-1"></i>Save instructions
+                </button>
+                <span class="small text-muted" id="instructions-status">Loaded on page open · also saved when you Process</span>
+            </div>
+        </div>
+        <div class="mt-3 pa-json-import">
+            <label class="form-label fw-semibold" for="paste-json">
+                Or paste invoice JSON <span class="text-muted fw-normal">(no upload needed)</span>
+            </label>
+            <textarea class="form-control form-control-sm font-monospace" id="paste-json" rows="6"
+                      placeholder='{"invoice_no":"301","date":"2026-08-07","customer":"CHENAB STEEL LAHORE","items":[{"manual_id":"47","description":"Lance Pipe SS","qty":3,"rate":1000,"amount":3000}]}'></textarea>
+            <div class="form-text">
+                Items match on <strong>manual_id first</strong>; grid titles always show
+                <code>Item Title --- Manual ID</code>. Totals are recalculated from Qty × Rate.
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-import-json">
+                    <i class="bi bi-braces me-1"></i>Fill grid from JSON
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-clear-json">Clear</button>
+                <span class="small text-muted" id="json-status"></span>
+            </div>
+        </div>
+        <div class="pa-actions mt-3">
+            <button type="button" class="btn btn-primary" id="btn-process" disabled>
+                <i class="bi bi-stars me-1"></i>Process
+            </button>
+        </div>
+        <div class="progress mt-3 d-none" id="process-progress-wrap">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" id="process-progress" style="width:0%">0%</div>
+        </div>
+    </div>
+
+    <div class="pa-step d-none" id="step-review">
+        <h5>2. Review Extracted Data</h5>
+        <div class="pa-warn alert alert-warning d-none" id="warnings-box"></div>
+        <div class="alert alert-danger d-none" id="validation-box"></div>
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <label class="form-label">Document class</label>
+                <input type="text" class="form-control form-control-sm" id="document_class" readonly>
+            </div>
+            <div class="col-md-9">
+                <label class="form-label">Recalculated totals (printed totals never trusted)</label>
+                <div class="small font-monospace" id="financials-box">—</div>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold">OCR text (EasyOCR + PaddleOCR)</label>
+            <textarea class="form-control form-control-sm font-monospace" id="ocr-text" rows="6"
+                      placeholder="Raw OCR output appears here after Process."></textarea>
+            <div class="form-text">Engines: <span id="ocr-engines">—</span>
+                · Stages: <span id="stage-trace-summary">—</span></div>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <label class="form-label">Supplier ID</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="supplier_id">
+                    <button class="btn btn-outline-secondary" type="button" id="btn-supplier-search">...</button>
+                </div>
+                <div class="small mt-1">Match: <span id="supplier-conf" class="pa-conf-none">none</span></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Supplier</label>
+                <input type="text" class="form-control form-control-sm" id="supplier_title" readonly>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Doc Date</label>
+                <input type="date" class="form-control form-control-sm" id="doc_date">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Ref / Inv #</label>
+                <input type="text" class="form-control form-control-sm" id="gp_id" maxlength="8">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Terms</label>
+                <select class="form-select form-select-sm" id="payment_type">
+                    <option value="0">Credit</option>
+                    <option value="1">Cash Reg.</option>
+                    <option value="2">Cash Un-Reg.</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Remarks</label>
+                <input type="text" class="form-control form-control-sm" id="remarks" maxlength="100">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Registration</label>
+                <input type="text" class="form-control form-control-sm" id="registration" readonly>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">AI Model</label>
+                <input type="text" class="form-control form-control-sm" id="ai_model" readonly>
+            </div>
+        </div>
+
+        <div class="table-responsive mb-2">
+            <table class="table table-sm table-bordered pa-grid align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Printed / HW ID / Barcode</th>
+                        <th>Item ID</th>
+                        <th>Item Title</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>S-Tax %</th>
+                        <th>S-Tax Amt</th>
+                        <th>Disc</th>
+                        <th>DOI</th>
+                        <th>Match / Confirm</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="lines-body"></tbody>
+            </table>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <div class="small text-muted" id="line-summary"></div>
+            <div class="pa-actions d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" id="btn-reset">Clear</button>
+                <button type="button" class="btn btn-success" id="btn-save">
+                    <i class="bi bi-save me-1"></i>Save Purchase
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="search-title">Search</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-2" id="search-query" placeholder="Type to search...">
+                <div class="table-responsive" style="max-height:360px">
+                    <table class="table table-sm table-hover">
+                        <thead><tr><th>ID</th><th>Title</th><th>Extra</th></tr></thead>
+                        <tbody id="search-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/purchase_automation.js?v=20260808"></script>
+{% endblock %}

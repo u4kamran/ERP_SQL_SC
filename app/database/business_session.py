@@ -11,9 +11,13 @@ from app.config.settings import settings
 business_engine = create_engine(
     settings.business_database_url,
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=12,
+    max_overflow=18,
+    pool_timeout=5,
+    pool_recycle=300,
+    pool_use_lifo=True,
     echo=settings.debug,
+    connect_args={"timeout": 8},
 )
 
 BusinessSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=business_engine)

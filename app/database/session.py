@@ -12,7 +12,11 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    pool_timeout=8,
+    pool_recycle=300,
+    pool_use_lifo=True,
     echo=settings.debug,
+    connect_args={"timeout": 8},
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

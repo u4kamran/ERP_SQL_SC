@@ -1,0 +1,40 @@
+Private Sub txtOffInvDiscAmt_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+    If txtOffInvDiscAmt.Text = "" Then Exit Sub
+
+    Call Calc_Rate
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+
+
+
+
+
+'Private Sub txtOffInvDiscAmt_Change()
+
+'On Error GoTo TrapError
+
+'    If txtOffInvDiscAmt.Text = "" Then Exit Sub
+
+'    Call Calc_Rate
+
+'Exit Sub
+
+'TrapError:
+
+'    Call ShowError(lngError, Me.Caption)
+
+'End Sub
+
+
+

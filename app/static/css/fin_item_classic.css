@@ -1,88 +1,445 @@
-.vbc-form {
-    background: #c0c0c0;
-    border: 2px solid #808080;
-    padding: 12px;
-    font-family: "MS Sans Serif", Tahoma, sans-serif;
-    font-size: 13px;
+/* Fin_Item / Item Info — geometry from Fin_Item.frm (twips/15). No Bootstrap form look. */
+
+.vb6-shell {
+    margin: 0;
+    overflow: auto;
 }
 
-.vbc-form .form-control,
-.vbc-form .form-select {
-    border-radius: 0;
-    font-size: 13px;
-    padding: 2px 6px;
-    height: 28px;
-}
+.vb6-form {
+    --face: #c0c0c0;
+    --hdr: #458ac9;       /* &H00C98A45& */
+    --hdr-val: #6ccdf2;   /* &H00F2CD6C& */
+    --navy: #000080;      /* &H00800000& */
+    --ro-bg: #e0e0e0;
+    --red: #c00000;       /* &H000000C0& */
+    --inset: inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff;
+    --outset: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #808080;
 
-.vbc-form .form-label {
-    font-size: 12px;
-    margin-bottom: 2px;
-    font-weight: 600;
-}
-
-.vbc-title {
-    background: linear-gradient(90deg, #000080, #1084d0);
-    color: #fff;
-    padding: 4px 10px;
-    font-weight: bold;
-    margin: -12px -12px 10px;
-}
-
-.vbc-frame {
+    position: relative;
+    width: 531px;
+    height: 617px;
+    background: var(--face);
     border: 1px solid #808080;
-    padding: 8px;
-    margin-bottom: 8px;
-    background: #c0c0c0;
+    font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif;
+    font-size: 11px;
+    color: #000;
+    line-height: 1;
+    overflow: visible;
+    user-select: none;
 }
 
-.vbc-frame legend {
-    font-size: 12px;
-    font-weight: 700;
-    padding: 0 4px;
-    width: auto;
-    float: none;
+.vb6-form input,
+.vb6-form select,
+.vb6-form button,
+.vb6-form a,
+.vb6-form .title-box,
+.vb6-form .ro-lbl {
+    user-select: text;
 }
 
-.vbc-statusbar {
-    background: #c0c0c0;
-    border-top: 1px solid #fff;
-    padding: 4px 8px;
-    font-size: 12px;
-    display: flex;
-    gap: 20px;
+.vb6-form .abs {
+    position: absolute;
+    box-sizing: border-box;
 }
 
-.vbc-btnbar .btn {
-    border-radius: 0;
-    min-width: 100px;
+/* White hairlines (Line1 / Line3) */
+.vb6-form .hline {
+    background: #fff;
+    height: 2px;
+    left: 2px;
+    width: 530px;
+}
+
+/* Banner — Arial Black italic ~15.75pt on #458AC9 */
+.vb6-banner {
+    left: 0;
+    top: 2px;
+    width: 534px;
+    height: 33px;
+    background: var(--hdr);
+    color: #fff;
+    text-align: center;
+    font-family: "Arial Black", "Arial", sans-serif;
+    font-size: 21px;
+    font-weight: 900;
+    font-style: italic;
+    line-height: 33px;
+    letter-spacing: -0.5px;
+}
+
+/* Status strip */
+.vb6-form .st-lbl,
+.vb6-form .st-val {
+    top: 40px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
     font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
-.vbc-readonly {
-    background: #e8e8e8 !important;
+.vb6-form .st-lbl { background: var(--hdr); width: 83px; }
+.vb6-form .st-val { background: var(--hdr-val); width: 83px; }
+.vb6-form .st-val.is-edit { background: var(--navy); }
+.vb6-form .st-last { width: 112px; } /* TxtLastID 1680 twips */
+
+/* Field labels — right-aligned like VB6 Alignment=1 */
+.vb6-form .flbl {
+    text-align: right;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 13px;
+    padding-top: 4px;
+    background: transparent;
 }
 
-.item-title-display {
-    background: #ffffcc;
-    border: 1px inset #808080;
-    padding: 4px 8px;
-    min-height: 28px;
-    font-weight: bold;
+/* Classic inset textbox */
+.vb6-form .tb {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #808080;
+    box-shadow: var(--inset);
+    background: #fff;
+    height: 21px;
+    padding: 0 3px;
+    margin: 0;
+    font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif;
+    font-size: 11px;
+    color: #000;
+    border-radius: 0 !important;
+    outline: none;
 }
 
-.nav-tabs .nav-link {
+.vb6-form select.tb {
+    padding: 0 0 0 2px;
+}
+
+.vb6-form .tb:focus {
+    outline: 1px dotted #000;
+    outline-offset: -2px;
+}
+
+.vb6-form .tb.ro,
+.vb6-form .tb[readonly],
+.vb6-form .tb:disabled {
+    background: var(--ro-bg) !important;
+    color: #000;
+}
+
+.vb6-form .tb.tr { text-align: right; }
+
+/* Read-only caption boxes (TxtTitle, titles, profit %) */
+.vb6-form .title-box,
+.vb6-form .ro-lbl {
+    border: 1px solid #808080;
+    background: var(--ro-bg);
+    color: var(--navy);
+    height: 21px;
+    line-height: 19px;
+    padding: 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+}
+
+.vb6-form .title-box {
+    font-family: "Microsoft Sans Serif", "MS Sans Serif", Tahoma, sans-serif;
+}
+
+.vb6-form .ro-lbl.ctr {
+    text-align: center;
+}
+
+.vb6-form .chk {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+    white-space: nowrap;
+    background: transparent;
+}
+
+.vb6-form .chk input {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: #000;
+}
+
+/* Store Stock Levels frame (VB6 Frame1) */
+.vb6-frame {
+    position: absolute;
+    border: 1px solid #808080;
+    background: var(--face);
+    margin: 0;
+    padding: 10px 4px 2px;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+.vb6-frame-cap {
+    position: absolute;
+    left: 10px;
+    top: -7px;
+    padding: 0 4px;
+    background: var(--face);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.store-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.store-tbl td {
+    padding: 2px 3px;
+    vertical-align: middle;
+}
+
+.store-tbl .flbl {
+    position: static;
+    width: 68px;
+    padding-top: 0;
+    text-align: right;
+    white-space: nowrap;
+    font-size: 11px;
+}
+
+.store-tbl .tb.w111 {
+    width: 111px;
+}
+
+.store-tbl .chk {
+    margin: 0;
+    position: static;
+}
+
+.bal-actions {
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.bal-actions .vb6-btn.sm {
+    width: auto;
+    min-width: 72px;
+    height: 22px;
+    padding: 0 6px;
+}
+
+/* SSTab */
+.vb6-sstab {
+    background: var(--face);
+    border: 1px solid #808080;
+}
+
+.sstab-headers {
+    display: flex;
+    height: 22px;
+    padding: 2px 2px 0;
+    gap: 0;
+    background: var(--face);
+    border-bottom: 1px solid #808080;
+}
+
+.sstab {
+    appearance: none;
+    background: var(--face);
+    border: 1px solid #808080;
+    border-bottom: none;
     border-radius: 0;
-    font-size: 12px;
-    padding: 4px 10px;
+    margin: 0 1px 0 0;
+    padding: 1px 8px 2px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: #000;
+    cursor: pointer;
+    position: relative;
+    top: 1px;
+    height: 20px;
 }
 
-.grid-table {
-    font-size: 12px;
+.sstab.active {
+    background: #fff;
+    padding-bottom: 3px;
+    z-index: 1;
+    top: 2px;
+}
+
+.sstab-body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 22px;
+    bottom: 0;
+    background: #fff;
+    padding: 4px;
+    overflow: auto;
+}
+
+.sstab-body .tab-pane { display: none; height: 100%; }
+.sstab-body .tab-pane.show.active { display: block; }
+
+.vb6-grid-wrap {
+    overflow: auto;
+    height: 100%;
+    border: 1px solid #808080;
+}
+
+.vb6-grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
     background: #fff;
 }
 
-.grid-table th {
-    background: #000080;
+.vb6-grid th {
+    background: var(--navy);
     color: #fff;
-    font-weight: 600;
+    font-weight: 700;
+    padding: 2px 5px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
 }
+
+.vb6-grid td {
+    padding: 1px 5px;
+    border-bottom: 1px solid #c0c0c0;
+    white-space: nowrap;
+}
+
+.vb6-grid tbody tr.selected,
+.vb6-grid tbody tr.selected:hover {
+    background: var(--navy);
+    color: #fff;
+}
+
+.vb6-grid tbody tr:hover:not(.selected) {
+    background: #e8f0ff;
+}
+
+/* Command buttons 75×25 */
+.vb6-btn {
+    appearance: none;
+    width: 75px;
+    height: 25px;
+    padding: 0;
+    border: 1px solid #404040;
+    background: var(--face);
+    box-shadow: var(--outset);
+    font-family: "MS Sans Serif", Tahoma, sans-serif;
+    font-size: 11px;
+    color: #000;
+    border-radius: 0 !important;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vb6-btn:focus {
+    outline: 1px dotted #000;
+    outline-offset: -3px;
+}
+
+.vb6-btn:active:not(:disabled) {
+    box-shadow: var(--inset);
+}
+
+.vb6-btn:disabled {
+    color: #808080;
+    cursor: default;
+}
+
+.vb6-btn:hover:not(:disabled) {
+    color: #000;
+    text-decoration: none;
+}
+
+.vb6-btn.sm {
+    width: auto;
+    min-width: 75px;
+    height: 21px;
+    padding: 0 6px;
+}
+
+#alert-area {
+    position: absolute;
+    left: 4px;
+    top: 398px;
+    width: 520px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#alert-area .alert {
+    border-radius: 0;
+    padding: 2px 6px;
+    margin: 0;
+    font-size: 11px;
+    pointer-events: auto;
+}
+
+.vb6-modal {
+    border-radius: 0;
+    font-family: "MS Sans Serif", Tahoma, sans-serif;
+    font-size: 11px;
+}
+
+.vb6-modal .modal-header {
+    background: var(--face);
+    border-radius: 0;
+}
+
+.admin-content:has(.vb6-shell) {
+    background: #c0c0c0;
+}
+
+/* Balances tab dense layout */
+.bal-grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+.bal-grid td {
+    padding: 2px 4px;
+    vertical-align: middle;
+}
+.bal-grid .flbl {
+    position: static;
+    padding-top: 0;
+    width: auto;
+}
+.bal-grid .tb {
+    width: 118px;
+}
+.bal-grid .tb.bal {
+    background: #e0e0e0 !important;
+    color: var(--navy);
+}
+
+.gl-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 11px;
+}
+.gl-row .tb { width: 90px; }
+.gl-row .ro-lbl { width: 200px; display: inline-block; }

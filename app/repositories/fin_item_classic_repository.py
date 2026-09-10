@@ -305,25 +305,104 @@ class FinItemClassicRepository:
             params[key] = f"%{token}%"
             clauses.append(
                 f"""(
-                    ITEM_TITLE LIKE :{key}
-                    OR ITEM_SHORT LIKE :{key}
-                    OR barcodeid LIKE :{key}
-                    OR BARCODEID_WS LIKE :{key}
+                    i.ITEM_TITLE LIKE :{key}
+                    OR i.ITEM_SHORT LIKE :{key}
+                    OR i.barcodeid LIKE :{key}
+                    OR i.BARCODEID_WS LIKE :{key}
+                    OR ISNULL(c.co_title, '') LIKE :{key}
                 )"""
             )
         where_sql = " AND ".join(clauses)
+        limit = max(1, min(int(limit), 80))
+        params["limit"] = limit
         rows = self.db.execute(
             text(
                 f"""
                 SELECT TOP (:limit)
-                    ITEM_ID AS item_id, ITEM_TITLE AS Item_Title, manualid,
-                    ITEM_SHORT AS item_short, barcodeid, BARCODEID_WS AS barcodeid_ws
-                FROM FIN_ITEM
-                WHERE {where_sql}
-                ORDER BY manualid DESC
+                    i.ITEM_ID AS item_id,
+                    i.ITEM_TITLE AS Item_Title,
+                    i.ITEM_SHORT AS item_short,
+                    i.manualid,
+                    i.barcodeid,
+                    i.BARCODEID_WS AS barcodeid_ws,
+                    c.co_title AS co_title,
+                    i.SALES_RATE AS sales_rate,
+                    i.CQTY AS cqty,
+                    i.MIN_LEVEL AS min_level,
+                    ISNULL(i.ED_STATUS, 0) AS ed_status
+                FROM FIN_ITEM i
+                LEFT JOIN Co c ON c.Co_id = i.co_id
+                WHERE ISNULL(i.manualid, 0) > 0
+                  AND ISNULL(i.SALES_RATE, 0) > 0
+                  AND ISNULL(i.ED_STATUS, 0) = 0
+                  AND ({where_sql})
+                ORDER BY i.ITEM_TITLE
                 """
             ),
             params,
+        ).mappings().all()
+        return [_row_to_dict(r) for r in rows]
+
+    def search_items_smart(self, q: str, *, prefix: str, limit: int = 40) -> List[Dict[str, Any]]:
+        """Ranked candidate fetch for autocomplete. Parameterized; no string-concat SQL."""
+        q = (q or "").strip()
+        if not q:
+            return []
+        limit = max(1, min(int(limit), 80))
+        prefix_q = (prefix or q)[:80]
+        pattern = f"%{q}%"
+        prefix_like = f"{prefix_q}%"
+        rows = self.db.execute(
+            text(
+                """
+                SELECT TOP (:limit)
+                    i.ITEM_ID AS item_id,
+                    i.ITEM_TITLE AS Item_Title,
+                    i.ITEM_SHORT AS item_short,
+                    i.manualid,
+                    i.barcodeid,
+                    i.BARCODEID_WS AS barcodeid_ws,
+                    c.co_title AS co_title,
+                    i.SALES_RATE AS sales_rate,
+                    i.CQTY AS cqty,
+                    i.MIN_LEVEL AS min_level,
+                    ISNULL(i.ED_STATUS, 0) AS ed_status
+                FROM FIN_ITEM i
+                LEFT JOIN Co c ON c.Co_id = i.co_id
+                WHERE ISNULL(i.manualid, 0) > 0
+                  AND ISNULL(i.SALES_RATE, 0) > 0
+                  AND ISNULL(i.ED_STATUS, 0) = 0
+                  AND (
+                        i.ITEM_TITLE LIKE :prefix_like
+                     OR i.ITEM_SHORT LIKE :prefix_like
+                     OR i.ITEM_TITLE LIKE :pattern
+                     OR i.ITEM_SHORT LIKE :pattern
+                     OR ISNULL(c.co_title, '') LIKE :prefix_like
+                     OR ISNULL(c.co_title, '') LIKE :pattern
+                     OR i.barcodeid = :exact
+                     OR i.BARCODEID_WS = :exact
+                     OR CAST(i.manualid AS VARCHAR(20)) = :exact
+                     OR CAST(i.ITEM_ID AS VARCHAR(20)) = :exact
+                  )
+                ORDER BY
+                    CASE
+                        WHEN i.barcodeid = :exact OR i.BARCODEID_WS = :exact THEN 0
+                        WHEN CAST(i.manualid AS VARCHAR(20)) = :exact THEN 1
+                        WHEN i.ITEM_TITLE = :exact THEN 2
+                        WHEN i.ITEM_TITLE LIKE :prefix_like THEN 3
+                        WHEN i.ITEM_SHORT LIKE :prefix_like THEN 4
+                        WHEN ISNULL(c.co_title, '') LIKE :prefix_like THEN 5
+                        ELSE 6
+                    END,
+                    i.ITEM_TITLE
+                """
+            ),
+            {
+                "limit": limit,
+                "pattern": pattern,
+                "prefix_like": prefix_like,
+                "exact": q,
+            },
         ).mappings().all()
         return [_row_to_dict(r) for r in rows]
 

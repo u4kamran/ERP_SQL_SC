@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import CurrentUser, require_any_permission
+from app.api.deps import CurrentUser, require_any_permission, require_report_delivery
 from app.config.settings import settings
 from app.database.business_session import get_business_db
 from app.database.session import get_db
@@ -38,10 +38,18 @@ from app.utils import get_client_ip
 
 router = APIRouter()
 
-_GL_LEDGER_PERMS = require_any_permission(
-    "reports.gl_ledger.view",
-    "inventory.fin_item.view",
-    "auth.admin.full",
+_LEGACY = ("inventory.fin_item.view", "auth.admin.full")
+_GL_VIEW = ("reports.gl_ledger.view", "reports.gl_ledger_mobile.view", *_LEGACY)
+_GL_LEDGER_PERMS = require_any_permission(*_GL_VIEW)
+_GL_EMAIL_PERMS = require_report_delivery(
+    *_GL_VIEW,
+    action_permissions=("reports.gl_ledger.email", "reports.gl_ledger_mobile.email"),
+    denied_detail="You do not have permission to email this report.",
+)
+_GL_WHATSAPP_PERMS = require_report_delivery(
+    *_GL_VIEW,
+    action_permissions=("reports.gl_ledger.whatsapp", "reports.gl_ledger_mobile.whatsapp"),
+    denied_detail="You do not have permission to send this report through WhatsApp.",
 )
 
 
@@ -119,7 +127,7 @@ def generate_pdf(
 @router.post("/email", response_model=GlLedgerEmailResponse)
 def email_pdf(
     params: GlLedgerEmailRequest,
-    current_user: CurrentUser = Depends(_GL_LEDGER_PERMS),
+    current_user: CurrentUser = Depends(_GL_EMAIL_PERMS),
     db: Session = Depends(get_business_db),
 ):
     try:
@@ -212,7 +220,7 @@ def view_mobile_pdf(token: str):
 
 @router.get("/email/status", response_model=GlLedgerEmailStatus)
 def email_status(
-    current_user: CurrentUser = Depends(_GL_LEDGER_PERMS),
+    current_user: CurrentUser = Depends(_GL_EMAIL_PERMS),
 ):
     service = EmailService()
     from_email = settings.smtp_from_email.strip() or settings.smtp_user.strip()
@@ -226,7 +234,7 @@ def email_status(
 @router.get("/whatsapp/contacts/search", response_model=list[GlWhatsAppContactLookup])
 def search_whatsapp_contacts(
     q: str = Query(..., min_length=1),
-    current_user: CurrentUser = Depends(_GL_LEDGER_PERMS),
+    current_user: CurrentUser = Depends(_GL_WHATSAPP_PERMS),
     db: Session = Depends(get_business_db),
 ):
     return GlLedgerReportService(db).search_whatsapp_contacts(q)
@@ -235,7 +243,7 @@ def search_whatsapp_contacts(
 @router.get("/whatsapp/contacts/lookup/{ac_id}", response_model=GlWhatsAppContactLookup)
 def lookup_whatsapp_contact(
     ac_id: int,
-    current_user: CurrentUser = Depends(_GL_LEDGER_PERMS),
+    current_user: CurrentUser = Depends(_GL_WHATSAPP_PERMS),
     db: Session = Depends(get_business_db),
 ):
     return GlLedgerReportService(db).lookup_whatsapp_contact(ac_id)
@@ -243,7 +251,7 @@ def lookup_whatsapp_contact(
 
 @router.get("/whatsapp/status", response_model=GlLedgerWhatsAppStatus)
 def whatsapp_status(
-    current_user: CurrentUser = Depends(_GL_LEDGER_PERMS),
+    current_user: CurrentUser = Depends(_GL_WHATSAPP_PERMS),
 ):
     service = WhatsAppService()
     return GlLedgerWhatsAppStatus(
@@ -256,7 +264,7 @@ def whatsapp_status(
 def send_whatsapp_pdf(
     request: Request,
     params: GlLedgerWhatsAppRequest,
-    current_user: CurrentUser = Depends(_GL_LEDGER_PERMS),
+    current_user: CurrentUser = Depends(_GL_WHATSAPP_PERMS),
     business_db: Session = Depends(get_business_db),
     auth_db: Session = Depends(get_db),
 ):

@@ -1,0 +1,58 @@
+Private Sub cmdPurOrder_Click()
+
+
+
+Dim RSMAST As New ADODB.Recordset
+
+Dim cSQL As String
+
+Dim nCnt As Integer
+
+Dim nCnt1 As Integer
+
+
+
+
+
+If TxtDocID.Text = "" Or TxtDocID.Text = "0" Then Exit Sub
+
+
+
+If TxtID.Text = "" Or TxtID.Text = "0" Then Exit Sub
+
+
+
+    For nCnt = 1 To (nCounter - 1)
+
+      VGrid.Row = nCnt
+
+      VGrid.Col = 1
+
+      MItem_ID = Val(Trim(VGrid.Text))
+
+          SQL = "select * FROM FIN_SUPP_ITEMS WHERE item_id = " & MItem_ID & "  and supplier_id = " & TxtID.Text
+
+          Set RSMAST = FetchAll(SQL)
+
+          If (RSMAST.EOF And RSMAST.BOF) Then
+
+                cSQL = "insert into fin_supp_items (supplier_id, item_id, stock_bal) values(" & TxtID.Text & "," & MItem_ID & ",0" & ")"
+
+                Call UpdateV(cSQL)
+
+                nCnt1 = nCnt1 + 1
+
+          End If
+
+          RSMAST.Close
+
+    Next
+
+          MsgBox nCnt1 & " Items Added successfully.", vbOKOnly, vbModal
+
+          
+
+End Sub
+
+
+

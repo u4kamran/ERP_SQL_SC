@@ -40,6 +40,15 @@ def to_proper_case(value: str | None) -> str | None:
     return titled
 
 
+def is_hidden_shop_title(value: str | None) -> bool:
+    """Hide ERP placeholder rows whose title is Empty / starts with Empty."""
+    text = str(value or "").strip().lower()
+    if not text:
+        return False
+    # Exact "EMPTY" rows and any title beginning with Empty…
+    return text == "empty" or text.startswith("empty")
+
+
 class GuestPriceLookupService:
     def __init__(self, db: Session):
         self.classic = FinItemClassicService(db)
@@ -83,11 +92,16 @@ class GuestPriceLookupService:
 
     @staticmethod
     def _to_public(detail) -> GuestPriceLookupResponse:
+        title = to_proper_case(detail.item_title) or ""
+        if is_hidden_shop_title(title) or is_hidden_shop_title(detail.item_title):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Product not found."
+            )
         return GuestPriceLookupResponse(
             manual_id=detail.manual_id,
             barcodeid=detail.barcodeid,
             barcodeid_ws=detail.barcodeid_ws,
-            item_title=to_proper_case(detail.item_title) or "",
+            item_title=title,
             item_short=to_proper_case(detail.item_short),
             uom_title=to_proper_case(detail.uom_title),
             co_title=to_proper_case(detail.co_title),

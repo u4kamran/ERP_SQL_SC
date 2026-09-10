@@ -2,52 +2,159 @@
 {% block title %}Roles - {{ app_name }}{% endblock %}
 {% block page_title %}Role Management{% endblock %}
 
+{% block extra_css %}
+<style>
+.role-perm-groups { max-height: 320px; overflow: auto; border: 1px solid #dee2e6; border-radius: .375rem; padding: .5rem .75rem; }
+.role-perm-group { margin-bottom: .75rem; }
+.role-perm-group h6 { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: #6c757d; margin-bottom: .35rem; }
+.role-perm-item { font-size: .875rem; }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <p class="text-muted mb-0">Create custom roles, assign permissions, and control which main-panel menus each role can see.</p>
+        <div class="small text-muted">After changes, users must log in again to refresh their menu and rights.</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-primary" href="/admin/menu-access" data-perm="auth.roles.view">
+            <i class="bi bi-toggles2 me-1"></i> Menu Rights (View/Add/Edit/Delete)
+        </a>
+        <a class="btn btn-outline-secondary" href="/admin/user-menu-rights" data-perm="auth.roles.manage">
+            <i class="bi bi-person-check me-1"></i> Per-User Menu
+        </a>
+        <button class="btn btn-primary" id="btn-create-role" data-perm="auth.roles.manage" type="button">
+            <i class="bi bi-plus-lg me-1"></i> New Role
+        </button>
+    </div>
+</div>
+
+<div id="roles-alert"></div>
+
+<div class="card card-stat mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <input type="search" class="form-control form-control-sm" id="role-search" placeholder="Search roles…">
+            </div>
+            <div class="col-md-6 text-md-end small text-muted" id="roles-count"></div>
+        </div>
+    </div>
+</div>
+
 <div class="card card-stat">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>Code</th>
                         <th>Name</th>
                         <th>Description</th>
-                        <th>System Role</th>
+                        <th>Type</th>
                         <th>Status</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="roles-table-body">
-                    <tr><td colspan="5" class="text-center py-4 text-muted">Loading...</td></tr>
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Loading...</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create / Edit Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roleModalTitle">New Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="roleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="role-id">
+                    <div class="row g-3">
+                        <div class="col-md-6" id="role-code-group">
+                            <label class="form-label" for="role-code">Role Code *</label>
+                            <input type="text" class="form-control" id="role-code" required maxlength="50"
+                                   placeholder="e.g. PURCHASE_CLERK" autocomplete="off">
+                            <div class="form-text">Letters, numbers, underscore. Saved as UPPER_CASE.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="role-name">Role Name *</label>
+                            <input type="text" class="form-control" id="role-name" required maxlength="100"
+                                   placeholder="e.g. Purchase Clerk">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="role-description">Description</label>
+                            <textarea class="form-control" id="role-description" rows="2" maxlength="500"></textarea>
+                        </div>
+                        <div class="col-12" id="role-active-group" style="display:none">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="role-active" checked>
+                                <label class="form-check-label" for="role-active">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0">Permissions</label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-perm-all">All</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-perm-none">None</button>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-perm-view-only">View only</button>
+                                </div>
+                            </div>
+                            <input type="search" class="form-control form-control-sm mb-2" id="perm-search" placeholder="Filter permissions…">
+                            <div class="role-perm-groups" id="role-permissions"></div>
+                            <div class="form-text">Tip: use <strong>Main Panel Menu Show/Hide</strong> for quick sidebar menus; use permissions here for full API/action rights.</div>
+                        </div>
+                    </div>
+                    <div id="role-form-error" class="alert alert-danger mt-3 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="roleFormSubmit">Save Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Clone Role Modal -->
+<div class="modal fade" id="cloneModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Clone Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="cloneForm">
+                <div class="modal-body">
+                    <input type="hidden" id="clone-source-id">
+                    <p class="small text-muted" id="clone-source-label"></p>
+                    <div class="mb-3">
+                        <label class="form-label" for="clone-code">New Role Code *</label>
+                        <input type="text" class="form-control" id="clone-code" required maxlength="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="clone-name">New Role Name *</label>
+                        <input type="text" class="form-control" id="clone-name" required maxlength="100">
+                    </div>
+                    <div id="clone-form-error" class="alert alert-danger d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Clone</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-    await Auth.requireAuth();
-    if (!Auth.hasPermission('auth.roles.view')) {
-        Auth.showAlert('alert-container', 'You do not have permission to view roles.', 'warning');
-        return;
-    }
-    try {
-        const roles = await Api.get('/api/v1/roles/');
-        const tbody = document.getElementById('roles-table-body');
-        tbody.innerHTML = roles.map(r => `
-            <tr>
-                <td><code>${r.role_code}</code></td>
-                <td>${r.role_name}</td>
-                <td class="text-muted">${r.description || '—'}</td>
-                <td>${r.is_system_role ? '<span class="badge bg-info">System</span>' : '—'}</td>
-                <td>${r.is_active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}</td>
-            </tr>
-        `).join('');
-    } catch (err) {
-        Auth.showAlert('alert-container', err.message, 'danger');
-    }
-});
-</script>
+<script src="/static/js/roles.js?v=20260812"></script>
 {% endblock %}

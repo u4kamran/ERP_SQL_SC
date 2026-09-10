@@ -1,0 +1,16 @@
+Private Sub Txtid_GotFocus()
+
+On Error GoTo TrapError
+
+    TxtID.SelLength = Len(TxtID)
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

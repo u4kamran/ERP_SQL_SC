@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Login Alerts - {{ app_name }}{% endblock %}
+{% block page_title %}Login Alerts{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0"><i class="bi bi-envelope-exclamation me-2"></i>Login email alerts</h5>
+        <p class="text-muted small mb-0">
+            When any user signs in, an email is sent to the default address below.
+        </p>
+    </div>
+    <button class="btn btn-primary btn-sm" type="button" id="btn-refresh">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+</div>
+
+<div id="login-notify-alert"></div>
+<div class="alert alert-info py-2 small" id="smtp-hint">Checking SMTP…</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Today sent</div>
+                <div class="fs-4 fw-semibold text-success" id="kpi-sent">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Today failed</div>
+                <div class="fs-4 fw-semibold text-danger" id="kpi-failed">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Default address</div>
+                <div class="fs-6 fw-semibold text-break" id="kpi-email">—</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Setup</div>
+            <div class="card-body">
+                <form id="settings-form" class="vstack gap-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enabled">
+                        <label class="form-check-label" for="enabled">Send email on every login</label>
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="notify_email">Default notify address</label>
+                        <input type="email" class="form-control" id="notify_email" maxlength="255" required placeholder="owner@gmail.com">
+                    </div>
+                    <div>
+                        <label class="form-label small mb-1" for="notes">Notes</label>
+                        <input type="text" class="form-control" id="notes" maxlength="300" placeholder="Ops note">
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-success btn-sm" type="submit" id="btn-save">Save</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" id="btn-test">Send test email</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Recent login emails</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>When (UTC)</th>
+                            <th>User</th>
+                            <th>IP</th>
+                            <th>Device</th>
+                            <th>To</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-body">
+                        <tr><td colspan="6" class="text-muted">No login emails yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/login_notify.js?v=1"></script>
+{% endblock %}

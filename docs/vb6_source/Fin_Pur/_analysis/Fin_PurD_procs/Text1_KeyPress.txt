@@ -1,0 +1,26 @@
+Private Sub Text1_KeyPress(KeyAscii As Integer)
+
+On Error GoTo TrapError
+
+        If KeyAscii = 27 Then
+
+               Unload Me
+
+        End If
+
+        KeyAscii = CheckNumOrChr(KeyAscii, True, True)
+
+
+
+Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+
+
+End Sub
+
+
+

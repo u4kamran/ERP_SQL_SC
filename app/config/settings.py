@@ -30,13 +30,25 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Application
+    # Application — ERP defaults (Shafique). ARP overrides these in its own .env.
     app_name: str = "Shafique Departmental Store"
     company_name: str = "Shafique Departmental Store."
+    site_code: str = "erp"
+    brand_short: str = "Shafique"
+    brand_tagline: str = "Departmental Store"
+    brand_slogan: str = "Your daily needs, our priority"
+    brand_logo_url: str = "/static/img/sds-logo.png?v=20260812b"
+    brand_icon_url: str = "/static/img/favicon.png?v=20260812b"
+    company_address: str = "193-A, QAMAR PARK SHAD BAGH LAHORE."
+    company_phone: str = "Ph No.+92-42-37603151-2"
+    company_ntn: str = "3973706-3"
+    company_strn: str = "0300397370614"
     app_env: str = "development"
     debug: bool = False
     secret_key: str = Field(..., min_length=32)
     api_v1_prefix: str = "/api/v1"
+    # Parallel Detailed Customer Ledger (does not alter existing GL Ledger). Rollback: false.
+    gl_ledger_detailed_enabled: bool = Field(default=True, alias="GL_LEDGER_DETAILED_ENABLED")
 
     # Server
     host: str = "0.0.0.0"
@@ -111,6 +123,10 @@ class Settings(BaseSettings):
     smtp_from_email: str = "noreply@ahsteellab.com"
     smtp_from_name: str = "Shafique Departmental Store"
 
+    # Email alert on every successful staff login
+    login_notify_enabled: bool = True
+    login_notify_email: str = ""
+
     # WhatsApp Business Cloud API (automated PDF send + chatbot)
     whatsapp_enabled: bool = False
     whatsapp_api_token: str = ""
@@ -120,13 +136,41 @@ class Settings(BaseSettings):
     whatsapp_app_secret: str = ""
     whatsapp_bot_enabled: bool = True
 
-    # Guest web chat: require OTP proof of mobile ownership (WhatsApp delivery)
+    # Guest web chat OTP: always writes SMS_DB_. Optional extra WhatsApp send.
+    # sms_db = SMS_DB_ only (required for SendSMSActive)
+    # auto / whatsapp = SMS_DB_ first, then try WhatsApp Cloud API
+    guest_mobile_otp_provider: str = "sms_db"
+    # Guest web chat: require OTP proof of mobile ownership
     guest_mobile_otp_required: bool = True
     guest_mobile_otp_dev_echo: bool = False
 
-    # Gemini Vision (server-side customer document extraction)
+    # Customer mobile app OTP via existing SMS_DB_ queue (one-time mobile proof)
+    customer_app_otp_required: bool = True
+    # sms_db = queue real SMS; test = no SMS_DB_ insert (dev/local only)
+    customer_app_otp_provider: str = "sms_db"
+    customer_app_otp_ttl_seconds: int = 300
+    customer_app_otp_verified_days: int = 30
+    customer_app_otp_max_attempts: int = 5
+    customer_app_otp_resend_cooldown_seconds: int = 45
+    customer_app_otp_max_requests_per_window: int = 3
+    customer_app_otp_request_window_minutes: int = 15
+    # Modem/SIM number used as SENDER in SMS_DB_ (existing convention)
+    customer_app_otp_sms_sender: str = "923004017067"
+    # After queuing SMS_DB_, launch this Windows sender to process the queue
+    customer_app_otp_sms_sender_exe: str = r"\\shaheenhp\Backup\localfiles\SendSMSActive\consoleapp2_lock.exe"
+    # Dev-only: echo OTP in API when provider=test and app_env is development
+    customer_app_otp_dev_echo: bool = False
+
+    # Optional barcode image lookup (never exposed to browser)
+    upcitemdb_api_key: SecretStr | None = None
+
+    # Gemini Vision + voice STT (guest chat / WhatsApp voice notes)
     gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-3.1-flash-lite"
+
+    # Heavy invoice import must not run inside the public web process.
+    # In-process sync freezes /health and the phone (SQL pool + GIL).
+    delivery_sync_in_web_process: bool = False
 
     # Database sync (local SQL Server -> online SQL Server)
     sync_enabled: bool = False
@@ -193,6 +237,8 @@ class Settings(BaseSettings):
             f"PWD={self.db_password};"
             f"TrustServerCertificate={self.db_trust_server_certificate};"
             f"Encrypt={self.db_encrypt};"
+            "Connection Timeout=8;"
+            "Login Timeout=8;"
         )
         return f"mssql+pyodbc:///?odbc_connect={quote_plus(odbc_connect)}"
 
@@ -203,6 +249,26 @@ class Settings(BaseSettings):
     @property
     def cookie_secure(self) -> bool:
         return self.secure_cookies or self.is_production
+
+    @property
+    def brand_short_label(self) -> str:
+        value = (self.brand_short or "").strip()
+        if value:
+            return value
+        name = (self.app_name or "").strip()
+        return name.split()[0] if name else "Store"
+
+    @property
+    def brand_tagline_label(self) -> str:
+        value = (self.brand_tagline or "").strip()
+        if value:
+            return value
+        parts = (self.app_name or "").split()
+        return " ".join(parts[1:]) if len(parts) > 1 else ""
+
+    @property
+    def company_display_name(self) -> str:
+        return (self.company_name or self.app_name or "").strip() or "Store"
 
 
 @lru_cache

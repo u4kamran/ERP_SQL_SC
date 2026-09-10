@@ -1,0 +1,348 @@
+Private Sub TxtID_Validate(Cancel As Boolean)
+
+On Error GoTo TrapError
+
+Dim Rs As New ADODB.Recordset
+
+
+
+   If Len(Trim(TxtID)) = 0 Then
+
+        Exit Sub
+
+   End If
+
+   If Len(Trim(TxtID)) < 10 Then
+
+'   cSeg1 + cSeg2 + cSeg3 + cSeg4 Then
+
+        MsgBox "Invalid ID length ", vbInformation, cSelFormId
+
+        TxtID.SetFocus
+
+        Cancel = True
+
+        Exit Sub
+
+   End If
+
+      Screen.MousePointer = vbHourglass
+
+        SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+
+        Set RsDummy = FetchAll(SQL)
+
+        If Not (RsDummy.EOF And RsDummy.BOF) Then
+
+            Text1.Text = RsDummy!manualid
+
+            'TxtTitle.Caption = RsDummy!Item_Title & " --- " & RsDummy!item_short
+
+            TxtTitle.Caption = RsDummy!Item_Title & " --- " & RsDummy!manualid
+
+            txtCoID.Text = RsDummy!co_id
+
+            txtCoID_Validate (False)
+
+            '
+
+            If RsDummy!sales_Rate > 0 Then
+
+                lblSale.Caption = Format(RsDummy!sales_Rate, "########.00")
+
+            Else
+
+                lblSale.Caption = "0.00"
+
+            End If
+
+            
+
+            If RsDummy!Cqty > 0 Then
+
+                lblStock.Caption = RsDummy!Cqty
+
+            Else
+
+                lblStock.Caption = "0.00"
+
+            End If
+
+            
+
+            If RsDummy!disc_p1 > 0 Then
+
+                txtMRP.Text = RsDummy!disc_p1
+
+            Else
+
+                txtMRP.Text = "0"
+
+            End If
+
+            
+
+            If RsDummy!Cqty1 > 0 Then
+
+                TxtRate.Text = Format(RsDummy!Cqty1, "########.#000")
+
+            Else
+
+'                TxtRate.Text = "0"
+
+            End If
+
+            
+
+            If RsDummy!STAX_REG > 0 Then
+
+                TxtStaxRate.Text = RsDummy!STAX_REG
+
+            Else
+
+                TxtStaxRate.Text = "0"
+
+            End If
+
+            
+
+            
+
+            
+
+            
+
+            If lEdit = False Then
+
+                If RsDummy!cost_Rate > 0 Then
+
+                    'Temporary Close
+
+                    'TxtRate.Text = Format(RsDummy!cost_Rate, "########.00")
+
+                Else
+
+                    'TxtRate.Text = ""
+
+                End If
+
+                
+
+                
+
+            End If
+
+            mUomID = RsDummy!uom_id
+
+            SQL = "SELECT * FROM fin_c002 WHERE uom_id = " & mUomID
+
+            Set Rs = FetchAll(SQL)
+
+            If Not (Rs.EOF And Rs.BOF) Then
+
+              ' Assign Values to Text/Controls
+
+              TxtUomTitle.Caption = "" & Rs!uom_abbr
+
+            Else
+
+                 TxtUomTitle.Caption = "UOM ID not found ...... "
+
+            End If
+
+            Rs.Close
+
+            
+
+            If RsDummy!ed_status = 1 Then
+
+                Screen.MousePointer = vbDefault
+
+                MsgBox "Item ID is Disabled, Consultant Administrator .... ", vbInformation, cSelFormId
+
+                Cancel = True
+
+                Exit Sub
+
+            End If
+
+            If lEdit = False Then
+
+                If RsDummy!cost_Rate > 0 Then
+
+'                    TxtRate.Text = Format(RsDummy!cost_Rate, "########.00")  'RsDummy!cost_Rate
+
+                Else
+
+                    TxtRate.Text = ""
+
+                End If
+
+            End If
+
+            ' *************************************************
+
+            If cSTaxType = 0 Then
+
+               If Fin_PurM.LblRegistration.Caption = "Registered" Then
+
+                If lEdit = False Then
+
+'                   mSaleTaxRate = RsDummy!STAX_REG
+
+'                   TxtStaxRate = mSaleTaxRate
+
+                End If
+
+    
+
+               Else
+
+               If lEdit = False Then
+
+'                   mSaleTaxRate = RsDummy!STAX_UNREG
+
+'                   TxtStaxRate = mSaleTaxRate
+
+               End If
+
+               End If
+
+            Else
+
+               ' For fix Sales Tax Rate (not dependent on item)
+
+            If lEdit = False Then
+
+'               TxtStaxRate = cSalesTaxRate
+
+'               mSaleTaxRate = cSalesTaxRate
+
+            End If
+
+            End If
+
+            ' *************************************************
+
+'            If Not IsNull(RsDummy!ed_status) Then
+
+'                If RsDummy!ed_status Then
+
+'                   MsgBox "Account ID is Diabled, please re-enter another ... ", vbCritical, cSelFormId
+
+'                   TxtID.Text = ""
+
+'                   TxtID.SetFocus
+
+'                   Cancel = True
+
+'                   Exit Sub
+
+'                End If
+
+'            End If
+
+        Else
+
+            Screen.MousePointer = vbDefault
+
+            MsgBox "Item ID not found, please re-enter ... " & Chr(13) & Chr(13) & " Or Main Or Sub Account ID is selected. ", vbInformation, "Production Receipt"
+
+            TxtID.SetFocus
+
+            Cancel = True
+
+            Exit Sub
+
+        End If
+
+        Set RsDummy = Nothing 'KAM 06032022
+
+        
+
+        SQL = "select * from v_FIN_ITEM where item_id=" & CDbl(TxtID)
+
+        Set RsTmp = FetchAll(SQL)
+
+        If Not (RsTmp.EOF And RsTmp.BOF) Then
+
+             LblMainTitle.Caption = RsTmp!main_title
+
+             LblSubTitle.Caption = RsTmp!sub_title
+
+        Else
+
+             LblMainTitle.Caption = "Not found . "
+
+             LblSubTitle.Caption = "Not found. "
+
+        End If
+
+        RsTmp.Close
+
+        
+
+                'SQL = "select * from FIN_ITEM where item_id=" & Val(TxtID)
+
+                'SQL = "select top " & txtNoOf.Text & " Prod_id,doc_date,QTY,((pur_AMT - disc_amt - disc_amt_oi )/QTY) as cost_amt ,rate as TP,item_id from Fin_Pur_D " & _
+
+
+
+                SQL = "select top " & txtNoOf.Text & " Prod_id,doc_date,QTY,rate as TP,item_id from Fin_Pur_D " & _
+
+                        "where ITEM_ID = '" & TxtID.Text & "' " & _
+
+                            "order by doc_date desc"
+
+                Set Rs = FetchAll(SQL)
+
+                If Not (Rs.EOF And Rs.BOF) Then
+
+                    grd(0).LoadArray Rs.GetRows()
+
+                End If
+
+                With grd(0)
+
+                    .Cols = 5
+
+                    .TextMatrix(0, 0) = "Pur.#"
+
+                    .ColWidth(0) = 1100
+
+                    .TextMatrix(0, 1) = "Date"
+
+                    .ColWidth(1) = 1300
+
+                    .TextMatrix(0, 2) = "Qty"
+
+                    .ColWidth(2) = 1100
+
+                    .TextMatrix(0, 3) = "TP Rate"
+
+                    .ColWidth(3) = 1100
+
+                    .TextMatrix(0, 4) = "ITEM ID"
+
+                    .ColWidth(4) = 1500
+
+                End With
+
+                Set Rs = Nothing 'KAM 06032022
+
+        
+
+        Screen.MousePointer = vbDefault
+
+        
+
+        Exit Sub
+
+TrapError:
+
+    Call ShowError(lngError, Me.Caption)
+
+End Sub
+
+
+

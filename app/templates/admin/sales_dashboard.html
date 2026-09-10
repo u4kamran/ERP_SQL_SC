@@ -15,13 +15,21 @@
                 <span class="badge bg-light text-dark border period-badge ms-2" id="sales-total-days">—</span>
             </div>
             <div class="text-muted small mt-1" id="sales-compare-period-text">—</div>
-            <div class="text-muted small mt-1">
-                <i class="bi bi-clock me-1"></i>Business day: <strong>08:00</strong> today → <strong>05:00</strong> next morning
+            <div class="text-muted small mt-1" id="sales-business-day-note">
+                <i class="bi bi-clock me-1"></i>Business day: loading…
             </div>
         </div>
-        <button class="btn btn-sm btn-primary" type="button" id="btn-refresh-sales">
-            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-        </button>
+        <div class="d-flex flex-wrap gap-1">
+            <button class="btn btn-sm btn-primary" type="button" id="btn-refresh-sales">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+            <button class="btn btn-sm btn-outline-success" type="button" id="btn-download-dashboard-csv">
+                <i class="bi bi-filetype-csv me-1"></i>Download CSV
+            </button>
+            <button class="btn btn-sm btn-outline-danger" type="button" id="btn-download-dashboard-pdf">
+                <i class="bi bi-filetype-pdf me-1"></i>Download PDF
+            </button>
+        </div>
     </div>
 
     <div class="filter-bar mb-3">
@@ -133,8 +141,18 @@
     </div>
 
     <div class="compare-panel mt-3">
-        <h6 class="mb-3"><i class="bi bi-calendar3 me-2"></i>Day-wise Sales</h6>
-        <p class="text-muted small mb-2" id="day-wise-note">Each row = one business day (08:00 → next day 05:00)</p>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h6 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Day-wise Sales</h6>
+            <div class="d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm btn-outline-success" id="btn-download-daywise" disabled>
+                    <i class="bi bi-filetype-csv me-1"></i>Download CSV
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btn-download-daywise-pdf" disabled>
+                    <i class="bi bi-filetype-pdf me-1"></i>Download PDF
+                </button>
+            </div>
+        </div>
+        <p class="text-muted small mb-2" id="day-wise-note">Each row = one business day</p>
         <div class="table-responsive">
             <table class="table table-sm compare-table mb-0">
                 <thead>
@@ -148,6 +166,46 @@
                 </thead>
                 <tbody id="day-wise-body">
                     <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="compare-panel mt-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Cumulative Sales</h6>
+            <div class="d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm btn-primary" id="btn-load-cumulative">
+                    <i class="bi bi-play-fill me-1"></i>Load Cumulative Sales
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" id="btn-download-cumulative" disabled>
+                    <i class="bi bi-filetype-csv me-1"></i>Download CSV
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btn-download-cumulative-pdf" disabled>
+                    <i class="bi bi-filetype-pdf me-1"></i>Download PDF
+                </button>
+            </div>
+        </div>
+        <p class="text-muted small mb-2" id="cumulative-note">
+            Each pair = current month cumulative period, then same dates last month (08:00 -> next day 05:00)
+        </p>
+        <div class="table-responsive">
+            <table class="table table-sm compare-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="num" style="width:3rem">#</th>
+                        <th style="width:6rem">Period</th>
+                        <th>Cumulative Business Period</th>
+                        <th class="num">Sale</th>
+                        <th class="num">Cost</th>
+                        <th class="num">Profit</th>
+                        <th class="num">Profit %</th>
+                        <th class="num">Avg Sale / Day</th>
+                        <th class="num">Invoices</th>
+                    </tr>
+                </thead>
+                <tbody id="cumulative-body">
+                    <tr><td colspan="9" class="text-muted">Click <strong>Load Cumulative Sales</strong> to view this report.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -263,9 +321,10 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/business_day.js?v=4"></script>
+<script src="/static/js/business_day.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="/static/js/sales_dashboard.js?v=13"></script>
+<script src="/static/js/report_delivery_rights.js?v=2"></script>
+<script src="/static/js/sales_dashboard.js?v=27"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
     await Auth.requireAuth();
@@ -274,6 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<div class="alert alert-danger">Access denied.</div>';
         return;
     }
+    await loadBusinessDayConfig();
     initSalesDashboard();
     initSalesDashboardEmail();
 });
