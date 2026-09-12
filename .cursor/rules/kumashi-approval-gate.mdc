@@ -1,0 +1,38 @@
+---
+description: Hard approval gate for AL HARAM → KUMASHI cloning. Stage 1 is inspect/plan/demo only. No execution without explicit APPROVE.
+alwaysApply: true
+---
+
+# ABSOLUTE RULE — NO KUMASHI EXECUTION WITHOUT PERMISSION
+
+This is the top gate for AL HARAM → KUMASHI work.
+
+**DO NOT** clone, copy, create, migrate, rebrand, edit production files, create `NKUM2627` / `NKUM2627_AUTH`, alter `.env`, install logos into a real project, run migrations/seeders, build, start, or deploy until the user gives explicit execution authorization:
+
+`APPROVE` / `APPROVED` / `YES, EXECUTE` / `GO AHEAD AND EXECUTE` / `START EXECUTION`
+
+These are **NOT** approval: continue, okay, looks good, questions, extra info, another demo, reviewing the plan.
+
+If ambiguous: **STOP** and ask.
+
+## Two stages — never reverse
+
+1. **STAGE 1 (current default):** inspect AL HARAM read-only → understand → plan → non-destructive demo → present report → **STOP**.
+2. **STAGE 2:** only after explicit approval.
+
+## Protect AL HARAM
+
+Source: `D:\CursorProject\ahsteellab-arp`  
+Auth DB: `NAHSL2627_AUTH` · Business DB: `NAHSL2627`
+
+Stage 1: inspection only. Do not rename/delete/move/edit AL HARAM files, `.env`, databases, auth, deploy, or network.
+
+Do not create/modify `NKUM2627` or `NKUM2627_AUTH` in Stage 1. No INSERT/UPDATE/DELETE/DROP against production.
+
+KUMASHI targets (Stage 2 only): app DB `NKUM2627`, auth DB `NKUM2627_AUTH`. Never point KUMASHI at AL HARAM databases.
+
+## Demo vs execution
+
+Stage 1 may create a **non-destructive preview** that is not connected to production DBs and does not modify AL HARAM.
+
+After the Stage 1 report, wait. Final line must state that no execution has been performed.
