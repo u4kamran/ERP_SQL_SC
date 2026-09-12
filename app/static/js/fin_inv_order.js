@@ -262,6 +262,7 @@ function clearForm(confirmFirst = true) {
     document.getElementById('txtManualID').value = '';
     document.getElementById('serial_no').value = '';
     document.getElementById('cFoundFlag').value = '0';
+    document.getElementById('chkBC').checked = true;
 
     clearDed(true);
     renderGrid();
@@ -839,9 +840,13 @@ async function saveDocument() {
     if (!payload) return;
     try {
         const res = await Api.post(`${API}/documents`, payload);
-        showAlert(res.message, 'success');
+        const invId = res.inv_id;
+        if (invId) document.getElementById('TxtDocID').value = invId;
+        const poMsg = res.message || `Purchase Order No. ${invId}`;
+        showAlert(poMsg, 'success');
+        // Show PO number first, then ask permission to print (VB6-style).
+        window.alert(poMsg);
         if (window.confirm('Do you want to take a print ?')) {
-            document.getElementById('TxtDocID').value = res.inv_id;
             await printDocument();
         }
         clearForm(false);

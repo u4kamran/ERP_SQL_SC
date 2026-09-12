@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KUMASHI Control Panel — Stage 1 Visual Concept (Demo Only)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #161616;
+      --muted: #6e6760;
+      --line: #e6e0d8;
+      --paper: #fff;
+      --cream: #f6f2ed;
+      --sidebar: #121212;
+      --accent: #1a1a1a;
+      --ok: #2f6b4f;
+      --warn: #9a6b2f;
+      --danger: #a33b3b;
+      --serif: "Cormorant Garamond", Georgia, serif;
+      --sans: "Manrope", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--sans); background: #ebe6e0; color: var(--ink); }
+    .stage-banner {
+      background: #7a1f1f; color: #fff; text-align: center;
+      padding: .65rem 1rem; font-size: .78rem; letter-spacing: .08em;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: .4rem; padding: .75rem 1rem;
+      background: #111; position: sticky; top: 2.3rem; z-index: 99;
+    }
+    .tabs button {
+      border: 0; background: #2a2a2a; color: #eee; padding: .5rem .85rem;
+      cursor: pointer; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .tabs button.active { background: #fff; color: #111; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .shell { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 6rem); }
+    .side {
+      background: var(--sidebar); color: #f4efe9; padding: 1.2rem .9rem;
+    }
+    .side .brand { letter-spacing: .22em; font-size: .78rem; font-weight: 700; margin-bottom: 1.4rem; }
+    .side .brand small { display: block; opacity: .55; letter-spacing: .08em; margin-top: .25rem; font-weight: 400; }
+    .nav-sec { font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: #8a837b; margin: 1rem 0 .35rem; }
+    .side a {
+      display: block; color: #d8d0c7; text-decoration: none; padding: .42rem .55rem;
+      font-size: .82rem; border-left: 2px solid transparent;
+    }
+    .side a.on, .side a:hover { background: #1f1f1f; border-left-color: #fff; color: #fff; }
+    .main { background: var(--cream); }
+    .topbar {
+      background: var(--paper); border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .85rem 1.25rem; gap: 1rem;
+    }
+    .topbar h1 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 1.45rem; }
+    .topbar .meta { font-size: .75rem; color: var(--muted); }
+    .content { padding: 1.25rem; }
+    .grid-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
+    .stat {
+      background: var(--paper); border: 1px solid var(--line); padding: 1rem;
+    }
+    .stat .l { font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .stat .v { font-family: var(--serif); font-size: 1.8rem; margin-top: .25rem; }
+    .stat .n { font-size: .72rem; color: var(--muted); margin-top: .2rem; }
+    .card {
+      background: var(--paper); border: 1px solid var(--line); margin-top: 1rem;
+    }
+    .card h2 {
+      margin: 0; padding: .9rem 1rem; border-bottom: 1px solid var(--line);
+      font-size: .95rem; font-weight: 600; letter-spacing: .04em;
+    }
+    .card .body { padding: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th, td { text-align: left; padding: .65rem .5rem; border-bottom: 1px solid var(--line); }
+    th { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    .badge {
+      display: inline-block; font-size: .65rem; letter-spacing: .06em; text-transform: uppercase;
+      padding: .2rem .4rem; border: 1px solid var(--line);
+    }
+    .badge.ok { color: var(--ok); border-color: #b7d4c5; background: #eef7f2; }
+    .badge.warn { color: var(--warn); border-color: #e2d0b0; background: #faf4ea; }
+    .badge.danger { color: var(--danger); border-color: #e2bdbd; background: #faf0f0; }
+    .badge.demo { color: #5a3d7a; border-color: #d4c4e4; background: #f5f0fa; }
+    .search {
+      display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .search input, .search select, .field input, .field textarea, .field select {
+      border: 1px solid var(--line); background: #fff; padding: .55rem .7rem; font: inherit;
+    }
+    .search input { min-width: 240px; flex: 1; }
+    .btn {
+      border: 1px solid var(--ink); background: var(--ink); color: #fff;
+      padding: .55rem .9rem; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+    }
+    .btn.ghost { background: transparent; color: var(--ink); }
+    .editor { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1rem; }
+    .ph {
+      aspect-ratio: 3/4; background: linear-gradient(145deg, #efe6de, #d4c4b8);
+      position: relative; overflow: hidden;
+    }
+    .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .ph .stamp {
+      position: absolute; left: .5rem; bottom: .5rem; background: rgba(122,31,31,.92);
+      color: #fff; font-size: .62rem; letter-spacing: .08em; padding: .3rem .45rem; text-transform: uppercase;
+    }
+    .gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: .55rem; }
+    .gallery .tile { border: 1px solid var(--line); position: relative; }
+    .gallery .tile.main { outline: 2px solid var(--ink); }
+    .gallery .tile .tag {
+      position: absolute; top: .35rem; left: .35rem; background: #111; color: #fff;
+      font-size: .58rem; padding: .2rem .35rem; letter-spacing: .06em;
+    }
+    .drop {
+      border: 1px dashed #b9aea2; background: #faf7f3; padding: 1.6rem; text-align: center;
+      color: var(--muted); margin-top: .8rem;
+    }
+    .fields { display: grid; gap: .75rem; }
+    .field label { display: block; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .25rem; }
+    .field input, .field textarea, .field select { width: 100%; }
+    .readonly { background: #f3eee8 !important; }
+    .note {
+      margin: 1rem 1.25rem; padding: .85rem 1rem; background: #fff8e8; border: 1px solid #e6d5a8;
+      font-size: .82rem; color: #5c4a20;
+    }
+    .media-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7rem; }
+    .split-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .empty { color: var(--muted); font-size: .85rem; padding: 1rem 0; }
+    footer.demo {
+      text-align: center; padding: 1.5rem; font-size: .75rem; color: var(--muted);
+      letter-spacing: .08em;
+    }
+    @media (max-width: 980px) {
+      .shell, .editor, .grid-stats, .gallery, .media-grid, .split-2 { grid-template-columns: 1fr 1fr; }
+      .shell { grid-template-columns: 1fr; }
+      .side { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage-banner">
+    STAGE 1 VISUAL CONCEPT ONLY — not connected to NKUM2627 — sample images are DEMO placeholders — no tables created — no uploads — no live admin changes
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="active" data-s="dash">Dashboard</button>
+    <button data-s="products">Products</button>
+    <button data-s="editor">Product Editor + Images</button>
+    <button data-s="media">Media Library</button>
+    <button data-s="cats">Categories</button>
+    <button data-s="collections">Collections</button>
+    <button data-s="home">Homepage</button>
+    <button data-s="orders">Orders</button>
+    <button data-s="customers">Customers</button>
+    <button data-s="settings">Settings / Roles</button>
+    <button data-s="map">Data Map</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section class="screen active" id="dash">
+    <div class="shell">
+      <aside class="side">
+        <div class="brand">KUMASHI<small>Control Panel Concept</small></div>
+        <div class="nav-sec">Overview</div>
+        <a class="on" href="#">Dashboard</a>
+        <div class="nav-sec">Catalog</div>
+        <a href="#">Products / Items</a>
+        <a href="#">Categories</a>
+        <a href="#">Collections</a>
+        <a href="#">Product Media</a>
+        <div class="nav-sec">Merchandising</div>
+        <a href="#">Homepage</a>
+        <a href="#">Banners</a>
+        <div class="nav-sec">Commerce</div>
+        <a href="#">Orders</a>
+        <a href="#">Customers</a>
+        <div class="nav-sec">System</div>
+        <a href="#">SEO</a>
+        <a href="#">Users & Security</a>
+        <a href="#">Audit Log</a>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <div>
+            <h1>Dashboard</h1>
+            <div class="meta">Live metrics from audit · NKUM2627 sample catalog</div>
+          </div>
+          <div class="meta">admin · SUPER_ADMIN</div>
+        </div>
+        <div class="content">
+          <div class="grid-stats">
+            <div class="stat"><div class="l">Products</div><div class="v">10</div><div class="n">FIN_ITEM · real count</div></div>
+            <div class="stat"><div class="l">Categories</div><div class="v">20</div><div class="n">FIN_CAT rows · real count</div></div>
+            <div class="stat"><div class="l">With images</div><div class="v">0</div><div class="n">item_images tables absent</div></div>
+            <div class="stat"><div class="l">Low stock ≤5</div><div class="v">2</div><div class="n">Bridal 3 · Formal 6</div></div>
+          </div>
+          <div class="grid-stats" style="margin-top:.8rem">
+            <div class="stat"><div class="l">Out of stock</div><div class="v">0</div><div class="n">From CQTY</div></div>
+            <div class="stat"><div class="l">Online orders</div><div class="v">—</div><div class="n">Unavailable · no shop order pipeline</div></div>
+            <div class="stat"><div class="l">Saved carts</div><div class="v">—</div><div class="n">customer_app_cart tables not deployed</div></div>
+            <div class="stat"><div class="l">Auth users</div><div class="v">1</div><div class="n">NKUM2627_AUTH · real</div></div>
+          </div>
+          <div class="card">
+            <h2>Source of truth reminder</h2>
+            <div class="body">
+              Category / Product / Rate / Stock remain in <strong>FIN_CAT</strong> + <strong>FIN_ITEM</strong>.
+              Control Panel manages presentation, media, SEO, collections, homepage — in a separate content layer.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="screen" id="products">
+    <div class="shell">
+      <aside class="side">
+        <div class="brand">KUMASHI<small>Control Panel Concept</small></div>
+        <div class="nav-sec">Catalog</div>
+        <a class="on" href="#">Products / Items</a>
+      </aside>
+      <div class="main">
+        <div class="topbar"><h1>Products</h1><div class="meta">Server-side search · FIN_ITEM</div></div>
+        <div class="content">
+          <div class="search">
+            <input placeholder="Search name, manualid, barcode…" />
+            <select><option>All categories</option><option>New Arrivals</option><option>Luxury</option><option>Sale</option></select>
+            <button class="btn">Search</button>
+          </div>
+          <div class="card">
+            <h2>Catalog (sample rows from live audit)</h2>
+            <div class="body" style="padding:0">
+              <table>
+                <thead>
+                  <tr><th>Manual ID</th><th>Name</th><th>Rate</th><th>Stock</th><th>Image</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>9001</td><td>Embroidered Lawn Suit</td><td>Rs. 8,900</td><td>12</td><td><span class="badge warn">No image</span></td><td><span class="badge ok">In stock</span></td></tr>
+                  <tr><td>9002</td><td>Floral Chiffon Ensemble</td><td>Rs. 12,500</td><td>8</td><td><span class="badge warn">No image</span></td><td><span class="badge ok">In stock</span></td></tr>
+                  <tr><td>9009</td><td>Luxury Organza Bridal</td><td>Rs. 45,000</td><td>3</td><td><span class="badge warn">No image</span></td><td><span class="badge warn">Low</span></td></tr>
+                  <tr><td>9010</td><td>Festive Sale Suit</td><td>Rs. 3,999</td><td>22</td><td><span class="badge warn">No image</span></td><td><span class="badge ok">Promo</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDITOR + IMAGES -->
+  <section class="screen" id="editor">
+    <div class="note">
+      <strong>Sample pics below are DEMO ONLY</strong> (styled placeholders for Stage 1 UX).
+      After approval: admins upload <strong>HD real fashion photography</strong> via the Product Media workflow.
+      Existing Item Images module will be adapted for boutique (manual upload first; grocery scrapers off by default).
+    </div>
+    <div class="shell">
+      <aside class="side">
+        <div class="brand">KUMASHI<small>Product workspace</small></div>
+        <a class="on" href="#">Editor</a>
+        <a href="#">Media</a>
+        <a href="#">SEO</a>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <div>
+            <h1>Embroidered Lawn Suit</h1>
+            <div class="meta">manualid 9001 · ITEM_ID 2000010001 · New Arrivals</div>
+          </div>
+          <div>
+            <button class="btn ghost">Discard</button>
+            <button class="btn">Save changes</button>
+          </div>
+        </div>
+        <div class="content editor">
+          <div>
+            <div class="card">
+              <h2>Business data (read-only from NKUM2627)</h2>
+              <div class="body fields">
+                <div class="split-2">
+                  <div class="field"><label>Database price</label><input class="readonly" readonly value="Rs. 8,900 (SALES_RATE)" /></div>
+                  <div class="field"><label>Compare-at (DISC_P1)</label><input class="readonly" readonly value="Rs. 9,900" /></div>
+                </div>
+                <div class="split-2">
+                  <div class="field"><label>Stock (CQTY)</label><input class="readonly" readonly value="12" /></div>
+                  <div class="field"><label>Promo flag (CRITICAL_LEVEL1)</label><input class="readonly" readonly value="On" /></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <h2>Online presentation (proposed content layer)</h2>
+              <div class="body fields">
+                <div class="field"><label>Display name</label><input value="Embroidered Lawn Suit" /></div>
+                <div class="field"><label>Short description</label><input value="Premium embroidered lawn for everyday elegance" /></div>
+                <div class="field"><label>Description</label><textarea rows="4">Three-piece lawn suit with delicate embroidery. Fabric, care, and package contents edited here — not written into FIN_ITEM.</textarea></div>
+                <div class="split-2">
+                  <div class="field"><label>Fabric</label><input value="Lawn" /></div>
+                  <div class="field"><label>Occasion</label><input value="Day / Festive" /></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <h2>SEO</h2>
+              <div class="body fields">
+                <div class="field"><label>SEO title</label><input value="Embroidered Lawn Suit | KUMASHI" /></div>
+                <div class="field"><label>Meta description</label><textarea rows="2">Shop the Embroidered Lawn Suit at KUMASHI. Premium ladies fashion.</textarea></div>
+                <div class="field"><label>URL slug</label><input value="embroidered-lawn-suit" /></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <h2>Media · Demo sample pics</h2>
+              <div class="body">
+                <div class="ph" style="max-width:280px;margin-bottom:.8rem">
+                  <!-- DEMO sample — not a live product asset -->
+                  <img alt="DEMO sample fashion look" src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80" />
+                  <div class="stamp">Demo sample · not HD master</div>
+                </div>
+                <div class="gallery">
+                  <div class="tile main">
+                    <div class="ph"><img alt="DEMO main" src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80" /><div class="stamp">Demo</div></div>
+                    <div class="tag">MAIN</div>
+                  </div>
+                  <div class="tile">
+                    <div class="ph"><img alt="DEMO detail" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80" /><div class="stamp">Demo</div></div>
+                  </div>
+                  <div class="tile">
+                    <div class="ph"><img alt="DEMO fabric" src="https://images.unsplash.com/photo-1558171813-4c088753af8f?auto=format&fit=crop&w=400&q=80" /><div class="stamp">Demo</div></div>
+                  </div>
+                  <div class="tile">
+                    <div class="ph"><img alt="DEMO outfit" src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=400&q=80" /><div class="stamp">Demo</div></div>
+                  </div>
+                </div>
+                <div class="drop">
+                  <strong>Drag & drop product images</strong><br />
+                  or Browse from computer · WebP / JPEG / PNG<br />
+                  <span style="font-size:.72rem">After approval: HD originals → master → large / medium / thumb</span>
+                </div>
+                <div class="fields" style="margin-top:.8rem">
+                  <div class="field"><label>Alt text</label><input value="Embroidered lawn suit — front view" /></div>
+                  <div class="field"><label>Caption (optional)</label><input value="Embroidered neckline detail" /></div>
+                  <div>
+                    <button class="btn ghost">Set as main</button>
+                    <button class="btn ghost">Reorder</button>
+                    <button class="btn ghost">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEDIA LIBRARY -->
+  <section class="screen" id="media">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI<small>Media</small></div><a class="on" href="#">Media Library</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Media Library</h1><div class="meta">Concept · linked by ITEM_ID / manualid</div></div>
+        <div class="content">
+          <div class="search">
+            <input placeholder="Search files, product, alt text…" />
+            <select><option>All usage</option><option>Linked</option><option>Orphan</option></select>
+            <button class="btn">Upload</button>
+          </div>
+          <div class="media-grid">
+            <div class="tile"><div class="ph"><img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80" alt=""/><div class="stamp">Demo</div></div><div style="padding:.45rem;font-size:.72rem">9001 · main</div></div>
+            <div class="tile"><div class="ph"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80" alt=""/><div class="stamp">Demo</div></div><div style="padding:.45rem;font-size:.72rem">9002 · demo</div></div>
+            <div class="tile"><div class="ph"><img src="https://images.unsplash.com/photo-1558171813-4c088753af8f?auto=format&fit=crop&w=400&q=80" alt=""/><div class="stamp">Demo</div></div><div style="padding:.45rem;font-size:.72rem">Banner · demo</div></div>
+            <div class="tile"><div class="ph"><img src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=400&q=80" alt=""/><div class="stamp">Demo</div></div><div style="padding:.45rem;font-size:.72rem">Hero · demo</div></div>
+            <div class="tile"><div class="ph" style="display:grid;place-items:center;color:var(--muted);font-size:.75rem">+ Upload HD</div><div style="padding:.45rem;font-size:.72rem">Real masters later</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIES -->
+  <section class="screen" id="cats">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI</div><a class="on" href="#">Categories</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Categories</h1><div class="meta">From FIN_CAT · business source of truth</div></div>
+        <div class="content">
+          <div class="card"><div class="body" style="padding:0">
+            <table>
+              <thead><tr><th>ID</th><th>Title</th><th>Level</th><th>Products</th><th>Images</th></tr></thead>
+              <tbody>
+                <tr><td>2000000000</td><td>Ladies Fashion</td><td>1</td><td>10</td><td>0%</td></tr>
+                <tr><td>2000010000</td><td>New Arrivals</td><td>2</td><td>3</td><td>0%</td></tr>
+                <tr><td>2000020000</td><td>Unstitched</td><td>2</td><td>2</td><td>0%</td></tr>
+                <tr><td>2000030000</td><td>Stitched</td><td>2</td><td>2</td><td>0%</td></tr>
+                <tr><td>2000050000</td><td>Luxury</td><td>2</td><td>1</td><td>0%</td></tr>
+                <tr><td>2000060000</td><td>Sale</td><td>2</td><td>1</td><td>0%</td></tr>
+              </tbody>
+            </table>
+          </div></div>
+          <p class="empty">Business category create/edit stays in ERP Item Info unless separately approved. Panel shows coverage + presentation overlays only.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLLECTIONS -->
+  <section class="screen" id="collections">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI</div><a class="on" href="#">Collections</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Collections</h1><div class="meta">Proposed KUMASHI layer · references manualid</div></div>
+        <div class="content split-2">
+          <div class="card"><h2>Curated sets</h2><div class="body">
+            <p><strong>Festive Edit</strong> — maps to products 9001, 9009, 9010</p>
+            <p><strong>Best Sellers</strong> — CRITICAL_LEVEL1 &gt; 0 (promo flag)</p>
+            <p><strong>Homepage Featured</strong> — ordered list of manualids</p>
+            <span class="badge demo">Not in DB yet · Stage 2</span>
+          </div></div>
+          <div class="card"><h2>Rule</h2><div class="body">
+            Collections reference existing FIN_ITEM rows by <code>manualid</code> / <code>ITEM_ID</code>.
+            They never duplicate product masters or rates.
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOMEPAGE -->
+  <section class="screen" id="home">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI</div><a class="on" href="#">Homepage</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Homepage merchandising</h1><div class="meta">Today: hardcoded in shop/home.html</div></div>
+        <div class="content">
+          <div class="card"><h2>Slots (proposed)</h2><div class="body">
+            <ol>
+              <li>Hero banner — desktop + mobile + CTA URL</li>
+              <li>Feature strip</li>
+              <li>Category circles</li>
+              <li>Featured products (ordered manualids)</li>
+              <li>Promo tile</li>
+            </ol>
+            <span class="badge demo">CMS tables not created</span>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ORDERS -->
+  <section class="screen" id="orders">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI</div><a class="on" href="#">Orders</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Orders</h1><div class="meta">Honest status</div></div>
+        <div class="content">
+          <div class="card"><div class="body">
+            <p><strong>Boutique /shop cart</strong> is localStorage + <code>/cart/validate</code> only — no order write.</p>
+            <p><strong>Customer App Carts</strong> code exists in repo; tables <em>not</em> deployed on NKUM2627 yet.</p>
+            <p><strong>Legacy</strong> <code>FIN_INV_*_ORDER</code> tables exist (ERP order docs) — not the fashion web checkout.</p>
+            <span class="badge warn">Order UI deferred until order source approved</span>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CUSTOMERS -->
+  <section class="screen" id="customers">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI</div><a class="on" href="#">Customers</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Customers</h1></div>
+        <div class="content">
+          <div class="card"><div class="body">
+            Existing contact surface: <code>CUST_SMS</code> + Customer Contacts admin.
+            Fashion customer profiles (addresses, order history) depend on approved order/customer pipeline.
+            PII must stay permission-gated.
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="screen" id="settings">
+    <div class="shell">
+      <aside class="side"><div class="brand">KUMASHI</div><a class="on" href="#">Users & Security</a></aside>
+      <div class="main">
+        <div class="topbar"><h1>Roles & permissions</h1><div class="meta">NKUM2627_AUTH ready</div></div>
+        <div class="content">
+          <div class="card"><div class="body" style="padding:0">
+            <table>
+              <thead><tr><th>Role</th><th>Today</th><th>Proposed fashion scope</th></tr></thead>
+              <tbody>
+                <tr><td>SUPER_ADMIN</td><td>Exists</td><td>Full control panel</td></tr>
+                <tr><td>ADMIN</td><td>Exists</td><td>Catalog + media + merchandising</td></tr>
+                <tr><td>USER</td><td>Exists</td><td>View-only / limited</td></tr>
+                <tr><td>REPORTS_ONLY</td><td>Exists</td><td>Inventory viewer</td></tr>
+                <tr><td>CATALOG_MANAGER</td><td>—</td><td>New permission set (Stage 2)</td></tr>
+                <tr><td>CONTENT_MANAGER</td><td>—</td><td>Banners / homepage / SEO</td></tr>
+              </tbody>
+            </table>
+          </div></div>
+          <p class="empty">Reuse auth.Permissions + menu rights. Extend codes: catalog.media.*, merchandising.*, seo.* — never trust UI alone.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA MAP -->
+  <section class="screen" id="map">
+    <div class="content" style="max-width:980px;margin:0 auto">
+      <div class="card" style="margin-top:1rem">
+        <h2>Actual data mapping (discovered)</h2>
+        <div class="body">
+<pre style="white-space:pre-wrap;font-size:.8rem;line-height:1.45;margin:0">
+NKUM2627 (business)                         KUMASHI layer
+─────────────────────────────────           ─────────────────────────────────
+FIN_CAT.ITEM_ID / ITEM_TITLE / AC_LEVEL  →  categoryId, title, level
+FIN_ITEM.ITEM_ID                         →  internal itemId
+FIN_ITEM.manualid                        →  productId / public key
+FIN_ITEM.ITEM_TITLE / ITEM_SHORT         →  name (business)
+FIN_ITEM.SALES_RATE                      →  price (authoritative)
+FIN_ITEM.DISC_P1                         →  marketPrice / compare-at
+FIN_ITEM.CRITICAL_LEVEL1                 →  promotion flag
+FIN_ITEM.CQTY                            →  stockQty
+FIN_ITEM.barcodeid                       →  barcode
+Co.co_title                              →  brand "KUMASHI"
+
+item_images* (SQL exists in repo,          →  gallery, main, alts, thumbs
+  NOT deployed on NKUM2627 yet)               linked by ITEM_ID + manual_id
+
+PROPOSED (new, separate — Stage 2 only):
+  shop_product_content   → description, fabric, tags, slug, SEO
+  shop_collections       → curated lists of manualid
+  shop_homepage_slots    → banners, featured order
+  shop_banners           → desktop/mobile assets + CTA
+</pre>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Architecture</h2>
+        <div class="body">
+<pre style="margin:0;font-size:.85rem">
+NKUM2627 FIN_*  ──read──► Catalog Service ──► Public Storefront API
+       ▲                         │
+       │ never write rates/stock │
+       │ from cosmetic UI        ▼
+NKUM2627_AUTH ◄── Auth/RBAC ── Control Panel
+                                 │
+                    Content + Media tables (new)
+                    disk: data/ProductImages/{item_id}/
+</pre>
+        </div>
+      </div>
+      <div class="note">
+        Implementation plan is ready in the Stage 1 report.
+        Reply with <strong>APPROVE</strong> / <strong>YES, EXECUTE</strong> to start Phase 2.
+        Sample storefront pics and HD upload pipeline will be implemented only after that approval.
+      </div>
+    </div>
+  </section>
+
+  <footer class="demo">KUMASHI · Stage 1 Control Panel Concept · No execution performed</footer>
+  <script>
+    document.getElementById("tabs").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-s]");
+      if (!b) return;
+      document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("active", x === b));
+      document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === b.dataset.s));
+      window.scrollTo(0, 0);
+    });
+  </script>
+</body>
+</html>

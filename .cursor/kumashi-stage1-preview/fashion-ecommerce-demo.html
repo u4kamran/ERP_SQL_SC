@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KUMASHI Fashion — Stage 1 Visual Concept (Demo Only)</title>
+  <style>
+    :root {
+      --ink: #111;
+      --muted: #6b6b6b;
+      --line: #e8e8e8;
+      --bg: #fafafa;
+      --paper: #fff;
+      --accent: #1a1a1a;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); }
+    .banner { background: #7a1f1f; color: #fff; text-align: center; padding: .55rem 1rem; font-size: .78rem; letter-spacing: .06em; }
+    .tabs { display: flex; gap: .4rem; flex-wrap: wrap; padding: .8rem 1rem; background: #111; }
+    .tabs button { border: 0; background: #2a2a2a; color: #eee; padding: .5rem .85rem; border-radius: 999px; cursor: pointer; font-size: .78rem; }
+    .tabs button.active { background: #fff; color: #111; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .announce { background: #111; color: #fff; text-align: center; font-size: .72rem; letter-spacing: .18em; padding: .55rem; text-transform: uppercase; }
+    header { background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: .9rem 1.4rem; gap: 1rem; }
+    .logo { font-weight: 800; letter-spacing: .22em; font-size: 1.05rem; }
+    nav { display: flex; gap: 1.1rem; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: #333; }
+    .icons { display: flex; gap: .85rem; font-size: .85rem; color: #333; }
+    .hero { min-height: 58vh; background: linear-gradient(120deg, #efeae4, #f7f4f0 45%, #e7dfd6); display: grid; place-items: center; text-align: center; padding: 3rem 1rem; }
+    .hero h1 { font-weight: 500; letter-spacing: .28em; font-size: clamp(1.6rem, 4vw, 2.8rem); margin: 0 0 .6rem; }
+    .hero p { color: var(--muted); max-width: 28rem; margin: 0 auto 1.4rem; }
+    .btn { display: inline-block; background: #111; color: #fff; text-decoration: none; padding: .85rem 1.4rem; letter-spacing: .16em; font-size: .72rem; text-transform: uppercase; }
+    .btn.outline { background: transparent; color: #111; border: 1px solid #111; }
+    section { padding: 2.5rem 1.4rem; max-width: 1180px; margin: 0 auto; }
+    .section-title { letter-spacing: .2em; text-transform: uppercase; font-size: .78rem; margin: 0 0 1.4rem; }
+    .cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .cat { background: #ece7e1; min-height: 160px; display: grid; place-items: end start; padding: 1rem; }
+    .cat span { background: #fff; padding: .4rem .65rem; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; }
+    .card { background: #fff; border: 1px solid var(--line); }
+    .card .ph { background: #efeae4; aspect-ratio: 3/4; }
+    .card .meta { padding: .85rem; }
+    .card h3 { margin: 0 0 .35rem; font-size: .92rem; font-weight: 500; }
+    .card .price { font-size: .86rem; }
+    .card .stock { color: var(--muted); font-size: .72rem; margin-top: .25rem; }
+    .note { max-width: 1180px; margin: 0 auto 2rem; padding: 0 1.4rem; color: #7a1f1f; font-size: .82rem; }
+    .pdp { max-width: 1100px; margin: 0 auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: 1.1fr .9fr; gap: 2rem; }
+    .pdp .ph { background: #efeae4; min-height: 520px; }
+    .pdp h1 { font-weight: 500; font-size: 1.6rem; margin: 0 0 .4rem; }
+    .sku { color: var(--muted); font-size: .78rem; margin-bottom: 1rem; }
+    .price-lg { font-size: 1.25rem; margin: 1rem 0; }
+    .actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.2rem; }
+    .cart-layout { max-width: 1100px; margin: 0 auto; padding: 2rem 1.4rem; display: grid; grid-template-columns: 1.4fr .8fr; gap: 1.5rem; }
+    .line { display: grid; grid-template-columns: 90px 1fr auto; gap: .9rem; background: #fff; border: 1px solid var(--line); padding: .9rem; margin-bottom: .7rem; }
+    .line .ph { background: #efeae4; }
+    .summary { background: #fff; border: 1px solid var(--line); padding: 1.2rem; height: fit-content; }
+    .summary row, .summary .row { display: flex; justify-content: space-between; margin: .45rem 0; font-size: .9rem; }
+    .summary .total { border-top: 1px solid var(--line); padding-top: .7rem; margin-top: .7rem; font-weight: 600; }
+    .checkout { max-width: 720px; margin: 0 auto; padding: 2rem 1.4rem; }
+    .checkout label { display: block; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; margin: .8rem 0 .3rem; }
+    .checkout input, .checkout select { width: 100%; padding: .7rem; border: 1px solid var(--line); background: #fff; }
+    .mobile-wrap { max-width: 390px; margin: 1.5rem auto; background: #fff; border: 1px solid var(--line); min-height: 720px; box-shadow: 0 20px 50px rgba(0,0,0,.08); }
+    .mobile-wrap header { padding: .8rem 1rem; }
+    .mobile-wrap nav { display: none; }
+    .drawer { border-top: 1px solid var(--line); padding: 1rem; background: #fff; }
+    footer.site { border-top: 1px solid var(--line); margin-top: 2rem; padding: 2rem 1.4rem; background: #fff; text-align: center; letter-spacing: .18em; font-size: .78rem; }
+    @media (max-width: 900px) {
+      nav { display: none; }
+      .cats, .grid, .pdp, .cart-layout { grid-template-columns: 1fr 1fr; }
+      .pdp, .cart-layout { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">STAGE 1 VISUAL CONCEPT ONLY — not connected to NKUM2627 — no orders, no stock changes, no fake live catalog claims</div>
+  <div class="tabs">
+    <button class="active" data-s="home">Homepage</button>
+    <button data-s="plp">Category / Listing</button>
+    <button data-s="pdp">Product Detail</button>
+    <button data-s="cart">Cart</button>
+    <button data-s="checkout">Checkout</button>
+    <button data-s="mobile">Mobile</button>
+    <button data-s="data">Data mapping</button>
+  </div>
+
+  <section id="home" class="screen active" style="padding:0;max-width:none">
+    <div class="announce">Complimentary boutique styling guidance · Free returns within policy</div>
+    <header>
+      <div class="logo">KUMASHI</div>
+      <nav>
+        <span>New</span><span>Unstitched</span><span>Stitched</span><span>Pret</span><span>Sale</span>
+      </nav>
+      <div class="icons"><span>Search</span><span>Account</span><span>♥</span><span>Bag (0)</span></div>
+    </header>
+    <div class="hero">
+      <div>
+        <h1>NEW SEASON</h1>
+        <p>Editorial boutique shopping experience powered by live categories, rates and stock from the business database.</p>
+        <a class="btn" href="#">Shop Collection</a>
+      </div>
+    </div>
+    <section>
+      <h2 class="section-title">Featured Categories</h2>
+      <div class="cats">
+        <div class="cat"><span>From FIN_CAT</span></div>
+        <div class="cat"><span>Dynamic navigation</span></div>
+        <div class="cat"><span>No hard-coded list</span></div>
+      </div>
+    </section>
+    <section>
+      <h2 class="section-title">New Arrivals · live FIN_ITEM</h2>
+      <div class="grid">
+        <div class="card"><div class="ph"></div><div class="meta"><h3>Product name from ITEM_TITLE</h3><div class="price">Rs. SALES_RATE</div><div class="stock">Stock CQTY</div></div></div>
+        <div class="card"><div class="ph"></div><div class="meta"><h3>Product name from ITEM_TITLE</h3><div class="price">Rs. SALES_RATE</div><div class="stock">Stock CQTY</div></div></div>
+        <div class="card"><div class="ph"></div><div class="meta"><h3>Product name from ITEM_TITLE</h3><div class="price">Rs. SALES_RATE</div><div class="stock">Stock CQTY</div></div></div>
+        <div class="card"><div class="ph"></div><div class="meta"><h3>Product name from ITEM_TITLE</h3><div class="price">Rs. SALES_RATE</div><div class="stock">Stock CQTY</div></div></div>
+      </div>
+    </section>
+    <footer class="site">KUMASHI · Building a Smarter Tomorrow</footer>
+  </section>
+
+  <div id="plp" class="screen">
+    <div class="note">Listing cards bind to `/api/v1/public/catalog/items` — real titles, rates, stock. Fashion imagery requires image module + uploads linked to manualid.</div>
+    <header><div class="logo">KUMASHI</div><div class="icons">Filters · Sort · Bag</div></header>
+    <section>
+      <h2 class="section-title">Category page</h2>
+      <div class="grid">
+        <div class="card"><div class="ph"></div><div class="meta"><h3>ITEM_TITLE</h3><div class="price">SALES_RATE</div><div class="stock">In stock / Out of stock from CQTY</div></div></div>
+        <div class="card"><div class="ph"></div><div class="meta"><h3>ITEM_TITLE</h3><div class="price">SALES_RATE</div><div class="stock">In stock / Out of stock from CQTY</div></div></div>
+        <div class="card"><div class="ph"></div><div class="meta"><h3>ITEM_TITLE</h3><div class="price">SALES_RATE</div><div class="stock">In stock / Out of stock from CQTY</div></div></div>
+        <div class="card"><div class="ph"></div><div class="meta"><h3>ITEM_TITLE</h3><div class="price">SALES_RATE</div><div class="stock">In stock / Out of stock from CQTY</div></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="pdp" class="screen">
+    <div class="pdp">
+      <div class="ph"></div>
+      <div>
+        <div class="sku">SKU / manualid · Category from FIN_CAT hierarchy</div>
+        <h1>ITEM_TITLE</h1>
+        <div class="price-lg">Rs. SALES_RATE</div>
+        <div class="stock">Availability: CQTY (server-validated)</div>
+        <p style="color:var(--muted);margin-top:1rem">Description / fabric / color / size only if columns or extension tables exist. Do not invent attributes.</p>
+        <div class="actions">
+          <a class="btn" href="#">Add to cart</a>
+          <a class="btn outline" href="#">Buy now</a>
+          <a class="btn outline" href="#">Wishlist</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="cart" class="screen">
+    <div class="cart-layout">
+      <div>
+        <h2 class="section-title">Shopping bag</h2>
+        <div class="line"><div class="ph"></div><div><strong>ITEM_TITLE</strong><div class="sku">manualid</div><div>Qty × SALES_RATE</div></div><div>Line total</div></div>
+        <div class="line"><div class="ph"></div><div><strong>ITEM_TITLE</strong><div class="sku">manualid</div><div>Qty × SALES_RATE</div></div><div>Line total</div></div>
+      </div>
+      <div class="summary">
+        <h2 class="section-title">Order summary</h2>
+        <div class="row"><span>Subtotal</span><span>Server calc</span></div>
+        <div class="row"><span>Shipping</span><span>TBD</span></div>
+        <div class="row"><span>Tax</span><span>If configured</span></div>
+        <div class="row total"><span>Grand total</span><span>Server calc</span></div>
+        <a class="btn" style="width:100%;text-align:center;margin-top:1rem" href="#">Checkout</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="checkout" class="screen">
+    <div class="checkout">
+      <h2 class="section-title">Checkout</h2>
+      <label>Contact</label><input placeholder="Email / mobile" />
+      <label>Shipping name</label><input />
+      <label>Address</label><input />
+      <label>City</label><input />
+      <label>Payment</label><select><option>Cash on delivery</option><option>Payment gateway (later)</option></select>
+      <p style="color:var(--muted);font-size:.85rem;margin:1rem 0">Final stock + price revalidation on order create. Snapshot stored on order lines.</p>
+      <a class="btn" href="#">Place order</a>
+    </div>
+  </div>
+
+  <div id="mobile" class="screen">
+    <div class="mobile-wrap">
+      <header><div class="logo">KUMASHI</div><div class="icons">♥ Bag</div></header>
+      <div class="hero" style="min-height:220px;padding:2rem 1rem"><h1 style="font-size:1.2rem">NEW SEASON</h1><a class="btn" href="#">Shop</a></div>
+      <div style="padding:1rem;display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+        <div class="card"><div class="ph" style="aspect-ratio:3/4"></div><div class="meta"><h3>ITEM</h3><div class="price">RATE</div></div></div>
+        <div class="card"><div class="ph" style="aspect-ratio:3/4"></div><div class="meta"><h3>ITEM</h3><div class="price">RATE</div></div></div>
+      </div>
+      <div class="drawer">
+        <strong>Cart drawer</strong>
+        <div class="row" style="display:flex;justify-content:space-between;margin-top:.6rem"><span>Subtotal</span><span>Server</span></div>
+        <a class="btn" style="width:100%;text-align:center;margin-top:.8rem" href="#">Checkout</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="data" class="screen">
+    <section>
+      <h2 class="section-title">Live data mapping (discovered)</h2>
+      <pre style="background:#fff;border:1px solid var(--line);padding:1rem;overflow:auto;font-size:.82rem;line-height:1.5">
+NKUM2627 (SQL Server 2008)
+  FIN_CAT.ITEM_ID / ITEM_TITLE / AC_LEVEL     → website categories
+  FIN_ITEM.ITEM_ID                            → internal item key
+  FIN_ITEM.manualid                           → shop SKU / product URL key
+  FIN_ITEM.ITEM_TITLE                         → product name
+  FIN_ITEM.SALES_RATE                         → product price
+  FIN_ITEM.CQTY                               → available stock
+  FIN_ITEM.OAMT1                              → GST amount (existing public API)
+  Category range via ITEM_ID hierarchy        → category filters (no SQL FK)
+
+Existing APIs (already in KUMASHI code):
+  GET  /api/v1/public/catalog/categories
+  GET  /api/v1/public/catalog/items
+  GET  /api/v1/public/catalog/items/{manual_id}
+  GET  /api/v1/public/catalog/search
+  POST /api/v1/public/catalog/cart/validate
+
+IMPORTANT CURRENT DATA STATE:
+  Catalog content today is still industrial / steel-lab style inventory
+  cloned from AL HARAM (not ladies fashion titles yet).
+  Website architecture will be fashion-first UI + real DB binding.
+  When boutique FIN_CAT / FIN_ITEM rows are loaded, site shows them automatically.
+      </pre>
+    </section>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tabs button').forEach((b) => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button').forEach((x) => x.classList.remove('active'));
+        document.querySelectorAll('.screen').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        document.getElementById(b.dataset.s).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

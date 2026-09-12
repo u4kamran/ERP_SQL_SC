@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KUMASHI Stage 1 Preview — Not a live system</title>
+  <style>
+    :root {
+      --navy: #051e3e;
+      --deep: #072c5c;
+      --blue: #0b4da2;
+      --royal: #1565c8;
+      --silver: #c5d0dc;
+      --gray: #5b6775;
+      --bg: #f4f6f9;
+      --sidebar: 250px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Roboto, sans-serif;
+      background: #0b1220;
+      color: #1b2430;
+    }
+    .banner {
+      background: #7a1f1f;
+      color: #fff;
+      text-align: center;
+      padding: 0.55rem 1rem;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.85rem 1rem;
+      background: #0d1628;
+      flex-wrap: wrap;
+    }
+    .tabs button {
+      border: 0;
+      background: #1a2740;
+      color: #dbe6f5;
+      padding: 0.55rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tabs button.active { background: #0b4da2; color: #fff; }
+    .screen { display: none; min-height: calc(100vh - 96px); }
+    .screen.active { display: block; }
+
+    /* Login */
+    .login {
+      min-height: calc(100vh - 96px);
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(21,101,200,0.35), transparent 46%),
+        linear-gradient(160deg, #051e3e 0%, #072c5c 42%, #0b4da2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem 3rem;
+    }
+    .card {
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 1.1rem;
+      box-shadow: 0 24px 50px rgba(5,30,62,0.28);
+      padding: 2rem;
+    }
+    .logo-plate {
+      background: #fff;
+      border: 1px solid rgba(11,77,162,0.08);
+      border-radius: 1.15rem;
+      padding: 1.1rem 1rem 0.9rem;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(5,30,62,0.12);
+      margin-bottom: 1.4rem;
+    }
+    .mark {
+      font-family: Georgia, "Source Serif 4", serif;
+      font-size: 2rem;
+      letter-spacing: 0.12em;
+      color: #072c5c;
+      margin: 0;
+    }
+    .mark span { display: block; font-size: 0.68rem; letter-spacing: 0.22em; color: #5b6775; margin-top: 0.35rem; }
+    label { display: block; font-size: 0.85rem; margin: 0.7rem 0 0.3rem; }
+    input[type=text], input[type=password] {
+      width: 100%;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid #d5deea;
+      border-radius: 0.5rem;
+    }
+    .row { display: flex; justify-content: space-between; align-items: center; margin: 1rem 0 1.2rem; font-size: 0.85rem; color: #5b6775; }
+    .btn {
+      width: 100%;
+      background: #0b4da2;
+      color: #fff;
+      border: 0;
+      padding: 0.8rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      cursor: default;
+    }
+    .foot { text-align: center; color: rgba(255,255,255,0.78); margin-top: 1.4rem; font-size: 0.78rem; }
+    .foot strong { color: #fff; letter-spacing: 0.08em; }
+
+    /* App shell */
+    .shell { display: flex; min-height: calc(100vh - 96px); background: var(--bg); }
+    .sidebar {
+      width: var(--sidebar);
+      background: linear-gradient(180deg, #051e3e 0%, #072c5c 48%, #0b4da2 100%);
+      color: #fff;
+      padding: 0.9rem 0.75rem;
+    }
+    .brand { display: flex; gap: 0.7rem; align-items: center; padding: 0.4rem 0.4rem 1rem; }
+    .badge {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: #fff; color: #072c5c; display: grid; place-items: center;
+      font-weight: 800; font-size: 0.78rem;
+    }
+    .brand h5 { margin: 0; font-family: Georgia, serif; letter-spacing: 0.06em; }
+    .brand small { color: #c5d0dc; letter-spacing: 0.08em; font-size: 0.62rem; }
+    .nav-sec { color: #c5d0dc; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0.85rem 0.5rem 0.3rem; }
+    .nav a {
+      display: block; color: #fff; text-decoration: none; padding: 0.45rem 0.65rem;
+      border-radius: 0.45rem; font-size: 0.88rem;
+    }
+    .nav a.active, .nav a:hover { background: rgba(21,101,200,0.28); }
+    .main { flex: 1; }
+    .topbar {
+      background: #fff; padding: 0.7rem 1.2rem; display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #e6ebf1; position: sticky; top: 0;
+    }
+    .topbar strong { color: var(--blue); }
+    .content { padding: 1.2rem; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .stat, .panel { background: #fff; border-radius: 0.8rem; padding: 1rem 1.1rem; box-shadow: 0 8px 22px rgba(11,77,162,0.08); }
+    .muted { color: #5b6775; margin: 0 0 0.25rem; font-size: 0.85rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.7rem; }
+    .actions span {
+      border: 1px solid #0b4da2; color: #0b4da2; padding: 0.4rem 0.7rem; border-radius: 0.45rem; font-size: 0.82rem;
+    }
+    .actions span.primary { background: #0b4da2; color: #fff; }
+
+    /* Documents */
+    .paper-wrap { background: #4a5568; padding: 1.5rem; min-height: calc(100vh - 96px); }
+    .paper {
+      width: min(860px, 100%);
+      margin: 0 auto;
+      background: #fff;
+      min-height: 640px;
+      padding: 1.6rem 1.8rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+    .center { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.86rem; }
+    th, td { border: 1px solid #cfd8e3; padding: 0.4rem 0.45rem; }
+    th { background: #eef3f9; }
+    .num { text-align: right; }
+    .note { font-size: 0.78rem; color: #5b6775; margin-top: 1rem; }
+
+    @media (max-width: 900px) {
+      .cards { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">STAGE 1 PREVIEW ONLY — not connected to any database — AL HARAM was not modified — KUMASHI has not been created</div>
+  <div class="tabs">
+    <button class="active" data-screen="login">Login</button>
+    <button data-screen="dash">Dashboard / Sidebar / Header</button>
+    <button data-screen="report">Sample report header</button>
+    <button data-screen="invoice">Sample invoice header</button>
+  </div>
+
+  <section id="login" class="screen active">
+    <div class="login">
+      <div class="card">
+        <div class="logo-plate">
+          <p class="mark">KUMASHI<span>INDEPENDENT ERP</span></p>
+        </div>
+        <label>Username</label>
+        <input type="text" value="admin" readonly />
+        <label>Password</label>
+        <input type="password" value="password" readonly />
+        <div class="row"><span>Remember Me</span><span>Forgot Password?</span></div>
+        <button class="btn" type="button">Sign In</button>
+        <p class="muted" style="text-align:center;margin-top:1rem">© 2026 KUMASHI. All rights reserved.</p>
+      </div>
+      <div class="foot"><strong>KUMASHI</strong><br>Proposed look — official logo to be installed only after approval</div>
+    </div>
+  </section>
+
+  <section id="dash" class="screen">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="badge">K</div>
+          <div>
+            <h5>KUMASHI</h5>
+            <small>Independent ERP</small>
+          </div>
+        </div>
+        <div class="nav">
+          <div class="nav-sec">Main</div>
+          <a class="active" href="#">Dashboard</a>
+          <div class="nav-sec">Inventory</div>
+          <a href="#">Item Info</a>
+          <a href="#">Purchase Receipt</a>
+          <a href="#">Purchase Order</a>
+          <div class="nav-sec">Delivery</div>
+          <a href="#">Delivery Command Center</a>
+          <div class="nav-sec">Reports</div>
+          <a href="#">Sales Dashboard</a>
+          <a href="#">GL Ledger Report</a>
+          <a href="#">Customer Ledger (Detailed)</a>
+          <a href="#">Trial Balance D2D</a>
+          <a href="#">Stock Balance D2D</a>
+          <div class="nav-sec">Accounting</div>
+          <a href="#">Voucher Entry</a>
+          <div class="nav-sec">Administration</div>
+          <a href="#">Users</a>
+          <a href="#">My Profile</a>
+        </div>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <div><strong>KUMASHI</strong> · Dashboard</div>
+          <div>Admin · Profile</div>
+        </div>
+        <div class="content">
+          <div class="cards">
+            <div class="stat"><p class="muted">Welcome</p><h3>Admin</h3></div>
+            <div class="stat"><p class="muted">Your Roles</p><h3>Administrator</h3></div>
+            <div class="stat"><p class="muted">System</p><h3>KUMASHI</h3><p class="muted">Independent ERP</p></div>
+          </div>
+          <div class="panel" style="margin-top:1rem">
+            <h4>Quick Actions</h4>
+            <div class="actions">
+              <span class="primary">Sales Dashboard</span>
+              <span>Manage Users</span>
+              <span>Item Master</span>
+              <span>Voucher Entry</span>
+              <span>GL Ledger Report</span>
+              <span>Customer Ledger (Detailed)</span>
+              <span>My Profile</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="report" class="screen">
+    <div class="paper-wrap">
+      <div class="paper">
+        <div class="center">
+          <h2 style="margin:0;color:#072c5c">KUMASHI</h2>
+          <p class="muted">Proposed company header — logo asset not installed in Stage 1</p>
+          <h3>CUSTOMER LEDGER (DETAILED)</h3>
+          <p>01-Jul-2026 to 31-Jul-2026 · Account: SAMPLE CUSTOMER</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Item Title</th><th>GP</th><th>Bill</th>
+              <th class="num">Qty</th><th class="num">Rate</th>
+              <th class="num">Value</th><th class="num">GST</th><th class="num">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Steel Sample Item</td><td>GP-12</td><td>1001</td>
+              <td class="num">10.00</td><td class="num">150.00</td>
+              <td class="num">1,500.00</td><td class="num">255.00</td><td class="num">1,755.00</td>
+            </tr>
+            <tr>
+              <td colspan="3"><strong>TOTAL</strong></td>
+              <td class="num"><strong>10.00</strong></td><td></td>
+              <td class="num"><strong>1,500.00</strong></td>
+              <td class="num"><strong>255.00</strong></td>
+              <td class="num"><strong>1,755.00</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">Preserved formula from AL HARAM: Qty × Rate = Value (GST-exclusive). Value + GST = Total. Calculations will not be changed unless a documented defect exists.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="invoice" class="screen">
+    <div class="paper-wrap">
+      <div class="paper">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2 style="margin:0;color:#072c5c">KUMASHI</h2>
+            <p class="muted">Invoice / print header preview<br>Address, phone, NTN, STRN from KUMASHI .env after approval</p>
+          </div>
+          <div class="center">
+            <strong>INVOICE</strong><br>
+            INV-1001<br>
+            Date: 10-Sep-2026
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Description</th>
+              <th class="num">Qty</th><th class="num">Rate</th>
+              <th class="num">Value</th><th class="num">GST</th><th class="num">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td><td>Sample line</td>
+              <td class="num">2.00</td><td class="num">1,000.00</td>
+              <td class="num">2,000.00</td><td class="num">340.00</td><td class="num">2,340.00</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">This is a visual identity preview only. No invoice engine, printer, or database was used.</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.screen).classList.add("active");
+      });
+    });
+  </script>
+</body>
+</html>
