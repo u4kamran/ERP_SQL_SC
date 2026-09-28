@@ -5,6 +5,11 @@
 
     Uses current Windows user scheduled tasks (not cloudflared service install),
     so ARP on this PC is not taken over.
+
+    IMPORTANT:
+    - ERP starts before the Cloudflare tunnel.
+    - Cloudflare Tunnel uses HTTP/2 instead of QUIC.
+    - Tunnel starts only after 127.0.0.1:<Port> is accepting TCP connections.
 #>
 
 param(
@@ -45,10 +50,13 @@ function Test-ErpConfig {
     if (-not (Test-Path $ConfigFile)) {
         throw "deploy\cloudflared\config.yml not found. Run SETUP-ERP.bat first."
     }
+
     $content = Get-Content $ConfigFile -Raw
+
     if ($content -notmatch [regex]::Escape([string]$cfg.hostname)) {
         throw "config.yml is not for $($cfg.hostname). Do not install ARP config as ERP."
     }
+
     if ($content -notmatch "127\.0\.0\.1:$Port") {
         throw "config.yml must point at 127.0.0.1:$Port."
     }
@@ -70,8 +78,10 @@ function Stop-ErpBatCopies {
         }
 
     $listen = netstat -ano | Select-String ":$Port" | Select-String "LISTENING"
+
     foreach ($line in $listen) {
         $procId = ($line.ToString() -split "\s+")[-1]
+
         if ($procId -match "^\d+$") {
             Write-Host "Stopping listener PID $procId on port $Port"
             cmd /c "taskkill /PID $procId /F >nul 2>&1"
@@ -104,8 +114,33 @@ Set-Location '$ProjectRoot'
 
     @"
 Set-Location '$ProjectRoot'
-& '$CloudflaredExe' tunnel --config '$ConfigFile' run
+& '$CloudflaredExe' tunnel --config '$ConfigFile' --protocol http2 run
 "@ | Set-Content -Path $TunnelWrapper -Encoding UTF8
+}
+
+function Wait-ForErp {
+    param(
+        [int]$TimeoutSeconds = 30
+    )
+
+    Write-Host "Waiting for ERP on port $Port..." -ForegroundColor Cyan
+
+    for ($i = 1; $i -le $TimeoutSeconds; $i++) {
+        Start-Sleep -Seconds 1
+
+        $ready = Test-NetConnection `
+            127.0.0.1 `
+            -Port $Port `
+            -WarningAction SilentlyContinue
+
+        if ($ready.TcpTestSucceeded) {
+            Write-Host "ERP is ready on port $Port." -ForegroundColor Green
+            return $true
+        }
+    }
+
+    Write-Host "ERP did not become available on port $Port within $TimeoutSeconds seconds." -ForegroundColor Red
+    return $false
 }
 
 function Register-ErpTask {
@@ -115,104 +150,191 @@ function Register-ErpTask {
         [string]$Description,
         $Trigger
     )
+
     $existing = Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue
+
     if ($existing) {
         Unregister-ScheduledTask -TaskName $Name -Confirm:$false
     }
-    $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+
+    $action = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+
     $principal = Get-ErpTaskPrincipal
     $settings = Get-LongRunningSettings
-    Register-ScheduledTask -TaskName $Name -Action $action -Trigger $Trigger -Principal $principal -Settings $settings -Description $Description | Out-Null
+
+    Register-ScheduledTask `
+        -TaskName $Name `
+        -Action $action `
+        -Trigger $Trigger `
+        -Principal $principal `
+        -Settings $settings `
+        -Description $Description | Out-Null
 }
 
 function Install-ErpAlwaysOn {
     Test-ErpConfig
+
     Write-Host "Installing always-on ERP tasks for $($cfg.hostname)..." -ForegroundColor Cyan
+
     Write-Wrappers
+
     Stop-ErpBatCopies
     Start-Sleep -Seconds 2
 
-    $boot = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
-    Register-ErpTask -Name $AppTask -ScriptPath $AppWrapper -Description "Shafique Center ERP (run.py)" -Trigger $boot
-    Register-ErpTask -Name $TunnelTask -ScriptPath $TunnelWrapper -Description "Shafique Center Cloudflare tunnel (ERP config only)" -Trigger $boot
+    $boot = New-ScheduledTaskTrigger `
+        -AtLogOn `
+        -User "$env:USERDOMAIN\$env:USERNAME"
 
-    $healthLogon = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
-    $healthRepeat = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 2) -RepetitionDuration (New-TimeSpan -Hours 23 -Minutes 50)
-    $existingHealth = Get-ScheduledTask -TaskName $HealthTask -ErrorAction SilentlyContinue
+    Register-ErpTask `
+        -Name $AppTask `
+        -ScriptPath $AppWrapper `
+        -Description "Shafique Center ERP (run.py)" `
+        -Trigger $boot
+
+    Register-ErpTask `
+        -Name $TunnelTask `
+        -ScriptPath $TunnelWrapper `
+        -Description "Shafique Center Cloudflare tunnel (ERP config only, HTTP/2)" `
+        -Trigger $boot
+
+    $healthLogon = New-ScheduledTaskTrigger `
+        -AtLogOn `
+        -User "$env:USERDOMAIN\$env:USERNAME"
+
+    $healthRepeat = New-ScheduledTaskTrigger `
+        -Once `
+        -At (Get-Date).AddMinutes(1) `
+        -RepetitionInterval (New-TimeSpan -Minutes 2) `
+        -RepetitionDuration (New-TimeSpan -Hours 23 -Minutes 50)
+
+    $existingHealth = Get-ScheduledTask `
+        -TaskName $HealthTask `
+        -ErrorAction SilentlyContinue
+
     if ($existingHealth) {
         Unregister-ScheduledTask -TaskName $HealthTask -Confirm:$false
     }
-    $healthAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$HealthScript`""
+
+    $healthAction = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$HealthScript`""
+
     $healthSettings = New-ScheduledTaskSettingsSet `
         -AllowStartIfOnBatteries `
         -DontStopIfGoingOnBatteries `
         -StartWhenAvailable `
         -ExecutionTimeLimit (New-TimeSpan -Minutes 5) `
         -MultipleInstances IgnoreNew
-    Register-ScheduledTask -TaskName $HealthTask -Action $healthAction -Trigger @($healthLogon, $healthRepeat) -Principal (Get-ErpTaskPrincipal) -Settings $healthSettings -Description "Restart ERP if http://127.0.0.1:$Port/health fails" | Out-Null
+
+    Register-ScheduledTask `
+        -TaskName $HealthTask `
+        -Action $healthAction `
+        -Trigger @($healthLogon, $healthRepeat) `
+        -Principal (Get-ErpTaskPrincipal) `
+        -Settings $healthSettings `
+        -Description "Restart ERP if http://127.0.0.1:$Port/health fails" | Out-Null
+
+    # IMPORTANT:
+    # Start ERP first. Do not start Cloudflare until port 8000 is ready.
+    Start-ScheduledTask -TaskName $AppTask
+    Write-Host "Started $AppTask"
+
+    if (-not (Wait-ForErp -TimeoutSeconds 30)) {
+        throw "ERP did not become available on port $Port. Cloudflare tunnel was NOT started."
+    }
 
     Start-ScheduledTask -TaskName $TunnelTask
-    Start-Sleep -Seconds 3
-    Start-ScheduledTask -TaskName $AppTask
-    Disable-ScheduledTask -TaskName $HealthTask -ErrorAction SilentlyContinue | Out-Null
+    Write-Host "Started $TunnelTask (HTTP/2)"
 
-    Write-Host "Installed:" -ForegroundColor Green
+    Disable-ScheduledTask `
+        -TaskName $HealthTask `
+        -ErrorAction SilentlyContinue | Out-Null
+
+    Write-Host ""
+    Write-Host "Installed successfully:" -ForegroundColor Green
     Write-Host "  $AppTask"
-    Write-Host "  $TunnelTask"
+    Write-Host "  $TunnelTask (HTTP/2)"
     Write-Host "  $HealthTask (registered, disabled - does not kill a live ERP)"
+    Write-Host ""
     Write-Host "Do not run START-APP.bat or FIX-TUNNEL.bat while these tasks are on."
 }
 
 function Uninstall-ErpAlwaysOn {
     foreach ($name in @($HealthTask, $AppTask, $TunnelTask)) {
         $existing = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
+
         if ($existing) {
             Stop-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
             Unregister-ScheduledTask -TaskName $name -Confirm:$false
             Write-Host "Removed task $name"
         }
     }
+
     Stop-ErpBatCopies
 }
 
 function Start-ErpAlwaysOn {
     Test-ErpConfig
-    foreach ($name in @($TunnelTask, $AppTask)) {
-        $existing = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
-        if (-not $existing) {
-            throw "Task $name is not installed. Run INSTALL-ERP-SERVICES.bat first."
-        }
-        Start-ScheduledTask -TaskName $name
-        Write-Host "Started $name"
+
+    $existingApp = Get-ScheduledTask `
+        -TaskName $AppTask `
+        -ErrorAction SilentlyContinue
+
+    if (-not $existingApp) {
+        throw "Task $AppTask is not installed. Run INSTALL-ERP-SERVICES.bat first."
     }
+
+    $existingTunnel = Get-ScheduledTask `
+        -TaskName $TunnelTask `
+        -ErrorAction SilentlyContinue
+
+    if (-not $existingTunnel) {
+        throw "Task $TunnelTask is not installed. Run INSTALL-ERP-SERVICES.bat first."
+    }
+
+    Start-ScheduledTask -TaskName $AppTask
+    Write-Host "Started $AppTask"
+
+    if (-not (Wait-ForErp -TimeoutSeconds 30)) {
+        throw "ERP did not become available on port $Port. Cloudflare tunnel was NOT started."
+    }
+
+    Start-ScheduledTask -TaskName $TunnelTask
+    Write-Host "Started $TunnelTask (HTTP/2)"
 }
 
 function Stop-ErpAlwaysOn {
     foreach ($name in @($HealthTask, $AppTask, $TunnelTask)) {
         $existing = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
+
         if ($existing) {
             Stop-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
             Write-Host "Stopped $name"
         }
     }
+
     Stop-ErpBatCopies
 }
 
 function Show-ErpStatus {
     foreach ($name in @($AppTask, $TunnelTask, $HealthTask)) {
         $t = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
+
         if ($t) {
             Write-Host ("{0}: {1}" -f $name, $t.State)
-        } else {
+        }
+        else {
             Write-Host ("{0}: not installed" -f $name)
         }
     }
 }
 
 switch ($Action) {
-    "install" { Install-ErpAlwaysOn }
+    "install"   { Install-ErpAlwaysOn }
     "uninstall" { Uninstall-ErpAlwaysOn }
-    "start" { Start-ErpAlwaysOn }
-    "stop" { Stop-ErpAlwaysOn }
-    "status" { Show-ErpStatus }
+    "start"     { Start-ErpAlwaysOn }
+    "stop"      { Stop-ErpAlwaysOn }
+    "status"    { Show-ErpStatus }
 }
